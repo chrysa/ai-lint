@@ -4080,33 +4080,49 @@ def interactive(rep: Report, repos: list[Path], policy: dict, user_scope: bool) 
 
 
 def restore_trash(target: str | None) -> int:
-    """Move every file of a trash session back where it came from (never overwrites)."""
+    """Move every file of a trash session back where it came from (never overwrites).
+    Returns 1 when the requested session is missing or nothing could be restored."""
     base = Path(os.path.expanduser("~/.cache/agent-config-lint/trash"))
     sessions = sorted(d for d in base.iterdir() if d.is_dir()) if base.is_dir() else []
     if target:
         root = Path(target).expanduser()
+        if not root.is_dir():
+            print(f"Session introuvable : {home_path(str(root))}")
+            return 1
     elif sessions:
         root = sessions[-1]
     else:
         print("Aucune session à restaurer.")
         return 0
-    moved = skipped = 0
-    for f in sorted(root.rglob("*")):
-        if f.is_dir() or f.name == "restore.sh":
-            continue
+    files = [f for f in sorted(root.rglob("*")) if f.is_file() and f.name != "restore.sh"]
+    if not files:
+        print(f"Session {root.name} : vide, rien à restaurer.")
+        return 0
+    moved = skipped = failed = 0
+    for f in files:
         dest = Path("/") / f.relative_to(root)
         if dest.exists():
             skipped += 1
             print(f"  déjà présent, laissé dans la corbeille : {home_path(str(dest))}")
             continue
-        dest.parent.mkdir(parents=True, exist_ok=True)
-        shutil.move(str(f), str(dest))
+        try:
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            shutil.move(str(f), str(dest))
+        except OSError as e:
+            failed += 1
+            print(f"  échec : {home_path(str(dest))} ({e})")
+            continue
         moved += 1
         print(f"  restauré : {home_path(str(dest))}")
-    print(f"Session {root.name} : {moved} fichier(s) restauré(s), {skipped} déjà présent(s).")
+    parts = [_fr_plural(moved, "fichier") + " restauré" + ("s" if moved >= 2 else "")]
+    if skipped:
+        parts.append(_fr_plural(skipped, "déjà présent", "déjà présents"))
+    if failed:
+        parts.append(_fr_plural(failed, "échec"))
+    print(f"Session {root.name} : " + ", ".join(parts) + ".")
     if len(sessions) > 1 and not target:
         print("Autres sessions : " + ", ".join(s.name for s in sessions[:-1]) + " (--restore <dossier>)")
-    return 0
+    return 1 if (moved == 0 and failed) else 0
 
 # --------------------------------------------------------------------------- #
 # Attribution traces
