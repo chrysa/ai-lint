@@ -100,7 +100,8 @@ def _build_user_scope(cfg: Path) -> None:
     for name in ("llmtrim-codex", "llmtrim-grok", "llmtrim-kimi"):
         _write(
             cfg / "agents" / f"{name}.md",
-            f"---\nname: {name}\ndescription: delegate to {name} provider\nmodel: inherit\n---\n\nGENERATED family member.\n",
+            f"---\nname: {name}\ndescription: delegate to {name} provider\nmodel: inherit\n---\n\n"
+            f"<!-- llmtrim-owned-route-agent-v1 -->\n<!-- llmtrim-route-v1:{name} -->\n\nRoute the task.\n",
         )
     # an agency pack: agents/agency/<domain>/
     for domain in ("backend", "frontend", "security"):
