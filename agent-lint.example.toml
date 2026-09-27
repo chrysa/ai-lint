@@ -1,0 +1,92 @@
+[instructions]
+user_max_lines = 150
+project_warn_lines = 200
+warn_tokens = 5000
+max_import_depth = 4
+doctrine_dir = "doctrine/rules"
+generated_marker = "GENERATED"
+rendered_files = ["CLAUDE.md", "AGENTS.md", ".github/copilot-instructions.md"]
+claude_md_import = true
+min_duplicate_line_len = 30
+
+[permissions]
+require_rtk = true
+rtk_twin_deny = true
+rtk_exempt = ["rtk"]
+rule_style = "keep"
+external_action_prefixes = ["git push", "gh pr create", "gh pr merge", "gh release", "gh repo", "kubectl apply", "kubectl delete", "kubectl patch", "helm install", "helm upgrade", "helm uninstall", "argocd", "terraform apply", "terraform destroy", "tofu apply", "tofu destroy", "bao write", "vault write", "docker push", "npm publish", "twine upload", "rm -rf"]
+forbidden_allow = ["Bash", "Bash(*)", "Bash(sudo:*)", "Bash(sudo *)", "Bash(rtk *)", "Bash(rtk:*)", "PowerShell", "PowerShell(*)"]
+exec_runners = ["npx", "bunx", "pnpm dlx", "yarn dlx", "uvx", "uv run", "poetry run", "pipenv run", "docker exec", "docker run", "docker compose exec", "docker compose run", "kubectl exec", "devbox run", "direnv exec", "mise exec", "nix run", "nix-shell", "sh -c", "bash -c", "zsh -c", "env", "eval", "exec", "xargs", "python -c", "python3 -c", "node -e", "sudo", "watch", "timeout", "rtk"]
+required_deny = ["Read(**/.env)", "Read(**/.env.*)", "Read(**/secrets/**)", "Read(**/*.pem)", "Read(**/*.key)", "Read(~/.ssh/**)", "Read(~/.aws/**)", "Read(~/.kube/**)", "Read(~/.vault-token)", "Read(!.env.example)"]
+
+[user_scope]
+context_only = true
+
+[attribution]
+scan_history_commits = 200
+install_commit_msg_hook = true
+scan_extensions = [".md", ".txt", ".rst", ".py", ".ts", ".tsx", ".js", ".yml", ".yaml", ".toml", ".json", ".cs", ".sh"]
+max_file_bytes = 1000000
+
+[scaffold]
+project_settings = true
+instructions = true
+user_settings = true
+schema_url = "https://json.schemastore.org/claude-code-settings.json"
+
+[skills]
+portable = true
+max_listing_chars = 1536
+portable_description_chars = 1024
+max_lines = 500
+name_pattern = "^[a-z0-9][a-z0-9-]{0,63}$"
+gate_side_effects = true
+side_effect_words = ["deploy", "release", "publish", "push", "send", "delete", "drop", "destroy", "migrate", "rollback", "merge"]
+
+[mcp]
+max_servers = 6
+
+[reference]
+extra_settings_keys = []
+extra_hook_events = []
+extra_tools = []
+extra_skill_fields = []
+extra_agent_fields = []
+docs_checked = ""
+
+[memory]
+max_lines = 200
+max_bytes = 25000
+
+[generate]
+project_settings = true
+user_settings = true
+rtk_config = true
+format_hook = true
+skills = ["check", "review-changes"]
+agents = ["code-reviewer", "test-runner", "security-auditor", "infra-reviewer"]
+mcp = ["github", "sentry", "supabase", "playwright"]
+user_mcp = ["notion"]
+extra_allow = []
+extra_ask = []
+extra_deny = []
+rtk_exclude_commands = []
+safe_make_targets = ["test", "lint", "fmt", "format", "check", "build", "typecheck", "up", "down", "logs", "ps", "dev", "run", "help", "doctor", "validate"]
+gated_make_targets = ["deploy", "release", "publish", "push", "promote", "rollback"]
+
+[tokens]
+max_always_loaded = 10000
+skill_description_chars = 400
+prefer_cli_over_mcp = true
+hold_cross_session = true
+compact_instructions = true
+mcp_server_estimate = 150
+agent_pack_tokens = 1000
+
+[restructure]
+marketplace_name = "personal"
+min_pack_agents = 3
+min_skill_family = 3
+skill_keep_lines = 150
+procedure_min_lines = 15
+
