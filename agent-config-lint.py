@@ -66,7 +66,7 @@ try:
 except ModuleNotFoundError:  # Python < 3.11: policy files unsupported, defaults apply
     tomllib = None
 
-VERSION = "2026.09.27-13"
+VERSION = "2026.09.27-14"
 DOCS = "https://code.claude.com/docs/en/"
 ISSUES = "https://github.com/anthropics/claude-code/issues/"
 
@@ -2337,7 +2337,14 @@ RTK: dict[str, Any] = {"path": None, "version": None, "genuine": None, "config":
 RTK_NATIVE = {"read", "smart", "summary", "proxy", "err", "test", "json", "deps", "env", "log",
               "gain", "discover", "session", "init", "hook", "rewrite", "recall", "telemetry", "lint"}
 
+# llmtrim: a companion CLI that owns "route" subagents (llmtrim-codex-*, llmtrim-grok-*...).
+# They carry an HTML marker and delegate to the llmtrim binary; without it on PATH those
+# subagents load into every session but route nowhere.
+LLMTRIM: dict[str, Any] = {"path": None, "version": None, "checked_cli": False}
+LLMTRIM_ROUTE_MARKER = re.compile(r"llmtrim-(owned-route-agent|route-v\d+)", re.I)
+
 HINTS.update({
+    "LLMTRIM_MISSING": ("These subagents are managed by the llmtrim CLI and delegate to it; without llmtrim on PATH they load into every session but their routes are dead. Install llmtrim, or remove the route agents (-i offers to park them).", "https://github.com/llmtrim/llmtrim#install"),
     "RTK_MISSING": ("rtk-prefixed allow rules only match once the rtk hook rewrites commands; without rtk they never match.", "https://github.com/rtk-ai/rtk#installation"),
     "RTK_WRONG_PACKAGE": ("'rtk' on PATH is another project (Rust Type Kit): 'rtk gain' does not exist.", "https://github.com/rtk-ai/rtk#verify-installation"),
     "RTK_OLD": ("Since v0.37.2 the hook is a native binary (rtk hook claude): no bash or jq needed.", "https://github.com/rtk-ai/rtk#windows"),
@@ -2454,7 +2461,8 @@ def check_rtk(policy: dict, rep: Report, repos: list[Path], user_scope: bool) ->
         rep.add("error", "RTK_CONFIG", RTK["config_path"], f"invalid TOML: {RTK['config']['__error__']}")
     if RTK["path"] is None and RTK["genuine"] is None:
         if shutil.which("rtk") is None and RTK.get("checked_cli"):
-            rep.add("warn", "RTK_MISSING", "rtk", "require_rtk is on but rtk is not installed")
+            rep.add("warn", "RTK_MISSING", "rtk", "require_rtk is on but rtk is not installed: "
+                    "install it (see hint) or set permissions.require_rtk = false to skip rtk routing")
         return
     if RTK["genuine"] is False:
         rep.add("error", "RTK_WRONG_PACKAGE", RTK["path"], "this 'rtk' is not Rust Token Killer")
@@ -2504,6 +2512,35 @@ def check_rtk(policy: dict, rep: Report, repos: list[Path], user_scope: bool) ->
         out = ((res.stdout or "") + (res.stderr or "")).lower() if res else ""
         if re.search(r"\b(enabled|granted|consent: yes|opted in)\b", out) and "disabled" not in out:
             rep.add("info", "RTK_TELEMETRY", "rtk", "telemetry enabled: 'rtk telemetry disable' (or RTK_TELEMETRY_DISABLED=1)")
+
+
+def detect_llmtrim(use_cli: bool) -> None:
+    LLMTRIM["checked_cli"] = use_cli
+    if not use_cli:
+        return
+    LLMTRIM["path"] = shutil.which("llmtrim")
+    if LLMTRIM["path"]:
+        res = _run(["llmtrim", "--version"], timeout=5)
+        m = re.search(r"(\d+)\.(\d+)\.(\d+)", (res.stdout if res else "") or "")
+        LLMTRIM["version"] = tuple(int(x) for x in m.groups()) if m else None
+    log(1, f"llmtrim: {LLMTRIM['path'] or 'not found'}")
+
+
+def check_llmtrim(rep: Report, repos: list[Path], user_scope: bool) -> None:
+    """If llmtrim owns route subagents but the CLI is absent, propose installing it
+    (or removing the dead routes). Skipped entirely when --no-cli is set."""
+    if not LLMTRIM["checked_cli"] or LLMTRIM["path"]:
+        return  # llmtrim installed, or CLI probing skipped: nothing to propose
+    roots = ([config_dir()] if user_scope else []) + [r / ".claude" for r in repos]
+    routes: list[Path] = []
+    for root in roots:
+        for ag in sorted(root.glob("agents/**/*.md")):
+            if LLMTRIM_ROUTE_MARKER.search(read_text(ag) or ""):
+                routes.append(ag)
+    if routes:
+        rep.add("warn", "LLMTRIM_MISSING", routes[0].parent,
+                f"{len(routes)} llmtrim route subagent(s) but llmtrim is not installed: "
+                f"install it or remove them (they load every session, their routes are dead)")
 
 
 def rtk_report() -> str:
@@ -3597,6 +3634,8 @@ BRIEF_FR = {
     "PLUGIN_MANIFEST": ("broken", "manifeste de plugin à corriger", "voir --details"),
     "HOOK_IF_DEAD": ("broken", "condition de hook jamais évaluée", "--fix la retire"),
     "RTK_NO_HOOK": ("broken", "rtk installé mais pas branché", "--fix --user l'ajoute"),
+    "RTK_MISSING": ("broken", "rtk exigé mais pas installé", "installer rtk, ou require_rtk = false pour l'esquiver"),
+    "LLMTRIM_MISSING": ("broken", "subagents de routage llmtrim mais llmtrim absent", "installer llmtrim, ou -i pour retirer ces agents"),
     "TOKEN_AGENT_PACK": ("tokens", "packs de subagents listés à chaque requête", "-i : les transformer en plugins à activer par projet"),
     "DUP_FAMILY": ("tokens", "familles d'agents/skills générés sur un même modèle (pas des doublons)", "-i : en faire un plugin ou les mettre de côté"),
     "TOKEN_SKILL_DESC": ("tokens", "descriptions de skills trop longues (relues à chaque tour)", "-i propose une version courte"),
@@ -3638,6 +3677,8 @@ BRIEF_EN = {
     "PLUGIN_MANIFEST": ("broken", "plugin manifest to fix", "see --details"),
     "HOOK_IF_DEAD": ("broken", "hook condition never evaluated", "--fix removes it"),
     "RTK_NO_HOOK": ("broken", "rtk installed but not wired in", "--fix --user adds it"),
+    "RTK_MISSING": ("broken", "rtk required but not installed", "install rtk, or set require_rtk = false to skip it"),
+    "LLMTRIM_MISSING": ("broken", "llmtrim route subagents but llmtrim not installed", "install llmtrim, or -i to remove those agents"),
     "TOKEN_AGENT_PACK": ("tokens", "subagent packs listed on every request", "-i: turn them into per-project plugins"),
     "DUP_FAMILY": ("tokens", "families of generated agents/skills from one template (not duplicates)", "-i: make a plugin or park them"),
     "TOKEN_SKILL_DESC": ("tokens", "skill descriptions too long (re-read every turn)", "-i offers a short version"),
@@ -4461,6 +4502,7 @@ def run_lint(repos: list[Path], policy: dict, args: argparse.Namespace, history:
     rep = Report()
     user_text = lint_user(policy, rep, repos) if (args.user or args.user_only) else None
     check_rtk(policy, rep, repos, bool(args.user or args.user_only))
+    check_llmtrim(rep, repos, bool(args.user or args.user_only))
     rep.budget = token_budget(repos[0] if repos else None, bool(args.user or args.user_only), policy, rep)
     user_roots = [config_dir()] if (args.user or args.user_only) else []
     dup_roots = user_roots + [r / ".claude" for r in repos]
@@ -4481,6 +4523,31 @@ def run_lint(repos: list[Path], policy: dict, args: argparse.Namespace, history:
         lint_repo(r, policy, rep, history, user_text)
         log(1, f"{r}: {len(rep.findings) - before} finding(s) in {time.perf_counter() - t0:.2f}s")
     return rep
+
+
+def log_dir() -> Path:
+    return Path(os.path.expanduser("~/.cache/agent-config-lint/logs"))
+
+
+def write_run_log(argv: list[str], repos: list[Path], rep: Report, fixed: list,
+                  applied: list[str], elapsed: float, code: int) -> None:
+    """Append one JSON line per run to ~/.cache/agent-config-lint/logs/<date>.log.
+    Best-effort: a logging failure never affects the run's exit code, and no file
+    contents or secrets are recorded, only counts and finding codes."""
+    try:
+        d = log_dir()
+        d.mkdir(parents=True, exist_ok=True)
+        codes: dict[str, int] = {}
+        for f in rep.findings:
+            codes[f.code] = codes.get(f.code, 0) + 1
+        record = {"ts": dt.datetime.now().isoformat(timespec="seconds"), "version": VERSION,
+                  "args": argv, "repos": len(repos), "elapsed_s": round(elapsed, 2),
+                  "findings": {lvl: rep.count(lvl) for lvl in LEVELS}, "fixed": len(fixed),
+                  "applied": len(applied), "exit": code, "codes": codes}
+        with (d / f"{dt.date.today().isoformat()}.log").open("a", encoding="utf-8") as fh:
+            fh.write(json.dumps(record, ensure_ascii=False) + "\n")
+    except OSError as e:
+        log(2, f"run log skipped: {e}")
 
 
 def backup(paths: list[Path]) -> Path:
@@ -5072,13 +5139,46 @@ def dump_reference() -> dict:
 
 
 def main(argv: list[str] | None = None) -> int:
-    ap = argparse.ArgumentParser(description="Validate, repair and optimize coding-agent configurations.")
+    ap = argparse.ArgumentParser(
+        description="Validate, repair and optimize coding-agent configurations "
+                    "(Claude Code settings, permissions, hooks, MCP, skills, subagents, "
+                    "commands, rules, instruction files, plugins, CI and secrets).",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog=(
+            "examples:\n"
+            "  agent-config-lint.py .                      read-only report for the current repo\n"
+            "  agent-config-lint.py . --fix               apply safe repairs (backup kept)\n"
+            "  agent-config-lint.py . --user              include user scope (~/.claude or $CLAUDE_CONFIG_DIR)\n"
+            "  agent-config-lint.py ~/dev --user          every git repo under ~/dev, plus user scope\n"
+            "  agent-config-lint.py . --generate          preview config to generate for the stack\n"
+            "  agent-config-lint.py . -i                  interactive review (duplicates, packs, restructurings)\n"
+            "  agent-config-lint.py --restore             undo the last interactive session\n"
+            "  agent-config-lint.py . --strict --format json --no-cli   CI-friendly run\n"
+            "\n"
+            "read-only by default; --fix and -i are the only writing modes, both reversible.\n"
+            "each run appends a JSON line to ~/.cache/agent-config-lint/logs/<date>.log.\n"
+            "docs snapshot follows code.claude.com/docs; unknown keys are reported, never errors.\n"
+            "\n"
+            "defaults:\n"
+            "  scope             current repo only (--user adds ~/.claude or $CLAUDE_CONFIG_DIR)\n"
+            "  mode              read-only (no --fix, no --generate, no -i)\n"
+            "  report            brief; language from $LANG (fr if it starts with 'fr', else en)\n"
+            "  scaffolding       on (missing baseline files created; --no-scaffold to disable)\n"
+            "  CLIs              claude and rtk are called when present (--no-cli to skip)\n"
+            "  policy file       <repo>/.agent-lint.toml if present, else built-in defaults\n"
+            "  instruction file  warns above 200 lines; user scope above 150\n"
+            "  always-loaded     token budget warns above 10000 tokens/turn\n"
+            "  skill description warns above 1024 chars in the listing\n"
+            "  MCP servers       capped at 6\n"
+            "  rtk routing       required (permissions.require_rtk = true)\n"
+            "run with --print-policy to print every default as TOML."),
+    )
     ap.add_argument("repos", nargs="*", type=Path, help="repositories or folders of repositories (default: cwd)")
     ap.add_argument("--user", action="store_true", help="also check user scope")
     ap.add_argument("--user-only", action="store_true", help="check user scope only")
     ap.add_argument("--fix", action="store_true", help="apply repairs (with backup)")
     ap.add_argument("--no-scaffold", action="store_true", help="do not create missing files")
-    ap.add_argument("--format", choices=("text", "json"), default="text")
+    ap.add_argument("--format", choices=("text", "json"), default="text", help="output format (default: text)")
     ap.add_argument("--policy", type=Path, help="policy TOML (default: <repo>/.agent-lint.toml)")
     ap.add_argument("--strict", action="store_true", help="fail on warnings too")
     ap.add_argument("--no-history", action="store_true", help="skip git history scan")
@@ -5102,6 +5202,10 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--guard", action="store_true", help="PreToolUse hook mode: read hook JSON on stdin, exit 2 to block")
     ap.add_argument("--session-settings", type=Path, metavar="FILE", help="write guarded session settings for 'claude --settings FILE'")
     ap.add_argument("--dump-reference", action="store_true", help="print built-in reference data as JSON")
+    # No arguments at all: show help (with defaults) instead of silently scanning cwd.
+    if not (argv if argv is not None else sys.argv[1:]):
+        ap.print_help()
+        return 0
     args = ap.parse_args(argv)
     global VERBOSITY, SCAFFOLD, CLI_VERSION, SHOW_ALL, FIRST_REPORT, LANG
     if args.restore is not None:
@@ -5131,11 +5235,13 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     log(1, f"agent-config-lint {VERSION}")
     detect_rtk(not args.no_cli)
+    detect_llmtrim(not args.no_cli)
     RTK["checked_cli"] = not args.no_cli
     if not args.no_cli:
         CLI_VERSION = detect_cli_version()
         log(1, "claude CLI: " + (".".join(map(str, CLI_VERSION)) if CLI_VERSION else "not found"))
 
+    run_started = time.perf_counter()
     targets = [] if args.user_only else [r.expanduser().resolve() for r in (args.repos or [Path.cwd()])]
     for r in targets:
         if not r.is_dir():
@@ -5182,8 +5288,10 @@ def main(argv: list[str] | None = None) -> int:
     if args.format == "text" and not (args.details or args.all):
         print(render_brief(rep, fixed, args.fix, len(repos), sys.stdout.isatty()))
         for bk in sorted(set(backups)):
-            print(f"Sauvegarde des fichiers modifiés : {bk}")
-        return 1 if rep.count("error") or (args.strict and rep.count("warn")) else 0
+            print(_L("Sauvegarde des fichiers modifiés : ", "Backup of modified files: ") + bk)
+        code = 1 if rep.count("error") or (args.strict and rep.count("warn")) else 0
+        write_run_log(argv or sys.argv[1:], repos, rep, fixed, applied, time.perf_counter() - run_started, code)
+        return code
     if args.format == "json":
         codes = {f.code for f in rep.findings} | {f.code for f in fixed}
         print(json.dumps({
@@ -5210,7 +5318,9 @@ def main(argv: list[str] | None = None) -> int:
         if args.rtk_report:
             report = rtk_report()
             print("\n== rtk report\n" + (report or "rtk not available"))
-    return 1 if rep.count("error") or (args.strict and rep.count("warn")) else 0
+    code = 1 if rep.count("error") or (args.strict and rep.count("warn")) else 0
+    write_run_log(argv or sys.argv[1:], repos, rep, fixed, applied, time.perf_counter() - run_started, code)
+    return code
 
 
 if __name__ == "__main__":
