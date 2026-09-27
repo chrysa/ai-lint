@@ -2387,8 +2387,11 @@ def detect_rtk(use_cli: bool) -> None:
     helptext = _run(["rtk", "--help"])
     cmds = set(re.findall(r"(?m)^\s{2,}([a-z][\w-]*)[\s,]", (helptext.stdout if helptext else "") or ""))
     RTK["help_commands"] = cmds if len(cmds) >= 10 else set()
+    # `rtk rewrite` prints the rewritten command on stdout when it supports it and
+    # nothing when it doesn't. Its exit code is unreliable (rtk 0.42.1 exits 3 on a
+    # successful rewrite), so detection keys on stdout, not the return code.
     probe = _run(["rtk", "rewrite", "git status"])
-    RTK["rewrite_cli"] = bool(probe and probe.returncode == 0 and "rtk" in (probe.stdout or ""))
+    RTK["rewrite_cli"] = bool(probe and (probe.stdout or "").strip().startswith("rtk"))
     log(1, f"rtk: {RTK['path']} {'.'.join(map(str, RTK['version'] or ())) or '?'} "
            f"(genuine={RTK['genuine']}, rewrite probe={RTK['rewrite_cli']}, "
            f"commands from --help={len(RTK['help_commands'])}, excluded={sorted(RTK['exclude'])})")
@@ -2403,7 +2406,7 @@ def rtk_rewrites(cmd: str) -> bool:
         cache = RTK["rewrite_cache"]
         if cmd not in cache:
             res = _run(["rtk", "rewrite", cmd], timeout=5)
-            cache[cmd] = bool(res and res.returncode == 0 and (res.stdout or "").strip().startswith("rtk"))
+            cache[cmd] = bool(res and (res.stdout or "").strip().startswith("rtk"))
             log(3, f"rtk rewrite {cmd!r}: {cache[cmd]}")
         return cache[cmd]
     if RTK["help_commands"]:
