@@ -431,6 +431,12 @@ HINTS: dict[str, tuple[str, str]] = {  # code -> (why/how, reference)
 VERBOSITY = 0
 SCAFFOLD = True
 CLI_VERSION: tuple[int, ...] | None = None
+LANG = "fr"  # brief-report language: "fr" or "en" (set from --lang / $LANG)
+
+
+def _L(fr: str, en: str) -> str:
+    """Pick the brief-report string for the active language."""
+    return en if LANG == "en" else fr
 _COLOR_ERR = sys.stderr.isatty()
 LEVELS = ("error", "warn", "info")
 
@@ -3611,6 +3617,55 @@ SECTION_TITLES = {
     "tokens": "3. TOKENS : ce qui alourdit chaque session",
     "dups": "4. DOUBLONS",
 }
+BRIEF_EN = {
+    "API_KEY_LEAK": ("security", "plaintext Anthropic API key", "revoke the key (console.anthropic.com), then remove the line"),
+    "SECRET_INLINE": ("security", "secret written in cleartext in a config", "--fix replaces it with ${VAR} where possible"),
+    "ATTR_TRACE": ("security", "Claude/Anthropic signature in files", "--fix strips lines in .claude/, CLAUDE.md, AGENTS.md; elsewhere by hand"),
+    "PERM_EXEC_RUNNER": ("security", "over-broad allow rule (xargs, npx... run any command)", "replace with specific commands"),
+    "PERM_TOO_BROAD": ("security", "allow rule that lets everything through", "--fix removes it"),
+    "PERM_BYPASS": ("security", "permission-bypass mode in a repository", "--fix removes it"),
+    "CI_ACTION": ("security", "GitHub Actions workflow to harden", "see --details"),
+    "CI_TRIGGER": ("security", "workflow triggerable by strangers", "see --details"),
+    "HOOK_MISSING_SCRIPT": ("broken", "hook calling a missing script: it does nothing", "fix the script path"),
+    "SKILL_MISSING": ("broken", "skill folder without SKILL.md: ignored", "add SKILL.md or delete the folder"),
+    "IMPORT_MISSING": ("broken", "@import to a missing file", "fix or remove the import"),
+    "AGENT_FRONTMATTER": ("broken", "file under agents/ that is not an agent", "-i offers to move it"),
+    "JSON_INVALID": ("broken", "unreadable JSON file: ignored entirely", "fix the syntax"),
+    "SETTINGS_DEAD_KEY": ("broken", "setting with no effect here (e.g. forceLoginOrgUUID in a repo)", "remove it"),
+    "MISPLACED": ("broken", "file in the wrong place, never read", "--fix moves it when safe"),
+    "SKILL_NAME": ("broken", "invalid skill folder name", "rename the folder to lowercase-dashes"),
+    "ATTR_HOOK_CONFLICT": ("broken", "existing commit-msg hook that does not strip signatures", "add the 2 sed lines (see --details)"),
+    "PLUGIN_MANIFEST": ("broken", "plugin manifest to fix", "see --details"),
+    "HOOK_IF_DEAD": ("broken", "hook condition never evaluated", "--fix removes it"),
+    "RTK_NO_HOOK": ("broken", "rtk installed but not wired in", "--fix --user adds it"),
+    "TOKEN_AGENT_PACK": ("tokens", "subagent packs listed on every request", "-i: turn them into per-project plugins"),
+    "DUP_FAMILY": ("tokens", "families of generated agents/skills from one template (not duplicates)", "-i: make a plugin or park them"),
+    "TOKEN_SKILL_DESC": ("tokens", "skill descriptions too long (re-read every turn)", "-i offers a short version"),
+    "SKILL_LONG": ("tokens", "skills over 500 lines", "-i: split into SKILL.md + references/"),
+    "INSTR_LONG": ("tokens", "instruction files over 200 lines", "-i: move procedures into skills"),
+    "RULE_UNSCOPED": ("tokens", "rules loaded everywhere for lack of 'paths:'", "-i offers the right filter when obvious"),
+    "TOKEN_MODEL": ("tokens", "Opus as the default for every session", "-i offers Sonnet by default (/model opus when needed)"),
+    "MCP_PREFER_CLI": ("tokens", "MCP server while the equivalent CLI is installed", "remove the server (gh does the job)"),
+    "TOKEN_SUBAGENT_MODEL": ("tokens", "mechanical subagents without a light model", "add 'model: haiku'"),
+    "DUP_EXACT": ("dups", "identical copies loaded together", "-i: pick the one to keep"),
+    "DUP_NAME": ("dups", "same name loaded twice (only one runs)", "-i: pick the one to keep"),
+    "DUP_SIMILAR": ("dups", "near-duplicates (very close name and description)", "-i: keep the best"),
+    "DUP_ACROSS_PROJECTS": ("dups", "same skill copied into many repositories", "put it in a shared plugin"),
+}
+SECTION_TITLES_EN = {
+    "security": "1. SECURITY AND PORTFOLIO RULES (handle first)",
+    "broken": "2. BROKEN: configured but not working",
+    "tokens": "3. TOKENS: what weighs on every session",
+    "dups": "4. DUPLICATES",
+}
+
+
+def brief_table() -> dict:
+    return BRIEF_EN if LANG == "en" else BRIEF_FR
+
+
+def section_titles() -> dict:
+    return SECTION_TITLES_EN if LANG == "en" else SECTION_TITLES
 
 
 def home_path(p: str) -> str:
@@ -3636,13 +3691,37 @@ def proposal_fr(p: dict) -> str:
     return p["title"]
 
 
+def proposal_desc(p: dict) -> str:
+    """Language-aware proposal description for the brief report."""
+    if LANG != "en":
+        return proposal_fr(p)
+    path = home_path(str(p.get("path", "")))
+    k = p["kind"]
+    if k == "agent-pack":
+        return f"turn {path} ({len(p['files'])} agents) into a per-project plugin"
+    if k == "skill-family":
+        return f"group {len(p['dirs'])} '{p['prefix']}-*' skills into a plugin"
+    if k == "split-skill":
+        return f"split {path} ({p['lines']} lines) into SKILL.md + references/"
+    if k == "command-to-skill":
+        return f"convert the command {path} into a skill"
+    if k == "rule-paths":
+        return f"scope the rule {path} to {p['glob']} files"
+    if k == "procedure-to-skill":
+        return f"move the '{p['section']}' section out of {path} into a skill"
+    return p["title"]
+
+
 def render_brief(rep: Report, fixed: list[Finding], fix: bool, repos_count: int, color: bool) -> str:
     b, dim, r0 = ("\033[1m", "\033[2m", "\033[0m") if color else ("", "", "")
     red, yel, grn = ("\033[31m", "\033[33m", "\033[32m") if color else ("", "", "")
-    out = [f"{b}agent-config-lint {VERSION}{r0} - {repos_count} dépôt(s) analysé(s)"
-           + (" + configuration utilisateur" if any("perso" in str(f.path) or ".claude" in str(f.path) for f in rep.findings) else "")]
+    out = [f"{b}agent-config-lint {VERSION}{r0} - "
+           + _L(f"{repos_count} dépôt(s) analysé(s)", f"{repos_count} repository(ies) scanned")
+           + (_L(" + configuration utilisateur", " + user configuration")
+              if any("perso" in str(f.path) or ".claude" in str(f.path) for f in rep.findings) else "")]
     if fix:
-        out.append(f"{grn}Corrigé automatiquement : {len(fixed)} point(s).{r0}" if fixed else "Rien à corriger automatiquement.")
+        out.append(_L(f"{grn}Corrigé automatiquement : {len(fixed)} point(s).{r0}", f"{grn}Fixed automatically: {len(fixed)} item(s).{r0}")
+                   if fixed else _L("Rien à corriger automatiquement.", "Nothing to fix automatically."))
     budget = getattr(rep, "budget", None) or {}
     by_code: dict[str, list[Finding]] = {}
     for f in rep.findings:
@@ -3650,7 +3729,7 @@ def render_brief(rep: Report, fixed: list[Finding], fix: bool, repos_count: int,
     shown: set[str] = set()
     for section in ("security", "broken", "tokens", "dups"):
         rows = []
-        for code, (sec, what, todo) in BRIEF_FR.items():
+        for code, (sec, what, todo) in brief_table().items():
             if sec != section or code not in by_code:
                 continue
             items = by_code[code]
@@ -3665,37 +3744,50 @@ def render_brief(rep: Report, fixed: list[Finding], fix: bool, repos_count: int,
             level = max(items, key=lambda f: LEVELS.index(f.level) * -1).level
             mark = {"error": f"{red}●{r0}", "warn": f"{yel}●{r0}", "info": f"{dim}○{r0}"}[level]
             rows.append(f"  {mark} {n:>4} × {what}")
-            rows.append(f"         {dim}où :{r0} {where}")
-            rows.append(f"         {dim}que faire :{r0} {todo}" + (f"  {grn}[{fixable} corrigeable(s) par --fix]{r0}" if fixable and not fix else ""))
+            rows.append(f"         {dim}{_L('où', 'where')} :{r0} {where}")
+            rows.append(f"         {dim}{_L('que faire', 'what to do')} :{r0} {todo}"
+                        + (f"  {grn}[{_L(f'{fixable} corrigeable(s) par --fix', f'{fixable} fixable with --fix')}]{r0}" if fixable and not fix else ""))
         if section == "tokens" and budget:
-            rows.insert(0, f"  Total estimé : ~{budget.get('total', 0)} tokens renvoyés à chaque requête"
-                           f" (objectif < {DEFAULT_POLICY['tokens']['max_always_loaded']}). Plus gros postes :")
+            rows.insert(0, "  " + _L(
+                f"Total estimé : ~{budget.get('total', 0)} tokens renvoyés à chaque requête"
+                f" (objectif < {DEFAULT_POLICY['tokens']['max_always_loaded']}). Plus gros postes :",
+                f"Estimated total: ~{budget.get('total', 0)} tokens re-sent on every request"
+                f" (target < {DEFAULT_POLICY['tokens']['max_always_loaded']}). Biggest contributors:"))
             for k, g in enumerate(budget.get("groups", [])[:3], 1):
-                rows.insert(k, f"     - {home_path(g['group'])} : {g['items']} élément(s), ~{g['tokens']} tokens")
+                rows.insert(k, "     - " + _L(f"{home_path(g['group'])} : {g['items']} élément(s), ~{g['tokens']} tokens",
+                                              f"{home_path(g['group'])}: {g['items']} item(s), ~{g['tokens']} tokens"))
             props = getattr(rep, "proposals", [])
             if props:
                 gain = sum(p["gain"] for p in props)
-                rows.append(f"  {grn}→{r0} {len(props)} restructuration(s) proposée(s), jusqu'à ~{gain} tokens de moins par session. Les 3 plus rentables :")
+                rows.append(f"  {grn}→{r0} " + _L(
+                    f"{len(props)} restructuration(s) proposée(s), jusqu'à ~{gain} tokens de moins par session. Les 3 plus rentables :",
+                    f"{len(props)} restructuring(s) proposed, up to ~{gain} fewer tokens per session. Top 3:"))
                 for p in props[:3]:
-                    gain_txt = f"~{p['gain']} tokens" if p["gain"] else "chargé seulement à l'usage"
-                    rows.append(f"     - {proposal_fr(p)} ({gain_txt})")
+                    gain_txt = (f"~{p['gain']} tokens" if p["gain"]
+                                else _L("chargé seulement à l'usage", "loaded only when used"))
+                    rows.append(f"     - {proposal_desc(p)} ({gain_txt})")
         if rows:
-            out += ["", f"{b}{SECTION_TITLES[section]}{r0}"] + rows
+            out += ["", f"{b}{section_titles()[section]}{r0}"] + rows
     rest = [f for f in rep.findings if f.code not in shown]
     if rest:
         cats: dict[str, int] = {}
         for f in rest:
             cats[category(f.code)] = cats.get(category(f.code), 0) + 1
-        out += ["", f"{b}5. LE RESTE{r0} : {len(rest)} remarque(s) mineure(s) ("
-                + ", ".join(f"{n} {c}" for c, n in sorted(cats.items(), key=lambda kv: -kv[1])) + ") : voir --details"]
+        joined = ", ".join(f"{n} {c}" for c, n in sorted(cats.items(), key=lambda kv: -kv[1]))
+        out += ["", f"{b}" + _L("5. LE RESTE", "5. THE REST") + f"{r0} : "
+                + _L(f"{len(rest)} remarque(s) mineure(s) ({joined}) : voir --details",
+                     f"{len(rest)} minor note(s) ({joined}): see --details")]
     auto = sum(1 for f in rep.findings if f.fixable)
     steps = []
     if auto and not fix:
-        steps.append(f"lancer avec --fix : corrige {auto} point(s) sans rien demander (sauvegarde automatique)")
+        steps.append(_L(f"lancer avec --fix : corrige {auto} point(s) sans rien demander (sauvegarde automatique)",
+                        f"run with --fix: fixes {auto} item(s) with no prompts (automatic backup)"))
     if any(c in by_code for c in ("DUP_EXACT", "DUP_NAME", "DUP_SIMILAR", "TOKEN_AGENT_PACK", "TOKEN_SKILL_DESC", "TOKEN_MODEL")) or getattr(rep, "proposals", []):
-        steps.append("lancer avec -i : doublons, packs et restructurations, un par un, réversible")
-    steps.append("--details : la liste complète, fichier par fichier")
-    out += ["", f"{b}ÉTAPES SUIVANTES{r0}"] + [f"  {i}. {s}" for i, s in enumerate(steps, 1)]
+        steps.append(_L("lancer avec -i : doublons, packs et restructurations, un par un, réversible",
+                        "run with -i: duplicates, packs and restructurings, one by one, reversible"))
+    steps.append(_L("--details : la liste complète, fichier par fichier",
+                    "--details: the full list, file by file"))
+    out += ["", f"{b}" + _L("ÉTAPES SUIVANTES", "NEXT STEPS") + f"{r0}"] + [f"  {i}. {s}" for i, s in enumerate(steps, 1)]
     return "\n".join(out)
 
 # --------------------------------------------------------------------------- #
@@ -4144,16 +4236,24 @@ def check_attribution(repo: Path, policy: dict, rep: Report, history: bool) -> N
             "Temp", ".mypy_cache", ".ruff_cache", ".cache", ".next", ".nuxt", ".svelte-kit",
             "coverage", "target", "vendor", ".terraform", ".gradle", ".tox", "Pods", ".obj"}
     self_path = Path(__file__).resolve()
+    self_name = self_path.name
+    max_bytes = pol["max_file_bytes"]
     scanned = skipped = 0
     for dirpath, dirnames, filenames in os.walk(repo):
         dirnames[:] = [d for d in dirnames if d not in skip
                        and not (d == "worktrees" and Path(dirpath).name == ".claude")]
         for fn in filenames:
+            # Suffix check first (a string test), and resolve() only for a file
+            # whose name could be this script: resolve() is a syscall per file and
+            # dominates the walk on large repos otherwise.
+            dot = fn.rfind(".")
+            if dot < 0 or fn[dot:] not in exts:
+                continue
             p = Path(dirpath) / fn
-            if p.suffix not in exts or p.resolve() == self_path:
+            if fn == self_name and p.resolve() == self_path:
                 continue
             try:
-                if p.stat().st_size > pol["max_file_bytes"]:
+                if p.stat().st_size > max_bytes:
                     skipped += 1
                     continue
             except OSError:
@@ -4992,6 +5092,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--details", action="store_true", help="full per-file report instead of the brief one")
     ap.add_argument("--all", action="store_true", help="list every finding instead of grouping repeated ones")
     ap.add_argument("--rtk-report", action="store_true", help="append 'rtk gain' and 'rtk discover' output")
+    ap.add_argument("--lang", choices=("en", "fr"), default=None,
+                    help="brief-report language (default: fr when $LANG starts with 'fr', else en)")
     vg = ap.add_mutually_exclusive_group()
     vg.add_argument("-v", "--verbose", action="count", default=0, help="-v progress+hints+refs, -vv transformations, -vvv debug")
     vg.add_argument("-q", "--quiet", action="store_true", help="errors and summary only")
@@ -5001,10 +5103,11 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--session-settings", type=Path, metavar="FILE", help="write guarded session settings for 'claude --settings FILE'")
     ap.add_argument("--dump-reference", action="store_true", help="print built-in reference data as JSON")
     args = ap.parse_args(argv)
-    global VERBOSITY, SCAFFOLD, CLI_VERSION, SHOW_ALL, FIRST_REPORT
+    global VERBOSITY, SCAFFOLD, CLI_VERSION, SHOW_ALL, FIRST_REPORT, LANG
     if args.restore is not None:
         return restore_trash(args.restore or None)
     VERBOSITY, SCAFFOLD, SHOW_ALL = args.verbose, not args.no_scaffold, args.all
+    LANG = args.lang or ("fr" if os.environ.get("LANG", "").lower().startswith("fr") else "en")
 
     if args.print_policy:
         print(to_toml(DEFAULT_POLICY))
