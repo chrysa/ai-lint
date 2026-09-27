@@ -46,6 +46,7 @@ import argparse
 import copy
 import datetime as dt
 import difflib
+import itertools
 import json
 import os
 import re
@@ -3192,26 +3193,35 @@ def find_duplicates(items: list[dict], threshold: float = 0.6, focus: set | None
             by_hash.setdefault(it["hash"], []).append(i)
         kind = "skill" if it["kind"] in ("skill", "command") else it["kind"]
         by_name.setdefault((kind, it["name"].lower()), []).append(i)
-    for group in list(by_hash.values()) + list(by_name.values()):
-        why = "DUP_EXACT" if group in by_hash.values() else "DUP_NAME"
-        for a in group:
-            for b in group:
-                if a < b:
-                    union(a, b, why)
-    idx = range(len(items)) if focus is None else sorted(focus)
-    for i in idx:
-        wi = items[i]["words"]
-        if len(wi) < 4:
-            continue
-        for j in range(len(items)):
-            if j == i or (focus is None and j < i) or items[i]["kind"] != items[j]["kind"]:
-                continue
-            wj = items[j]["words"]
-            if len(wj) < 4:
-                continue
-            inter = len(wi & wj)
-            if inter and inter / len(wi | wj) >= threshold:
-                union(i, j, "DUP_SIMILAR")
+    # Label each group by its own source: identical body -> EXACT, same name -> NAME.
+    # union() keeps the strongest (lowest-rank) reason per cluster, so a cluster that
+    # is both an exact and a name match ends up labeled EXACT.
+    for why, groups in (("DUP_EXACT", by_hash.values()), ("DUP_NAME", by_name.values())):
+        for group in groups:
+            for a, b in itertools.combinations(group, 2):
+                union(a, b, why)
+    # Similarity is O(n^2) within a kind; bucket by kind so it stays quadratic per
+    # kind instead of over every item (13s -> sub-second on large user scopes).
+    by_kind: dict[str, list[int]] = {}
+    for i, it in enumerate(items):
+        if len(it["words"]) >= 4:
+            by_kind.setdefault(it["kind"], []).append(i)
+    for bucket in by_kind.values():
+        for a_pos, i in enumerate(bucket):
+            wi = items[i]["words"]
+            ni = len(wi)
+            for j in bucket[a_pos + 1:]:
+                if focus is not None and i not in focus and j not in focus:
+                    continue
+                wj = items[j]["words"]
+                # Jaccard >= threshold is impossible unless the sizes are within
+                # the threshold ratio; this prune skips the set ops for most pairs.
+                nj = len(wj)
+                if (ni if ni < nj else nj) < threshold * (ni if ni > nj else nj):
+                    continue
+                inter = len(wi & wj)
+                if inter and inter / (ni + nj - inter) >= threshold:
+                    union(i, j, "DUP_SIMILAR")
     clusters: dict[int, list[dict]] = {}
     for i, it in enumerate(items):
         clusters.setdefault(find(i), []).append(it)
