@@ -4141,7 +4141,8 @@ def check_attribution(repo: Path, policy: dict, rep: Report, history: bool) -> N
     pol = policy["attribution"]
     exts = set(pol["scan_extensions"])
     skip = {".git", "node_modules", ".venv", "venv", "dist", "build", "__pycache__", "Library",
-            "Temp", ".mypy_cache", ".ruff_cache", ".cache"}
+            "Temp", ".mypy_cache", ".ruff_cache", ".cache", ".next", ".nuxt", ".svelte-kit",
+            "coverage", "target", "vendor", ".terraform", ".gradle", ".tox", "Pods", ".obj"}
     self_path = Path(__file__).resolve()
     scanned = skipped = 0
     for dirpath, dirnames, filenames in os.walk(repo):
@@ -4162,6 +4163,10 @@ def check_attribution(repo: Path, policy: dict, rep: Report, history: bool) -> N
                 continue
             scanned += 1
             log(3, f"scan {p}")
+            # Cheap whole-file test first; only the rare file that matches pays for
+            # the per-line scan. This keeps a 12k-file repo well under the 30s budget.
+            if not any(pat.search(text) for pat in ATTRIBUTION_PATTERNS):
+                continue
             bad = [i for i, line in enumerate(text.splitlines(), 1) if any(pat.search(line) for pat in ATTRIBUTION_PATTERNS)]
             if bad:
                 rel_parts = p.relative_to(repo).parts
