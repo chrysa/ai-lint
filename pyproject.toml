@@ -1,0 +1,18 @@
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# Disable globally-installed pytest plugins that assume a Django app; this
+# project is a standalone script with no framework.
+addopts = "-ra -p no:query_optimizer -p no:django -p no:qt -p no:asyncio -p no:cacheprovider"
+
+[tool.ruff]
+line-length = 120
+target-version = "py39"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B"]
+# E501 line length is enforced by line-length above; E741/E731/UP034 are
+# pre-existing stylistic choices in the single-file script, not defects.
+ignore = ["E501", "B008", "E741", "E731", "UP034"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["B011"]

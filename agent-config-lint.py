@@ -171,8 +171,7 @@ KNOWN_SETTINGS_KEYS = {
     "skillOverrides", "spinnerTipsEnabled", "statusLine", "strictPluginOnlyCustomization",
     "subagentStatusLine", "syncClaudeAiPlugins", "syncClaudeAiSkills", "theme",
     "useAutoModeDuringPlan", "autoContinueAtUsageLimit", "agentPushNotifEnabled", "inputNeededNotifEnabled",
-    "tui", "skipWorkflowUsageWarning", "workflowSizeGuideline", "modelPricing", "effortLevel",
-    "disableBypassPermissionsMode",
+    "tui", "skipWorkflowUsageWarning", "workflowSizeGuideline", "modelPricing", "disableBypassPermissionsMode",
 }
 # Keys a repository file cannot set (dead config in .claude/settings*.json).
 PROJECT_DEAD_KEYS = {
@@ -3981,7 +3980,7 @@ def interactive(rep: Report, repos: list[Path], policy: dict, user_scope: bool) 
     print("et un script restore.sh annule toute la session. À chaque question : ? pour l'aide.\n")
     for i, (_, label, _) in enumerate(sections, 1):
         print(f"  {t.b}{i}{t.r}. {label}")
-    pick = _ask(f"\nSections à revoir (ex. 1,3 ; Entrée = toutes ; q = quitter) : ")
+    pick = _ask("\nSections à revoir (ex. 1,3 ; Entrée = toutes ; q = quitter) : ")
     if pick == "q":
         return 0
     chosen = [sections[int(x) - 1][0] for x in re.findall(r"\d+", pick) if 0 < int(x) <= len(sections)] or [s[0] for s in sections]
@@ -4607,7 +4606,7 @@ def grouped_findings(findings: list[Finding]) -> list[tuple[str, list[Finding]]]
         by.setdefault((f.level, f.code), []).append(f)
     order = {lvl: i for i, lvl in enumerate(LEVELS)}
     out: list[tuple[str, list[Finding]]] = []
-    for (lvl, code), items in sorted(by.items(), key=lambda kv: (order[kv[0][0]], -len(kv[1]), kv[0][1])):
+    for (_lvl, _code), items in sorted(by.items(), key=lambda kv: (order[kv[0][0]], -len(kv[1]), kv[0][1])):
         if SHOW_ALL or len(items) <= GROUP_THRESHOLD:
             out += [("one", [f]) for f in sorted(items, key=lambda f: f.path)]
         else:
@@ -4691,7 +4690,6 @@ def render_summary(rep: Report, fix: bool, color: bool, quiet: bool, fixed: list
         where = ", ".join(files[:3]) + (f" +{len(files) - 3}" if len(files) > 3 else "")
         lines.append(f"  {mark_done} {code:24} x{len(items):<3} {where}")
 
-    order = {lvl: i for i, lvl in enumerate(LEVELS)}
     shown = [f for f in manual if not quiet or f.level == "error"]
     lines.append(f"{red if any(f.level == 'error' for f in manual) else yel}"
                  f"NOT FIXED - manual action needed ({len(manual)}){r0}"
