@@ -83,6 +83,15 @@ The full report ends with:
 
 Exit codes: `0` clean, `1` errors (or warnings with `--strict`), `2` usage error or guard block.
 
+## Run log
+
+Every run appends one JSON line to `~/.cache/agent-config-lint/logs/<date>.log` (one file
+per day). Each record holds the timestamp, version, arguments, repository count, elapsed
+time, finding counts by level and by code, how many findings were fixed or applied, and the
+exit code — counts and codes only, never file contents or secrets. Logging is best-effort:
+a failure to write the log never changes the run's result or exit code. The same directory
+also holds `--fix` backups and, under `trash/`, whatever an interactive session removed.
+
 ## Duplicates and interactive review
 
 Skills, subagents and commands are compared within what one session loads together (the
@@ -288,6 +297,16 @@ rotated) and in shell startup files.
   duplicated), retriever disabled (no `rtk recall` after failures), telemetry enabled;
 - `--rtk-report` shows measured savings and missed commands, so you can decide with data
   (compression is not free: the hook only sees Bash, never Read/Grep/Glob).
+
+When `require_rtk` is on but `rtk` is not installed, the tool says so and points to both
+ways forward: install rtk, or set `permissions.require_rtk = false` to skip rtk routing.
+Both `rtk` and `llmtrim` are probed only when the CLIs are allowed (not under `--no-cli`).
+
+**llmtrim** (companion CLI, when present): subagents that carry the llmtrim route marker
+delegate to the `llmtrim` binary. If those route subagents exist but `llmtrim` is not on
+`PATH`, the tool reports it (`LLMTRIM_MISSING`) — they load into every session but route
+nowhere — so you can install llmtrim or remove them (`-i` offers to park them). When
+llmtrim is installed, its route agents are left alone.
 
 **Scaffolding** (disable with `--no-scaffold`): baseline `.claude/settings.json`,
 `AGENTS.md` skeleton plus `CLAUDE.md` importing it, user settings, commit-msg hook.

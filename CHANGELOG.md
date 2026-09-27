@@ -2,6 +2,30 @@
 
 All notable changes to `agent-config-lint`. Dates are ISO 8601.
 
+## 2026.09.27-14
+
+### Added
+- Running with no arguments now prints the help instead of silently scanning the
+  current directory. The help gained a `defaults:` block listing the effective
+  defaults (scope, mode, report language, scaffolding, token budget, MCP cap, rtk),
+  plus usage examples.
+- Per-run log: each run appends one JSON line to
+  `~/.cache/agent-config-lint/logs/<date>.log` (timestamp, version, arguments,
+  repository count, elapsed time, finding counts by level and code, fixed/applied
+  counts, exit code). Counts and codes only — never file contents or secrets.
+  Best-effort: a logging failure never changes the run's result.
+- `llmtrim` companion CLI check: when subagents carry the llmtrim route marker but
+  the `llmtrim` binary is not on `PATH`, the tool reports it (`LLMTRIM_MISSING`) so
+  you can install llmtrim or remove the dead route agents. Skipped under `--no-cli`.
+- `make help` and `make selfcheck` targets.
+
+### Changed
+- `RTK_MISSING` now spells out both ways forward: install rtk, or set
+  `permissions.require_rtk = false` to skip rtk routing. `RTK_MISSING` and
+  `LLMTRIM_MISSING` appear in the brief report's "broken" section.
+- The project format hook no longer reformats `agent-config-lint.py`; the single
+  distribution file keeps its dense hand-authored layout (it is still linted).
+
 ## 2026.09.27-13
 
 ### Added
