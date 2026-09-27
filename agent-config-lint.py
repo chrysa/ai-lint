@@ -3276,14 +3276,23 @@ def check_duplicates(user_roots: list[Path], project_roots: list[Path], rep: Rep
 
 # ---- interactive session -------------------------------------------------- #
 
+def _fr_plural(n: int, singular: str, plural: str | None = None) -> str:
+    """French count phrase: '1 groupe', '3 groupes'. In French 0 takes the
+    singular. Pass an explicit plural for irregular words."""
+    word = singular if abs(n) < 2 else (plural if plural is not None else singular + "s")
+    return f"{n} {word}"
+
+
 def _ask(prompt: str, choices: str = "yN") -> str:
+    """Read one answer. Case is preserved so a prompt can offer both a
+    lowercase key and its uppercase "...for all" variant (e.g. s vs S, a vs A)
+    without the two collapsing together. An empty answer falls back to the
+    default (the last letter of `choices`, lowercased)."""
     try:
         raw = input(prompt).strip()
     except EOFError:
         return "q"
-    if raw in ("A", "S"):
-        return raw.lower()
-    return raw.lower() or (choices[-1].lower() if choices else "")
+    return raw or (choices[-1].lower() if choices else "")
 
 
 def _trash(path: Path, trash_root: Path, log_lines: list[str]) -> None:
@@ -3864,13 +3873,13 @@ def interactive(rep: Report, repos: list[Path], policy: dict, user_scope: bool) 
     for i, (_, label, _) in enumerate(sections, 1):
         print(f"  {t.b}{i}{t.r}. {label}")
     pick = _ask("\nSections à revoir (ex. 1,3 ; Entrée = toutes ; q = quitter) : ")
-    if pick == "q":
+    if pick.lower() == "q":
         return 0
     chosen = [sections[int(x) - 1][0] for x in re.findall(r"\d+", pick) if 0 < int(x) <= len(sections)] or [s[0] for s in sections]
 
     # ---- duplicates
     if "dups" in chosen:
-        t.rule(f"DOUBLONS ({len(dups)} groupes)")
+        t.rule(f"DOUBLONS ({_fr_plural(len(dups), 'groupe')})")
         print(f"{t.dim}Un doublon, c'est deux éléments chargés dans la même session : Claude n'en utilise qu'un,\n"
               f"ou hésite entre les deux. Les groupes sûrs viennent en premier.{t.r}")
         auto_all = False
@@ -3883,7 +3892,7 @@ def interactive(rep: Report, repos: list[Path], policy: dict, user_scope: bool) 
             except OSError:
                 continue
             label = {"DUP_EXACT": "copies identiques", "DUP_NAME": "même nom", "DUP_SIMILAR": "quasi-doublons"}[why]
-            print(f"\n{t.b}[{n}/{len(dups)}] {label}{t.r} · {len(members)} {members[0]['kind']}s")
+            print(f"\n{t.b}[{n}/{len(dups)}] {label}{t.r} · {_fr_plural(len(members), members[0]['kind'])}")
             descs = [m["desc"] for m in members]
             pre, suf = _affixes(descs)
             if len(pre) + len(suf) > 30:
@@ -3905,19 +3914,21 @@ def interactive(rep: Report, repos: list[Path], policy: dict, user_scope: bool) 
                 while True:
                     ans = _ask(f"  Entrée = {default} · g = tout garder · 2,3 = retirer ces numéros · v2 = voir le n°2 · "
                                f"A = conseil pour tous les groupes sûrs · s = passer · q = fin des doublons : ", "")
-                    if ans.startswith("v") and ans[1:].isdigit() and 0 < int(ans[1:]) <= len(members):
-                        _show_file(Path(members[int(ans[1:]) - 1]["path"]), t)
+                    low = ans.lower()
+                    if low.startswith("v") and low[1:].isdigit() and 0 < int(low[1:]) <= len(members):
+                        _show_file(Path(members[int(low[1:]) - 1]["path"]), t)
                         continue
                     if ans == "?":
                         print("  Retirer = déplacer dans la corbeille de la session (restore.sh pour annuler).")
                         continue
                     break
-            if ans == "q":
+            low = ans.lower()
+            if low == "q":
                 break
-            if ans in ("s", "g"):
+            if low in ("s", "g"):
                 count("groupes gardés tels quels")
                 continue
-            if ans == "a":
+            if ans == "A":              # apply the advice to every safe group from here on
                 auto_all = True
                 ans = ""
             targets = remove if ans == "" else [int(x) - 1 for x in re.findall(r"\d+", ans) if 0 < int(x) <= len(members)]
@@ -3943,9 +3954,9 @@ def interactive(rep: Report, repos: list[Path], policy: dict, user_scope: bool) 
             names = [m["name"] for m in members]
             stem = os.path.commonprefix(names).rstrip("-_") or names[0]
             toks = sum((len(m["desc"]) + 40) // 4 for m in members)
-            print(f"\n{t.b}[{n}/{len(families)}] {stem}-*{t.r} · {len(members)} {members[0]['kind']}s · ~{toks} tokens/session")
+            print(f"\n{t.b}[{n}/{len(families)}] {stem}-*{t.r} · {_fr_plural(len(members), members[0]['kind'])} · ~{toks} tokens/session")
             print("  " + ", ".join(nm[len(stem):].lstrip("-_") or nm for nm in names))
-            ans = _ask("  Entrée = garder · p = en faire un plugin · k = mettre de côté (parked/) · q = fin : ", "")
+            ans = _ask("  Entrée = garder · p = en faire un plugin · k = mettre de côté (parked/) · q = fin : ", "").lower()
             if ans == "q":
                 break
             if ans == "p":
@@ -3988,22 +3999,22 @@ def interactive(rep: Report, repos: list[Path], policy: dict, user_scope: bool) 
             else:
                 extra = " · k = mettre de côté" if k == "agent-pack" else ""
                 ans = _ask(f"  o = appliquer{extra} · Entrée = passer · A = appliquer tous les '{k}' · S = passer tous les '{k}' · q = fin : ", "")
-                if ans == "a":
+                if ans == "A":                # apply every proposal of this kind
                     accept_kind.add(k)
                     ans = "o"
-            if ans == "q":
+                elif ans == "S":              # skip every proposal of this kind
+                    skip_kind.add(k)
+                    continue
+            if ans.lower() == "q":
                 break
-            if ans == "s":
-                skip_kind.add(k)
-                continue
-            if k == "agent-pack" and ans == "k":
+            if k == "agent-pack" and ans.lower() == "k":
                 root = p["root"]
                 dest = root / "parked" / p["path"].relative_to(root)
                 dest.parent.mkdir(parents=True, exist_ok=True)
                 shutil.move(str(p["path"]), str(dest))
                 restore.append(f"mv '{dest}' '{p['path']}'")
                 count("packs mis de côté")
-            elif ans in ("o", "y"):
+            elif ans.lower() in ("o", "y"):
                 try:
                     print(f"     {t.grn}{apply_proposal(p, policy, restore, trash_root)}{t.r}")
                     count("restructurations appliquées")
@@ -4028,7 +4039,7 @@ def interactive(rep: Report, repos: list[Path], policy: dict, user_scope: bool) 
             print(f"\n{t.b}[{n}/{len(long_desc)}] {sk.parent.name}{t.r} {t.dim}{len(desc)} → {len(proposal)} caractères{t.r}")
             print(f"  {t.dim}avant :{t.r} {desc[:200]}{'…' if len(desc) > 200 else ''}")
             print(f"  {t.grn}après :{t.r} {proposal}")
-            ans = _ask("  o = appliquer · Entrée = passer · q = fin : ", "")
+            ans = _ask("  o = appliquer · Entrée = passer · q = fin : ", "").lower()
             if ans == "q":
                 break
             if ans == "o":
@@ -4044,14 +4055,14 @@ def interactive(rep: Report, repos: list[Path], policy: dict, user_scope: bool) 
         for item in misc:
             if item == "model":
                 print(f"Modèle par défaut : {t.b}{udata['model']}{t.r}. Opus sert à chaque session et aux subagents qui en héritent.")
-                if _ask("  o = passer à Sonnet par défaut (/model opus quand il le faut) · Entrée = garder : ", "") == "o":
+                if _ask("  o = passer à Sonnet par défaut (/model opus quand il le faut) · Entrée = garder : ", "").lower() == "o":
                     backup([cfg / "settings.json"])
                     udata["model"] = "sonnet"
                     (cfg / "settings.json").write_text(dump_json(udata), encoding="utf-8")
                     count("modèle changé")
             elif (m := re.search(r"(claude mcp add .+)$", item.message)):
                 print(f"Serveur MCP proposé : {t.b}{m.group(1)}{t.r}")
-                if _ask("  o = lancer la commande · Entrée = passer : ", "") == "o":
+                if _ask("  o = lancer la commande · Entrée = passer : ", "").lower() == "o":
                     subprocess.run(shlex.split(m.group(1)), check=False)
                     count("serveurs MCP ajoutés")
 
