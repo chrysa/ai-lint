@@ -28,7 +28,10 @@ def test_scan_still_detects_attribution(tmp_path, linter_module):
     repo = _big_repo(tmp_path, 50)
     tainted = repo / ".claude" / "CLAUDE.md"
     tainted.parent.mkdir(parents=True)
-    tainted.write_text("# notes\n\nCo-Authored-By: Claude <noreply@anthropic.com>\n")
+    # Build the trailer from parts so this source file never itself carries the
+    # attribution string it is testing for.
+    trailer = "Co-Authored" + "-By: " + "Cla" + "ude <noreply@" + "anthropic.com>"
+    tainted.write_text(f"# notes\n\n{trailer}\n")
     policy = m.load_policy(None, [repo])
     rep = m.Report()
     m.check_attribution(repo, policy, rep, history=False)
