@@ -34,7 +34,7 @@ Guarded audit session (for an AI agent doing the judgment calls):
   claude --settings FILE                         agent edits are now checked by --guard:
       no widening of allow rules, no removal of deny/ask rules or hooks, no bypass modes,
       no new MCP servers/env/helpers, no attribution, protected files untouchable,
-      .agent-lint.toml editable only in [reference]. Fails closed.
+      .claude-lint.toml editable only in [reference]. Fails closed.
   claude-lint.py --dump-reference          built-in reference data, to diff against docs
 
 Exit codes: 0 clean, 1 errors (or warnings with --strict), 2 usage error / guard block.
@@ -515,7 +515,8 @@ def deep_merge(base: dict, override: dict) -> dict:
 
 
 def load_policy(path: Path | None, repos: list[Path]) -> dict:
-    candidates = [path] if path else [r / ".agent-lint.toml" for r in repos]
+    # Prefer .claude-lint.toml; accept the former .agent-lint.toml name too.
+    candidates = [path] if path else [r / n for r in repos for n in (".claude-lint.toml", ".agent-lint.toml")]
     policy, source = copy.deepcopy(DEFAULT_POLICY), "built-in defaults"
     for c in candidates:
         if c and c.is_file():
@@ -4690,6 +4691,24 @@ FIRST_REPORT: Report | None = None
 INTERACTIVE_RAN = False
 
 
+def _finding_gain(f: Finding) -> int:
+    """Estimated tokens saved per session if this finding is acted on. Uses the
+    figure already in the message when present, else a per-code estimate. Only the
+    context-cost codes carry a gain; everything else returns 0."""
+    m = re.search(r"~?(\d+)\s*tokens?", f.message)
+    if m:
+        return int(m.group(1))
+    if f.code in ("SKILL_LONG", "INSTR_LONG"):
+        m = re.search(r"(\d+)\s*lines?", f.message)  # a long file: ~half its lines leave the always-loaded path
+        return int(m.group(1)) * 8 // 4 if m else 0
+    if f.code == "TOKEN_SKILL_DESC":
+        m = re.search(r"(\d+)\s*chars", f.message)
+        return (int(m.group(1)) - 400) // 4 if m else 0
+    if f.code in ("RULE_UNSCOPED", "DUP_EXACT", "DUP_NAME", "DUP_SIMILAR", "DUP_ACROSS_PROJECTS"):
+        return 60  # a small constant per unscoped rule / duplicate removed from the listing
+    return 0
+
+
 def render_text(rep: Report, fix: bool, color: bool, quiet: bool, fixed: list[Finding],
                 applied: list[str], failures: list[tuple[str, str]], backups: list[str]) -> str:
     out: list[str] = []
@@ -4712,12 +4731,19 @@ def render_text(rep: Report, fix: bool, color: bool, quiet: bool, fixed: list[Fi
             else:
                 f = items[0]
                 tag = f"{COLORS[f.level] if color else ''}{f.level.upper():5}{r0}"
-                out.append(f"{tag} {f.code:24} {short_path(f.path)}\n      {f.message}{' [fixable]' if f.fixable else ''}")
+                gain = sum(_finding_gain(x) for x in items) if kind == "group" else _finding_gain(f)
+                gtxt = f"{dim} · ~{gain} tokens/session{r0}" if gain else ""
+                out.append(f"{tag} {f.code:24} {short_path(f.path)}\n      {f.message}{' [fixable]' if f.fixable else ''}{gtxt}")
             if VERBOSITY >= 1 and f.code in HINTS:
                 why, ref = HINTS[f.code]
                 out.append(f"{dim}      why/how: {why}{r0}")
                 if ref:
                     out.append(f"{dim}      ref: {ref}{r0}")
+        total_gain = sum(_finding_gain(f) for f in rep.findings)
+        props_gain = sum(p["gain"] for p in getattr(rep, "proposals", []))
+        if total_gain or props_gain:
+            out.append(f"{g}Potential savings: ~{total_gain + props_gain} tokens/session{r0} "
+                       f"{dim}(~{total_gain} from findings + ~{props_gain} from restructurings; acted on with --fix / -i){r0}")
     if not fix and not quiet:
         for p, (old, new) in rep.edits.items():
             out.append(redact("".join(difflib.unified_diff(old.splitlines(True), new.splitlines(True), f"a{p}", f"b{p}"))))
@@ -5023,7 +5049,7 @@ def frontmatter_violations(old: str, new: str) -> list[str]:
 
 def lint_toml_violations(old: str, new: str) -> list[str]:
     if tomllib is None:
-        return ["cannot verify .agent-lint.toml without Python 3.11"]
+        return ["cannot verify .claude-lint.toml without Python 3.11"]
     try:
         o = tomllib.loads(old) if old.strip() else {}
         n = tomllib.loads(new)
@@ -5157,7 +5183,7 @@ def guard_check(data: dict) -> str | None:
         violations = [msg for pat, msg in risky if re.search(pat, new) and not re.search(pat, old)]
         if re.search(r"(?m)^\s*permissions\s*:", old) and not re.search(r"(?m)^\s*permissions\s*:", new):
             violations.append("workflow permissions block removed")
-    elif name == ".agent-lint.toml":
+    elif name in (".claude-lint.toml", ".agent-lint.toml"):
         violations = lint_toml_violations(old, new)
     elif name.endswith(".md") and ("/.claude/skills/" in str(path) or "/.claude/agents/" in str(path)
                                    or "/.claude/commands/" in str(path)):
@@ -5238,7 +5264,7 @@ def main(argv: list[str] | None = None) -> int:
             "  report            brief; language from $LANG (fr if it starts with 'fr', else en)\n"
             "  scaffolding       on (missing baseline files created; --no-scaffold to disable)\n"
             "  CLIs              claude and rtk are called when present (--no-cli to skip)\n"
-            "  policy file       <repo>/.agent-lint.toml if present, else built-in defaults\n"
+            "  policy file       <repo>/.claude-lint.toml if present, else built-in defaults\n"
             "  instruction file  warns above 200 lines; user scope above 150\n"
             "  always-loaded     token budget warns above 10000 tokens/turn\n"
             "  skill description warns above 1024 chars in the listing\n"
@@ -5252,7 +5278,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--fix", action="store_true", help="apply repairs (with backup)")
     ap.add_argument("--no-scaffold", action="store_true", help="do not create missing files")
     ap.add_argument("--format", choices=("text", "json"), default="text", help="output format (default: text)")
-    ap.add_argument("--policy", type=Path, help="policy TOML (default: <repo>/.agent-lint.toml)")
+    ap.add_argument("--policy", type=Path, help="policy TOML (default: <repo>/.claude-lint.toml)")
     ap.add_argument("--strict", action="store_true", help="fail on warnings too")
     ap.add_argument("--no-history", action="store_true", help="skip git history scan")
     ap.add_argument("--no-cli", action="store_true", help="do not call the claude / rtk CLIs")
@@ -5290,8 +5316,7 @@ def main(argv: list[str] | None = None) -> int:
         print(to_toml(DEFAULT_POLICY))
         return 0
     if args.guard:
-        repo_policy = Path(os.getcwd()) / ".agent-lint.toml"
-        load_policy(None, [Path(os.getcwd())]) if repo_policy.is_file() else None
+        load_policy(None, [Path(os.getcwd())])
         return run_guard()
     if args.dump_reference:
         load_policy(args.policy, [Path.cwd()])

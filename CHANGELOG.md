@@ -4,10 +4,19 @@ All notable changes to `claude-lint`. Dates are ISO 8601.
 
 ## 2026.09.28-17
 
+### Added
+- The `--details` report quantifies token cost: each context-weighing finding is
+  annotated with its estimated `~N tokens/session`, and the block ends with a
+  **Potential savings** total (findings + restructurings).
+- GitHub Actions CI (`.github/workflows/ci.yml`): ruff, pytest and the self-check,
+  on Python 3.9 / 3.11 / 3.13, with a read-only `permissions` block.
+
 ### Changed
 - Renamed the project and executable to `claude-lint` (`claude-lint.py`). The cache
   directory is now `~/.cache/claude-lint/`; `--restore` still reads the former
   `~/.cache/agent-config-lint/trash/` so pre-rename sessions stay restorable.
+- The policy file is now `.claude-lint.toml` (example: `claude-lint.example.toml`);
+  the former `.agent-lint.toml` is still accepted.
 
 ## 2026.09.27-16
 

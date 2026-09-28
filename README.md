@@ -22,9 +22,25 @@ Single Python file, no dependencies. Python >= 3.9 (>= 3.11 to read a policy fil
 ```
 claude-lint.py          the linter / fixer / guard
 skills/config-audit/SKILL.md  guarded audit workflow (user-invoked only)
-agent-lint.example.toml       default policy, copy to <repo>/.agent-lint.toml to customize
+claude-lint.example.toml       default policy, copy to <repo>/.claude-lint.toml to customize
 README.md
 ```
+
+## Install
+
+`claude-lint.py` is a single file with no dependencies (Python >= 3.9). Copy it
+anywhere on your `PATH` and make it executable:
+
+```sh
+curl -O https://raw.githubusercontent.com/chrysa/claude-lint/main/claude-lint.py
+chmod +x claude-lint.py && ./claude-lint.py --help
+# or drop it on your PATH:
+install -m 0755 claude-lint.py ~/.local/bin/claude-lint
+```
+
+Running it with no arguments prints the help, including the effective defaults.
+Optional companions it uses when present: the `claude` CLI (`--no-cli` to skip),
+`rtk`, and `llmtrim`. Python >= 3.11 is only needed to read a policy file.
 
 ## Quick start
 
@@ -49,7 +65,10 @@ The full report ends with:
   manual action. Findings repeated more than 5 times are grouped into one line with the
   count, the most common message and the first files (`--all` lists them one by one).
 - **TOKENS**: estimated context loaded in every session, by kind and by biggest group
-  (for example one `agents/<pack>` directory).
+  (for example one `agents/<pack>` directory). In `--details`, each finding that
+  weighs on context is annotated with its estimated `~N tokens/session`, and the
+  block ends with a **Potential savings** total (findings + restructurings) — what
+  you would reclaim per session by acting on them with `--fix` / `-i`.
 - **STATS**: how many items were checked (settings files, permission rules, hook
   handlers, MCP servers, skills, subagents, commands, rules, instruction files, plugins),
   a per-category table (found, fixed, remaining errors / warnings / info) and the
@@ -65,7 +84,7 @@ The full report ends with:
 | `--no-scaffold` | Do not create missing files |
 | `--format json` | Machine-readable output (`findings`, `fixed`, `not_fixed`, `would_fix`, `hints`) |
 | `--strict` | Exit 1 on warnings too (CI) |
-| `--policy FILE` | Policy file (default `<repo>/.agent-lint.toml`) |
+| `--policy FILE` | Policy file (default `<repo>/.claude-lint.toml`) |
 | `--no-history` | Skip the git history scan for attribution |
 | `--no-cli` | Do not call the `claude` / `rtk` CLIs (static fallbacks are used) |
 | `--rtk-report` | Append `rtk gain` and `rtk discover --since 7` output |
@@ -196,7 +215,7 @@ already follows every rule below.
 | rtk `config.toml` (`--user`) | `[hooks] exclude_commands`, `[retriever] mode = "sqlite"` |
 | user MCP servers (`--user`) | printed as `claude mcp add --scope user ...` commands (Notion by default): `~/.claude.json` is written by the CLI only |
 
-Tune it in `.agent-lint.toml`, table `[generate]`: which skills, agents and MCP servers,
+Tune it in `.claude-lint.toml`, table `[generate]`: which skills, agents and MCP servers,
 `extra_allow` / `extra_ask` / `extra_deny`, safe and gated Makefile targets,
 `rtk_exclude_commands`, and on/off switches per artifact.
 
@@ -339,7 +358,7 @@ edit that would:
   or remove its `permissions:` block;
 - touch `~/.claude.json`, managed settings, synced skills, installed plugins, git hooks,
   the linter or the session file;
-- change `.agent-lint.toml` outside the `[reference]` table;
+- change `.claude-lint.toml` outside the `[reference]` table;
 - run `--generate --fix`, `--session-settings` or `--policy` (a `--generate` preview is allowed);
 - write configuration files through the shell instead of Edit/Write.
 
@@ -350,12 +369,12 @@ the plan and ends with a report in two sections: fixed / not fixed.
 
 The agent compares `--dump-reference` with the current documentation and records new
 settings keys, hook events, tools and fields in the `[reference]` table of
-`.agent-lint.toml`. The linter then recognises them without code changes. Changes that
+`.claude-lint.toml`. The linter then recognises them without code changes. Changes that
 need new logic are reported, not worked around.
 
 ## Policy
 
-Copy `agent-lint.example.toml` to `<repo>/.agent-lint.toml` and keep only what you
+Copy `claude-lint.example.toml` to `<repo>/.claude-lint.toml` and keep only what you
 change. Main knobs: `permissions.require_rtk`, `permissions.rtk_twin_deny`,
 `permissions.rule_style` (`keep` / `space` / `colon`), `permissions.external_action_prefixes`,
 `permissions.required_deny` (rtk also reads its own `exclude_commands`), `skills.portable`, `skills.gate_side_effects`,
