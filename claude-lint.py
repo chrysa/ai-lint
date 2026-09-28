@@ -51,6 +51,11 @@ import json
 import os
 import re
 import shlex
+
+try:
+    import yaml  # optional: only needed for --print-catalog / --catalog
+except ModuleNotFoundError:
+    yaml = None
 import shutil
 import stat
 import subprocess
@@ -66,7 +71,7 @@ try:
 except ModuleNotFoundError:  # Python < 3.11: policy files unsupported, defaults apply
     tomllib = None
 
-VERSION = "2026.09.28-21"
+VERSION = "2026.09.28-22"
 DOCS = "https://code.claude.com/docs/en/"
 ISSUES = "https://github.com/anthropics/claude-code/issues/"
 
@@ -173,6 +178,7 @@ KNOWN_SETTINGS_KEYS = {
     "subagentStatusLine", "syncClaudeAiPlugins", "syncClaudeAiSkills", "theme",
     "useAutoModeDuringPlan", "autoContinueAtUsageLimit", "agentPushNotifEnabled", "inputNeededNotifEnabled",
     "tui", "skipWorkflowUsageWarning", "workflowSizeGuideline", "modelPricing", "disableBypassPermissionsMode",
+    "disableWorkflows", "ultracode", "subagentPromptCacheTtl", "strictKnownMarketplaces", "blockedMarketplaces",
 }
 # Keys a repository file cannot set (dead config in .claude/settings*.json).
 PROJECT_DEAD_KEYS = {
@@ -496,6 +502,9 @@ class Report:
     proposals: list = field(default_factory=list)
 
     def add(self, level: str, code: str, path: Path | str, msg: str, fixable: bool = False) -> None:
+        if code in DISABLED_CODES:  # silenced in the catalog
+            return
+        level = SEVERITY_OVERRIDES.get(code, level)  # catalog can re-rank a code
         self.findings.append(Finding(level, code, str(path), msg, fixable))
         log(3, f"finding {level}:{code} @ {path}")
 
@@ -5291,6 +5300,108 @@ def dump_reference() -> dict:
             "agent_fields": sorted(AGENT_FIELDS), "project_dead_keys": PROJECT_DEAD_KEYS}
 
 
+# --------------------------------------------------------------------------- #
+# Editable catalog: the reference sets and per-code metadata as one YAML file.
+# Editing it (via --catalog FILE) extends the reference data and overrides a
+# code's severity, message action or enabled flag, without touching the engine.
+# --------------------------------------------------------------------------- #
+
+# Codes turned off in the catalog: check_* still runs, but rep.add drops them.
+DISABLED_CODES: set[str] = set()
+# Per-code severity overrides from the catalog (code -> "error"/"warn"/"info"/"off").
+SEVERITY_OVERRIDES: dict[str, str] = {}
+
+
+def catalog_data() -> dict:
+    """The full built-in catalog: reference sets plus one entry per known finding
+    code (its default severity is filled in from where it is emitted, best-effort;
+    an explicit severity in the catalog wins)."""
+    src = ""
+    try:
+        src = read_text(Path(__file__)) or ""
+    except OSError:
+        pass
+    emitted = {}
+    for lvl, code in re.findall(r'rep\.add\(\s*"([a-z]+)",\s*"([A-Z_]+)"', src):
+        emitted.setdefault(code, lvl)  # first-seen severity as the default
+    checks = {}
+    for code in sorted(set(emitted) | set(HINTS)):
+        why, ref = HINTS.get(code, ("", ""))
+        checks[code] = {
+            "severity": SEVERITY_OVERRIDES.get(code, emitted.get(code, "info")),
+            "category": category(code),
+            "enabled": code not in DISABLED_CODES,
+            "why": why,
+            "ref": ref,
+            "action_fr": (BRIEF_FR.get(code) or ("", "", ""))[2],
+            "action_en": (BRIEF_EN.get(code) or ("", "", ""))[2],
+        }
+    return {
+        "docs_snapshot": "2026-09",
+        "reference": {
+            "settings_keys": sorted(KNOWN_SETTINGS_KEYS),
+            "project_dead_keys": PROJECT_DEAD_KEYS,
+            "hook_events": sorted(KNOWN_HOOK_EVENTS),
+            "no_matcher_events": sorted(NO_MATCHER_EVENTS),
+            "tools": sorted(KNOWN_TOOLS),
+            "legacy_tools": LEGACY_TOOLS,
+            "skill_fields": sorted(SKILL_FIELDS),
+            "agent_fields": sorted(AGENT_FIELDS),
+        },
+        "checks": checks,
+    }
+
+
+def dump_catalog() -> str:
+    if yaml is None:
+        return "# PyYAML not installed: run `pip install pyyaml` to use the catalog.\n"
+    header = ("# claude-lint catalog. Edit and pass with --catalog FILE.\n"
+              "# reference.*: extend the known keys/events/tools/fields the linter accepts.\n"
+              "# checks.<CODE>.severity: error|warn|info|off  ·  enabled: false to silence.\n"
+              "# checks.<CODE>.action_fr/action_en: the '-> fix' line shown in --details.\n\n")
+    return header + yaml.safe_dump(catalog_data(), sort_keys=True, allow_unicode=True, width=100)
+
+
+def load_catalog(path: Path) -> None:
+    """Overlay an edited catalog onto the built-in defaults: extend reference sets,
+    and record severity/enabled/action overrides for codes."""
+    if yaml is None:
+        log(1, "PyYAML not installed: --catalog ignored")
+        return
+    try:
+        data = yaml.safe_load(read_text(path) or "") or {}
+    except (OSError, yaml.YAMLError) as e:  # noqa: BLE001
+        log(1, f"catalog {path}: unreadable ({e}); using built-in defaults")
+        return
+    ref = data.get("reference") or {}
+    KNOWN_SETTINGS_KEYS.update(ref.get("settings_keys") or [])
+    KNOWN_HOOK_EVENTS.update(ref.get("hook_events") or [])
+    NO_MATCHER_EVENTS.update(ref.get("no_matcher_events") or [])
+    KNOWN_TOOLS.update(ref.get("tools") or [])
+    LEGACY_TOOLS.update(ref.get("legacy_tools") or {})
+    SKILL_FIELDS.update(ref.get("skill_fields") or [])
+    AGENT_FIELDS.update(ref.get("agent_fields") or [])
+    if isinstance(ref.get("project_dead_keys"), dict):
+        PROJECT_DEAD_KEYS.update(ref["project_dead_keys"])
+    for code, meta in (data.get("checks") or {}).items():
+        if not isinstance(meta, dict):
+            continue
+        sev = str(meta.get("severity", "")).lower()
+        if meta.get("enabled") is False or sev == "off":
+            DISABLED_CODES.add(code)
+        elif sev in ("error", "warn", "info"):
+            SEVERITY_OVERRIDES[code] = sev
+        fr, en = meta.get("action_fr"), meta.get("action_en")
+        if fr or en:
+            base = BRIEF_FR.get(code) or ("other", "", "")
+            if fr:
+                BRIEF_FR[code] = (base[0], base[1], fr)
+            baseen = BRIEF_EN.get(code) or ("other", "", "")
+            if en:
+                BRIEF_EN[code] = (baseen[0], baseen[1], en)
+    log(1, f"catalog {path}: +{len(SEVERITY_OVERRIDES)} severity, {len(DISABLED_CODES)} disabled")
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(
         description="Validate, repair and optimize coding-agent configurations "
@@ -5355,6 +5466,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--guard", action="store_true", help="PreToolUse hook mode: read hook JSON on stdin, exit 2 to block")
     ap.add_argument("--session-settings", type=Path, metavar="FILE", help="write guarded session settings for 'claude --settings FILE'")
     ap.add_argument("--dump-reference", action="store_true", help="print built-in reference data as JSON")
+    ap.add_argument("--print-catalog", action="store_true", help="print the editable catalog (reference + checks) as YAML")
+    ap.add_argument("--catalog", type=Path, metavar="FILE", help="load an edited catalog YAML (extends reference, overrides checks)")
     # No arguments at all: show help (with defaults) instead of silently scanning cwd.
     if not (argv if argv is not None else sys.argv[1:]):
         ap.print_help()
@@ -5367,6 +5480,8 @@ def main(argv: list[str] | None = None) -> int:
     # Progress bar by default: interactive stderr, no -v (which logs per repo),
     # no -q, text output only. Keeps pipes, JSON and CI silent.
     PROGRESS = sys.stderr.isatty() and args.verbose == 0 and not args.quiet and args.format == "text"
+    if args.catalog:
+        load_catalog(args.catalog)
     LANG = args.lang or ("fr" if os.environ.get("LANG", "").lower().startswith("fr") else "en")
 
     if args.print_policy:
@@ -5375,6 +5490,11 @@ def main(argv: list[str] | None = None) -> int:
     if args.guard:
         load_policy(None, [Path(os.getcwd())])
         return run_guard()
+    if args.print_catalog:
+        if args.catalog:
+            load_catalog(args.catalog)
+        print(dump_catalog(), end="")
+        return 0 if yaml is not None else 2
     if args.dump_reference:
         load_policy(args.policy, [Path.cwd()])
         print(json.dumps(dump_reference(), indent=2))

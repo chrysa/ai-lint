@@ -103,6 +103,8 @@ The full report ends with:
 | `--lang en\|fr` | Language of the brief report. Defaults to French when `$LANG` starts with `fr`, English otherwise. The interactive review is always French |
 | `--all` | List every finding (repeated findings are grouped by default, above 5 of the same kind) |
 | `--print-policy` | Print the default policy as TOML |
+| `--print-catalog` | Print the editable catalog (reference sets + per-check metadata) as YAML |
+| `--catalog FILE` | Load an edited catalog: extend the known keys/events/tools/fields, and override any check's severity (`error`/`warn`/`info`/`off`), `enabled`, or `→ fix` action |
 | `--dump-reference` | Print built-in reference data (keys, events, tools, fields) |
 | `--session-settings FILE` | Write settings for a guarded agent session |
 | `--guard` | PreToolUse hook mode (stdin JSON, exit 2 blocks) |
@@ -386,6 +388,31 @@ change. Main knobs: `permissions.require_rtk`, `permissions.rtk_twin_deny`,
 `permissions.rule_style` (`keep` / `space` / `colon`), `permissions.external_action_prefixes`,
 `permissions.required_deny` (rtk also reads its own `exclude_commands`), `skills.portable`, `skills.gate_side_effects`,
 `instructions.claude_md_import`, `scaffold.*`.
+
+## Catalog (editable checks)
+
+The reference data (known settings keys, hook events, tools, skill/agent fields)
+and the metadata of every check (severity, category, `→ fix` action, doc ref) are
+exposed as one editable YAML catalog. Export it, edit it, and feed it back:
+
+```sh
+claude-lint.py --print-catalog > claude-lint.catalog.yaml   # the built-in catalog
+# edit it, then:
+claude-lint.py . --catalog claude-lint.catalog.yaml
+```
+
+An overlaid catalog:
+
+- **extends the reference sets** — add a new settings key, hook event, tool or
+  frontmatter field so the linter accepts it (useful as Claude Code evolves);
+- **overrides a check** — set `severity` to `error` / `warn` / `info` / `off`
+  (or `enabled: false`) to re-rank or silence it, and set `action_fr` / `action_en`
+  to change the `→ fix` line shown in `--details`.
+
+Anything not mentioned in the file keeps its built-in default, so a catalog can be
+as small as the changes you want. The catalog needs PyYAML
+(`pip install -r requirements-optional.txt`); without it the linter still runs and
+the `--catalog` / `--print-catalog` options degrade gracefully.
 
 ## CI
 

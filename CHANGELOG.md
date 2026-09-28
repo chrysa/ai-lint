@@ -2,6 +2,18 @@
 
 All notable changes to `claude-lint`. Dates are ISO 8601.
 
+## 2026.09.28-22
+
+### Added
+- Editable YAML catalog. `--print-catalog` exports the reference sets (known
+  settings keys, hook events, tools, skill/agent fields) and per-check metadata
+  (severity, category, action, doc ref) as one YAML file; `--catalog FILE` overlays
+  an edited copy to extend the reference data and override a check's severity
+  (`error`/`warn`/`info`/`off`), `enabled` flag, or `→ fix` action — without
+  touching the engine. Requires PyYAML (optional; degrades gracefully when absent).
+- New settings keys recognised: disableWorkflows, ultracode, subagentPromptCacheTtl,
+  strictKnownMarketplaces, blockedMarketplaces.
+
 ## 2026.09.28-20
 
 ### Fixed
