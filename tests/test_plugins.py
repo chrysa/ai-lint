@@ -54,9 +54,7 @@ def test_plugin_check_error_isolated(linter_module, tmp_path):
     _reset(m)
     _write_plugin(
         tmp_path / "plg",
-        "def register(api):\n"
-        "    @api.check('PLUGIN_X')\n"
-        "    def _c(ctx):\n        raise ValueError('nope')\n",
+        "def register(api):\n    @api.check('PLUGIN_X')\n    def _c(ctx):\n        raise ValueError('nope')\n",
     )
     m.load_plugins([tmp_path / "plg"])
     rep = m.Report()

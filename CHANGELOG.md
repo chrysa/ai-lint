@@ -2,6 +2,17 @@
 
 All notable changes to `claude-lint`. Dates are ISO 8601.
 
+## 2026.09.29-29
+
+### Changed
+- Align with the canonical shared-standards (chrysa): line length is 120 (not 100),
+  ruff adds BLE (no unjustified bare `except Exception`), and the Makefile uses the
+  invariant target names (install, lint, format, typecheck, test, build, clean,
+  docker-test, pre-commit) with a single entry point.
+
+### Added
+- `--min-level error|warn|info` hides findings below the chosen severity, so a
+  large `--user` run can show only what matters (e.g. `--min-level warn`).
 ## 2026.09.29-28
 
 ### Fixed

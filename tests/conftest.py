@@ -75,9 +75,7 @@ def _build_user_scope(cfg: Path) -> None:
                     "PreToolUse": [
                         {
                             "matcher": "Bash",
-                            "hooks": [
-                                {"type": "command", "command": str(cfg / "hooks" / "missing.sh")}
-                            ],
+                            "hooks": [{"type": "command", "command": str(cfg / "hooks" / "missing.sh")}],
                         }
                     ]
                 },
@@ -113,9 +111,7 @@ def _build_user_scope(cfg: Path) -> None:
         "---\nname: reviewer\ndescription: review code changes for quality and correctness issues\n---\n\nReview diffs.\n",
     )
     # a big CLAUDE.md (1200 lines)
-    _write(
-        cfg / "CLAUDE.md", "# User memory\n" + "\n".join(f"- rule {i}" for i in range(1200)) + "\n"
-    )
+    _write(cfg / "CLAUDE.md", "# User memory\n" + "\n".join(f"- rule {i}" for i in range(1200)) + "\n")
 
 
 def _build_projects(home: Path) -> list[Path]:
@@ -130,11 +126,7 @@ def _build_projects(home: Path) -> list[Path]:
             "CLAUDE.md": "@AGENTS.md\n",
             "AGENTS.md": "# app\n\n## Overview\n\n## Commands\n\n## Conventions\n\n## Boundaries\n",
             ".mcp.json": json.dumps(
-                {
-                    "mcpServers": {
-                        "github": {"type": "http", "url": "https://api.githubcopilot.com/mcp/"}
-                    }
-                },
+                {"mcpServers": {"github": {"type": "http", "url": "https://api.githubcopilot.com/mcp/"}}},
                 indent=2,
             ),
             ".claude/settings.json": json.dumps(

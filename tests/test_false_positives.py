@@ -9,9 +9,7 @@ def test_grouping_skill_dir_not_flagged(linter_module, tmp_path):
     m = linter_module
     group = tmp_path / "gitnexus"
     (group / "gitnexus-cli").mkdir(parents=True)
-    (group / "gitnexus-cli" / "SKILL.md").write_text(
-        "---\nname: gitnexus-cli\ndescription: cli\n---\n\nx\n"
-    )
+    (group / "gitnexus-cli" / "SKILL.md").write_text("---\nname: gitnexus-cli\ndescription: cli\n---\n\nx\n")
     rep = m.Report()
     m.check_skill(group, m.load_policy(None, [tmp_path]), rep)
     assert not any(f.code == "SKILL_MISSING" for f in rep.findings)
@@ -29,9 +27,7 @@ def test_leaf_dir_without_skill_still_flagged(linter_module, tmp_path):
 
 def test_attribution_negation_not_flagged(linter_module):
     m = linter_module
-    assert (
-        m._is_attribution("append Co-Authored" + "-By: Claude <noreply@" + "anthropic.com>") is True
-    )
+    assert m._is_attribution("append Co-Authored" + "-By: Claude <noreply@" + "anthropic.com>") is True
     assert m._is_attribution("NEVER add a Co-Authored" + "-By trailer or Claude line") is False
     assert m._is_attribution("- do not add the noreply@" + "anthropic.com trailer") is False
     assert m._is_attribution("strip any Generated with Claude Code line") is False

@@ -71,7 +71,7 @@ try:
 except ModuleNotFoundError:  # Python < 3.11: policy files unsupported, defaults apply
     tomllib = None
 
-VERSION = "2026.09.29-28"
+VERSION = "2026.09.29-29"
 DOCS = "https://code.claude.com/docs/en/"
 ISSUES = "https://github.com/anthropics/claude-code/issues/"
 
@@ -644,9 +644,7 @@ SECRET_VALUE_PATTERNS = [
 SECRET_REDACT_RE = re.compile(
     r"(gh[pousr]_|github_pat_|sk-|xox[abpr]-|AKIA|ntn_|secret_|hvs\.|glpat-)[A-Za-z0-9_-]{8,}"
 )
-SECRET_KEY_RE = re.compile(
-    r"(TOKEN|SECRET|PASSWORD|PASSWD|API_?KEY|PRIVATE_KEY|AUTHORIZATION)", re.I
-)
+SECRET_KEY_RE = re.compile(r"(TOKEN|SECRET|PASSWORD|PASSWD|API_?KEY|PRIVATE_KEY|AUTHORIZATION)", re.I)
 
 COMMIT_MSG_HOOK = """#!/usr/bin/env sh
 # Strip AI-assistant attribution trailers from commit messages.
@@ -694,8 +692,7 @@ HINTS: dict[str, tuple[str, str]] = {  # code -> (why/how, reference)
         DOCS + "settings#fix-a-broken-settings-file",
     ),
     "JSON_REPAIRED": (
-        "Settings files are strict JSON: comments or trailing commas make Claude Code "
-        "reject the file.",
+        "Settings files are strict JSON: comments or trailing commas make Claude Code reject the file.",
         DOCS + "settings#edit-a-settings-file",
     ),
     "SETTINGS_SCHEMA": (
@@ -711,8 +708,7 @@ HINTS: dict[str, tuple[str, str]] = {  # code -> (why/how, reference)
         DOCS + "settings#a-committed-key-doesnt-reach-teammates",
     ),
     "SETTINGS_DISABLE_HOOKS": (
-        "disableAllHooks in project settings overrides your user value and silences every "
-        "guard hook.",
+        "disableAllHooks in project settings overrides your user value and silences every guard hook.",
         DOCS + "hooks#disable-or-remove-hooks",
     ),
     "SETTINGS_MCP_AUTO": (
@@ -734,8 +730,7 @@ HINTS: dict[str, tuple[str, str]] = {  # code -> (why/how, reference)
         "",
     ),
     "ATTR_HOOK_MISSING": (
-        "The model can write the trailer itself in 'git commit -m'; a commit-msg hook "
-        "removes it deterministically.",
+        "The model can write the trailer itself in 'git commit -m'; a commit-msg hook removes it deterministically.",
         "",
     ),
     "ATTR_HOOK_CONFLICT": (
@@ -766,13 +761,11 @@ HINTS: dict[str, tuple[str, str]] = {  # code -> (why/how, reference)
         DOCS + "permissions#match-by-input-parameter",
     ),
     "PERM_COLON_MID": (
-        "':*' is only a wildcard at the end; elsewhere the colon is literal and the rule "
-        "never matches.",
+        "':*' is only a wildcard at the end; elsewhere the colon is literal and the rule never matches.",
         DOCS + "permissions#wildcard-patterns",
     ),
     "PERM_ABS_PATH": (
-        "A single leading slash anchors at the settings source, not the filesystem root; "
-        "use // for absolute paths.",
+        "A single leading slash anchors at the settings source, not the filesystem root; use // for absolute paths.",
         DOCS + "permissions#read-and-edit",
     ),
     "PERM_USER_ANCHOR": (
@@ -848,13 +841,11 @@ HINTS: dict[str, tuple[str, str]] = {  # code -> (why/how, reference)
         DOCS + "settings#a-value-you-set-is-ignored",
     ),
     "PERM_NET_DENY": (
-        "Bash deny rules miss /usr/bin/curl or sh -c 'curl'; the sandbox network allowlist "
-        "is the real boundary.",
+        "Bash deny rules miss /usr/bin/curl or sh -c 'curl'; the sandbox network allowlist is the real boundary.",
         DOCS + "permissions#bash-rule-limits",
     ),
     "SECRET_INLINE": (
-        "Committed or plaintext config is readable by anyone with access; reference ${VAR} "
-        "or the vault.",
+        "Committed or plaintext config is readable by anyone with access; reference ${VAR} or the vault.",
         "",
     ),
     "HOOK_SHAPE": (
@@ -904,8 +895,7 @@ HINTS: dict[str, tuple[str, str]] = {  # code -> (why/how, reference)
         DOCS + "hooks#other-exit-codes",
     ),
     "HOOK_RELATIVE_PATH": (
-        "Hooks run in the current directory, which moves with cd; anchor on "
-        "${CLAUDE_PROJECT_DIR} in exec form.",
+        "Hooks run in the current directory, which moves with cd; anchor on ${CLAUDE_PROJECT_DIR} in exec form.",
         DOCS + "hooks#reference-scripts-by-path",
     ),
     "HOOK_EXEC_FORM": (
@@ -913,8 +903,7 @@ HINTS: dict[str, tuple[str, str]] = {  # code -> (why/how, reference)
         DOCS + "hooks#exec-form-and-shell-form",
     ),
     "HOOK_EXIT1": (
-        "Only exit 2 (or a JSON decision) blocks; exit 1 is a non-blocking error and the "
-        "action proceeds.",
+        "Only exit 2 (or a JSON decision) blocks; exit 1 is a non-blocking error and the action proceeds.",
         DOCS + "hooks#exit-code-2",
     ),
     "HOOK_ASYNC_GATE": (
@@ -922,8 +911,7 @@ HINTS: dict[str, tuple[str, str]] = {  # code -> (why/how, reference)
         DOCS + "hooks#command-hook-fields",
     ),
     "HOOK_TIMEOUT": (
-        "A PreToolUse hook that times out does not block; the call continues to the normal "
-        "permission flow.",
+        "A PreToolUse hook that times out does not block; the call continues to the normal permission flow.",
         DOCS + "hooks#timeouts",
     ),
     "HOOK_HTTP_ENV": (
@@ -943,8 +931,7 @@ HINTS: dict[str, tuple[str, str]] = {  # code -> (why/how, reference)
         "",
     ),
     "LOCAL_NOT_IGNORED": (
-        "Personal overrides must stay out of commits; a tracked local file also waits for "
-        "workspace trust.",
+        "Personal overrides must stay out of commits; a tracked local file also waits for workspace trust.",
         DOCS + "permissions#when-your-local-settings-file-needs-trust",
     ),
     "JSON_FORMAT": ("Canonical 2-space formatting keeps diffs readable.", ""),
@@ -990,8 +977,7 @@ HINTS: dict[str, tuple[str, str]] = {  # code -> (why/how, reference)
         DOCS + "memory#agents-md",
     ),
     "AGENTS_MENTION": (
-        "A sentence asking to read AGENTS.md only works if Claude decides to open it; use "
-        "@AGENTS.md.",
+        "A sentence asking to read AGENTS.md only works if Claude decides to open it; use @AGENTS.md.",
         DOCS + "memory#remove-an-earlier-agents-md-workaround",
     ),
     "AGENTS_SHADOWED_LOCAL": (
@@ -999,13 +985,11 @@ HINTS: dict[str, tuple[str, str]] = {  # code -> (why/how, reference)
         DOCS + "memory#when-claude-code-reads-agents-md",
     ),
     "AGENTS_OLD_CLI": (
-        "Reading AGENTS.md natively needs v2.1.277+ (v2.1.281+ on Bedrock); keep a "
-        "CLAUDE.md import.",
+        "Reading AGENTS.md natively needs v2.1.277+ (v2.1.281+ on Bedrock); keep a CLAUDE.md import.",
         DOCS + "memory#when-agents-md-support-is-unavailable",
     ),
     "AGENTS_SYMLINK": (
-        "A symlinked CLAUDE.md breaks on Windows clones without core.symlinks; prefer the "
-        "@AGENTS.md import.",
+        "A symlinked CLAUDE.md breaks on Windows clones without core.symlinks; prefer the @AGENTS.md import.",
         DOCS + "memory#share-one-file-with-other-coding-tools",
     ),
     "RENDER_HAND_EDITED": ("Edit doctrine/rules/ and re-render; hand edits are lost.", ""),
@@ -1026,8 +1010,7 @@ HINTS: dict[str, tuple[str, str]] = {  # code -> (why/how, reference)
         DOCS + "memory#path-specific-rules",
     ),
     "RULE_EXTERNAL": (
-        "A rule symlinked outside the project needs external-import approval; "
-        "~/.claude/rules/ doesn't.",
+        "A rule symlinked outside the project needs external-import approval; ~/.claude/rules/ doesn't.",
         DOCS + "memory#share-rules-across-projects-with-symlinks",
     ),
     "FRONTMATTER_OFFSET": (
@@ -1055,8 +1038,7 @@ HINTS: dict[str, tuple[str, str]] = {  # code -> (why/how, reference)
         DOCS + "skills#using-skill-frontmatter-outside-claude-code",
     ),
     "SKILL_NAME": (
-        "The command comes from the directory; the spec expects name == directory, "
-        "lowercase-hyphen, max 64.",
+        "The command comes from the directory; the spec expects name == directory, lowercase-hyphen, max 64.",
         DOCS + "skills#how-a-skill-gets-its-command-name",
     ),
     "SKILL_DESCRIPTION": (
@@ -1226,19 +1208,13 @@ class Report:
 def deep_merge(base: dict, override: dict) -> dict:
     out = copy.deepcopy(base)
     for k, v in override.items():
-        out[k] = (
-            deep_merge(out[k], v) if isinstance(v, dict) and isinstance(out.get(k), dict) else v
-        )
+        out[k] = deep_merge(out[k], v) if isinstance(v, dict) and isinstance(out.get(k), dict) else v
     return out
 
 
 def load_policy(path: Path | None, repos: list[Path]) -> dict:
     # Prefer .claude-lint.toml; accept the former .agent-lint.toml name too.
-    candidates = (
-        [path]
-        if path
-        else [r / n for r in repos for n in (".claude-lint.toml", ".agent-lint.toml")]
-    )
+    candidates = [path] if path else [r / n for r in repos for n in (".claude-lint.toml", ".agent-lint.toml")]
     policy, source = copy.deepcopy(DEFAULT_POLICY), "built-in defaults"
     for c in candidates:
         if c and c.is_file():
@@ -1257,8 +1233,7 @@ def load_policy(path: Path | None, repos: list[Path]) -> dict:
     AGENT_FIELDS.update(ref.get("extra_agent_fields", []))
     log(
         1,
-        f"policy: {source}"
-        + (f" (reference data checked {ref['docs_checked']})" if ref.get("docs_checked") else ""),
+        f"policy: {source}" + (f" (reference data checked {ref['docs_checked']})" if ref.get("docs_checked") else ""),
     )
     log(3, "resolved policy: " + json.dumps(policy, ensure_ascii=False))
     return policy
@@ -1363,9 +1338,7 @@ def frontmatter_block(text: str) -> str:
     return stripped[3:end] if stripped.startswith("---") and end != -1 else ""
 
 
-def set_frontmatter(
-    text: str, updates: dict[str, str], renames: dict[str, str] | None = None
-) -> str:
+def set_frontmatter(text: str, updates: dict[str, str], renames: dict[str, str] | None = None) -> str:
     text = text.lstrip("\ufeff \t\r\n") if text.lstrip("\ufeff \t\r\n").startswith("---") else text
     if text.startswith("---") and (end := text.find("\n---", 3)) != -1:
         head, body = text[3:end].strip("\n").splitlines(), text[end + 4 :]
@@ -1373,9 +1346,7 @@ def set_frontmatter(
             head = [re.sub(rf"^{re.escape(old)}(\s*:)", rf"{new}\1", l) for l in head]
         for key, val in updates.items():
             line = f"{key}: {yaml_scalar(val)}"
-            idx = next(
-                (i for i, l in enumerate(head) if re.match(rf"^{re.escape(key)}\s*:", l)), None
-            )
+            idx = next((i for i, l in enumerate(head) if re.match(rf"^{re.escape(key)}\s*:", l)), None)
             if idx is None:
                 head.insert(0 if key == "name" else len(head), line)
             else:
@@ -1403,9 +1374,7 @@ def derive_description(text: str) -> str | None:
     body = strip_html_comments(strip_code(body))
     for para in re.split(r"\n\s*\n", body):
         para = " ".join(
-            l.strip()
-            for l in para.splitlines()
-            if l.strip() and not l.lstrip().startswith(("#", "|", ">", "!"))
+            l.strip() for l in para.splitlines() if l.strip() and not l.lstrip().startswith(("#", "|", ">", "!"))
         )
         para = re.sub(r"[*_`]", "", para).strip(" -")
         if len(para) >= 20:
@@ -1416,9 +1385,7 @@ def derive_description(text: str) -> str | None:
 def git(repo: Path, *args: str) -> str | None:
     log(3, "git -C " + str(repo) + " " + " ".join(args))
     try:
-        res = subprocess.run(
-            ["git", "-C", str(repo), *args], capture_output=True, text=True, timeout=30, check=False
-        )
+        res = subprocess.run(["git", "-C", str(repo), *args], capture_output=True, text=True, timeout=30, check=False)
     except (OSError, subprocess.TimeoutExpired):
         return None
     return res.stdout if res.returncode == 0 else None
@@ -1559,9 +1526,7 @@ def dedupe(seq: list[str]) -> list[str]:
     return [x for x in seq if not (x in seen or seen.add(x))]  # type: ignore[func-returns-value]
 
 
-def repair_rule(
-    rule: Any, key: str, scope: str, path: Path, rep: Report, policy: dict
-) -> str | None:
+def repair_rule(rule: Any, key: str, scope: str, path: Path, rep: Report, policy: dict) -> str | None:
     """Normalize one rule; report each repair. Returns the new rule or None to drop it."""
 
     def note(level: str, code: str, msg: str, fixable: bool = True) -> None:
@@ -1580,9 +1545,7 @@ def repair_rule(
         return None
     tool, spec_p, closed, spec_colon, spec_space = m.groups()
     if spec_p is not None and closed is None and not spec_p.strip():
-        note(
-            "error", "PERM_SYNTAX", f"{r!r} has an unbalanced parenthesis; intent unknown (dropped)"
-        )
+        note("error", "PERM_SYNTAX", f"{r!r} has an unbalanced parenthesis; intent unknown (dropped)")
         return None
     spec = spec_p if spec_p is not None else (spec_colon or spec_space)
     if not tool.startswith("mcp__") and "*" not in tool:
@@ -1606,20 +1569,14 @@ def repair_rule(
         return None
 
     # 4. parameter rules on a primary field are ignored
-    if (
-        spec is not None
-        and (pm := re.match(r"^\s*(\w+)\s*:(.*)$", spec))
-        and pm.group(1) in PRIMARY_PARAMS
-    ):
+    if spec is not None and (pm := re.match(r"^\s*(\w+)\s*:(.*)$", spec)) and pm.group(1) in PRIMARY_PARAMS:
         value = pm.group(2).strip()
         if tool == "WebFetch":
             host = urlparse(value if "://" in value else "https://" + value).hostname or value
             new = f"WebFetch(domain:{host})"
         else:
             new = f"{tool}({value})" if value else tool
-        note(
-            "error", "PERM_PRIMARY_PARAM", f"{r!r} is ignored by Claude Code; rewritten as {new!r}"
-        )
+        note("error", "PERM_PRIMARY_PARAM", f"{r!r} is ignored by Claude Code; rewritten as {new!r}")
         r, spec = new, (split_rule(new) or (tool, None))[1]
 
     # 5. path rules on tools whose path rules are never consulted
@@ -1630,12 +1587,7 @@ def repair_rule(
         r, tool = new, new_tool
 
     # 6. WebFetch needs domain:
-    if (
-        tool == "WebFetch"
-        and spec
-        and not spec.startswith("domain:")
-        and not re.match(r"^\s*\w+\s*:(?!//)", spec)
-    ):
+    if tool == "WebFetch" and spec and not spec.startswith("domain:") and not re.match(r"^\s*\w+\s*:(?!//)", spec):
         host = urlparse(spec if "://" in spec else "https://" + spec).hostname
         if host:
             new = f"WebFetch(domain:{host})"
@@ -1649,9 +1601,7 @@ def repair_rule(
         and tool not in SPECIFIER_TOOLS
         and not (key in ("deny", "ask") and re.match(r"^\s*\w+\s*:", spec))
     ):
-        note(
-            "warn", "PERM_NO_SPECIFIER", f"{r!r}: {tool} takes no specifier; rewritten as {tool!r}"
-        )
+        note("warn", "PERM_NO_SPECIFIER", f"{r!r}: {tool} takes no specifier; rewritten as {tool!r}")
         r, spec = tool, None
 
     # 8. ':*' in the middle is a literal colon
@@ -1700,9 +1650,7 @@ def repair_rule(
     return r
 
 
-def optimize_permissions(
-    perms: dict, policy: dict, path: Path, rep: Report, scope: str, sandbox_on: bool
-) -> dict:
+def optimize_permissions(perms: dict, policy: dict, path: Path, rep: Report, scope: str, sandbox_on: bool) -> dict:
     pol = policy["permissions"]
     out = copy.deepcopy(perms)
     lists = {k: list(out.get(k, []) or []) for k in ("allow", "ask", "deny")}
@@ -1725,17 +1673,14 @@ def optimize_permissions(
 
     mode = out.get("defaultMode")
     if mode in ("bypassPermissions", "auto") and scope == "project":
-        rep.add(
-            "warn", "PERM_MODE_DEAD", path, f"defaultMode={mode} has no effect here (removed)", True
-        )
+        rep.add("warn", "PERM_MODE_DEAD", path, f"defaultMode={mode} has no effect here (removed)", True)
         out.pop("defaultMode")
     elif mode == "bypassPermissions":
         rep.add(
             "error",
             "PERM_BYPASS",
             path,
-            "defaultMode=bypassPermissions disables every prompt; "
-            'consider "disableBypassPermissionsMode": "disable"',
+            'defaultMode=bypassPermissions disables every prompt; consider "disableBypassPermissionsMode": "disable"',
         )
 
     for r in list(allow):
@@ -1766,8 +1711,7 @@ def optimize_permissions(
                 "warn",
                 "PERM_EXEC_RUNNER",
                 path,
-                f"allow: {r!r} allows any command run through {runner!r}; list exact inner "
-                f"commands",
+                f"allow: {r!r} allows any command run through {runner!r}; list exact inner commands",
             )
         tokens = cmd.split()
         if tokens and (tokens[0].startswith("*") or (len(tokens) >= 2 and "*" in tokens[1])):
@@ -1820,8 +1764,7 @@ def optimize_permissions(
             unwrapped.append(r)
         allow[:] = dedupe(unwrapped)
         wrapped = [
-            rtk_wrap(r, pol["rtk_exempt"]) if (c := command_of(r)) is None or rtk_rewrites(c) else r
-            for r in allow
+            rtk_wrap(r, pol["rtk_exempt"]) if (c := command_of(r)) is None or rtk_rewrites(c) else r for r in allow
         ]
         changed = [(a, b) for a, b in zip(allow, wrapped) if a != b]
         for a, b in changed:
@@ -1867,16 +1810,10 @@ def optimize_permissions(
             continue
         by = next((a for a in ask if covers(a, r)), None)
         if by:
-            rep.add(
-                "info", "PERM_ASK_SHADOW", path, f"allow: {r!r} still prompts because of ask {by!r}"
-            )
+            rep.add("info", "PERM_ASK_SHADOW", path, f"allow: {r!r} still prompts because of ask {by!r}")
 
     for key, rules in (("allow", allow), ("ask", ask), ("deny", deny)):
-        shadowed = [
-            b
-            for b in rules
-            if not b.split("(", 1)[-1].startswith("!") and any(covers(a, b) for a in rules)
-        ]
+        shadowed = [b for b in rules if not b.split("(", 1)[-1].startswith("!") and any(covers(a, b) for a in rules)]
         if shadowed:
             rep.add(
                 "info",
@@ -1915,9 +1852,7 @@ def optimize_permissions(
                     "warn",
                     "PERM_RTK_TWIN",
                     path,
-                    f"{key}: add rtk/non-rtk twins: "
-                    + ", ".join(twins[:4])
-                    + (" ..." if len(twins) > 4 else ""),
+                    f"{key}: add rtk/non-rtk twins: " + ", ".join(twins[:4]) + (" ..." if len(twins) > 4 else ""),
                     True,
                 )
                 rules.extend(dedupe(twins))
@@ -1927,8 +1862,7 @@ def optimize_permissions(
             "info",
             "PERM_NET_DENY",
             path,
-            "deny rules on curl/wget are not a network boundary; "
-            "enable sandbox.network.allowedDomains",
+            "deny rules on curl/wget are not a network boundary; enable sandbox.network.allowedDomains",
         )
 
     for key, rules in (("allow", allow), ("ask", ask), ("deny", deny)):
@@ -2018,9 +1952,7 @@ def check_matcher(event: str, matcher: Any, path: Path, rep: Report) -> Any:
                 )
                 t = LEGACY_TOOLS[t]
             elif t not in KNOWN_TOOLS:
-                rep.add(
-                    "warn", "HOOK_MATCHER_TOOL", path, f"{event}: matcher {t!r} is not a tool name"
-                )
+                rep.add("warn", "HOOK_MATCHER_TOOL", path, f"{event}: matcher {t!r} is not a tool name")
             fixed.append(t)
         new = "|".join(dedupe(fixed))
         return new if new != "|".join(tokens) else matcher
@@ -2035,22 +1967,16 @@ def check_matcher(event: str, matcher: Any, path: Path, rep: Report) -> Any:
     return matcher
 
 
-def check_handler(
-    event: str, h: dict, base: Path, path: Path, rep: Report, scope: str
-) -> dict | None:
+def check_handler(event: str, h: dict, base: Path, path: Path, rep: Report, scope: str) -> dict | None:
     rep.stats["hook handlers"] = rep.stats.get("hook handlers", 0) + 1
     h = dict(h)
     htype = h.get("type")
     if htype is None and h.get("command"):
-        rep.add(
-            "warn", "HOOK_NO_TYPE", path, f"{event}: handler without 'type' (set to command)", True
-        )
+        rep.add("warn", "HOOK_NO_TYPE", path, f"{event}: handler without 'type' (set to command)", True)
         h = {"type": "command", **h}
         htype = "command"
     if htype not in HOOK_TYPES:
-        rep.add(
-            "error", "HOOK_TYPE", path, f"{event}: unknown handler type {htype!r} (dropped)", True
-        )
+        rep.add("error", "HOOK_TYPE", path, f"{event}: unknown handler type {htype!r} (dropped)", True)
         return None
     missing = [f for f in HOOK_TYPES[htype] if not h.get(f)]
     if missing:
@@ -2063,13 +1989,9 @@ def check_handler(
         )
         return None
     if "if" in h and event not in TOOL_EVENTS:
-        rep.add(
-            "error", "HOOK_IF_DEAD", path, f"{event}: handler with 'if' never runs on this event"
-        )
+        rep.add("error", "HOOK_IF_DEAD", path, f"{event}: handler with 'if' never runs on this event")
     if "once" in h:
-        rep.add(
-            "warn", "HOOK_ONCE", path, f"{event}: 'once' is ignored in settings (removed)", True
-        )
+        rep.add("warn", "HOOK_ONCE", path, f"{event}: 'once' is ignored in settings (removed)", True)
         h.pop("once")
     if "timeout" in h and not isinstance(h["timeout"], (int, float)):
         rep.add("error", "HOOK_SHAPE", path, f"{event}: timeout must be a number of seconds")
@@ -2077,12 +1999,8 @@ def check_handler(
     if htype == "command":
         cmd = str(h["command"]).strip()
         if event == "PreToolUse" and h.get("async"):
-            rep.add(
-                "warn", "HOOK_ASYNC_GATE", path, f"{event}: async hook cannot block ({cmd[:40]})"
-            )
-        if event == "SessionStart" and re.search(
-            r"\b(cat|type|Get-Content)\b.*\b(AGENTS|CLAUDE)\.md", cmd
-        ):
+            rep.add("warn", "HOOK_ASYNC_GATE", path, f"{event}: async hook cannot block ({cmd[:40]})")
+        if event == "SessionStart" and re.search(r"\b(cat|type|Get-Content)\b.*\b(AGENTS|CLAUDE)\.md", cmd):
             rep.add(
                 "warn",
                 "HOOK_DUP_CONTEXT",
@@ -2097,9 +2015,7 @@ def check_handler(
                 conv = to_exec_form(cmd, scope)
                 if conv and scope == "project":
                     code = "HOOK_RELATIVE_PATH" if relative else "HOOK_EXEC_FORM"
-                    rep.add(
-                        "warn", code, path, f"{event}: {cmd[:60]!r} -> exec form {conv[0]!r}", True
-                    )
+                    rep.add("warn", code, path, f"{event}: {cmd[:60]!r} -> exec form {conv[0]!r}", True)
                     h["command"], h["args"] = conv
                 elif relative:
                     rep.add(
@@ -2108,14 +2024,10 @@ def check_handler(
                         path,
                         f"{event}: {cmd[:60]!r} depends on the current directory",
                     )
-        script = resolve_script(
-            str(h["command"]).split()[0] if "args" not in h else h["command"], base
-        )
+        script = resolve_script(str(h["command"]).split()[0] if "args" not in h else h["command"], base)
         if script is not None:
             if not script.exists():
-                rep.add(
-                    "error", "HOOK_MISSING_SCRIPT", path, f"{event}: script not found: {script}"
-                )
+                rep.add("error", "HOOK_MISSING_SCRIPT", path, f"{event}: script not found: {script}")
             else:
                 if not os.access(script, os.X_OK) and script not in rep.chmods:
                     rep.add(
@@ -2159,16 +2071,15 @@ def check_handler(
                     "error",
                     "HOOK_HTTP_ENV",
                     path,
-                    f"{event}: header {k} uses {', '.join(missing_vars)} "
-                    "without allowedEnvVars (added)",
+                    f"{event}: header {k} uses {', '.join(missing_vars)} without allowedEnvVars (added)",
                     True,
                 )
                 allowed += missing_vars
         if allowed:
             h["allowedEnvVars"] = dedupe(allowed)
-        h["headers"] = check_env_secrets(
-            h.get("headers") or {}, path, rep, f"hooks.{event}.headers"
-        ) or h.get("headers")
+        h["headers"] = check_env_secrets(h.get("headers") or {}, path, rep, f"hooks.{event}.headers") or h.get(
+            "headers"
+        )
         if not h["headers"]:
             h.pop("headers")
     elif htype == "mcp_tool" and event in ("SessionStart", "Setup"):
@@ -2220,10 +2131,7 @@ def check_hooks(hooks: Any, base: Path, path: Path, rep: Report, scope: str) -> 
         return hooks
     log(
         1,
-        "hooks: "
-        + ", ".join(
-            f"{e}({len(v) if isinstance(v, (list, dict)) else 1})" for e, v in hooks.items()
-        ),
+        "hooks: " + ", ".join(f"{e}({len(v) if isinstance(v, (list, dict)) else 1})" for e, v in hooks.items()),
         1,
     )
     fixed: dict[str, Any] = {}
@@ -2269,18 +2177,12 @@ def check_env_secrets(env: dict, path: Path, rep: Report, ctx: str, mode: str = 
         bare = re.sub(r"^(bearer|token|basic)\s+", "", v, flags=re.I)
         if bare.startswith("$"):
             continue
-        if any(p.search(bare) for p in SECRET_VALUE_PATTERNS) or (
-            SECRET_KEY_RE.search(k) and len(bare) >= 12
-        ):
+        if any(p.search(bare) for p in SECRET_VALUE_PATTERNS) or (SECRET_KEY_RE.search(k) and len(bare) >= 12):
             var = re.sub(r"[^A-Z0-9]+", "_", k.upper()).strip("_")
             if k.lower() == "authorization" and "." in ctx:
                 var = re.sub(r"[^A-Z0-9]+", "_", ctx.split(".")[1].upper()) + "_TOKEN"
             if mode == "reference":
-                prefix = (
-                    v.split(" ")[0] + " "
-                    if v.lower().startswith(("bearer ", "token ", "basic "))
-                    else ""
-                )
+                prefix = v.split(" ")[0] + " " if v.lower().startswith(("bearer ", "token ", "basic ")) else ""
                 out[k] = f"{prefix}${{{var}}}"
                 action = f"replaced by {out[k]}; export {var} (or inject it from the vault)"
             elif mode == "remove":
@@ -2311,9 +2213,7 @@ def check_settings(path: Path, base: Path, scope: str, policy: dict, rep: Report
         rep.add("error", "JSON_INVALID", path, f"invalid JSON, not auto-repairable: {e}")
         return None
     if repaired:
-        rep.add(
-            "error", "JSON_REPAIRED", path, "comments, trailing commas or BOM in strict JSON", True
-        )
+        rep.add("error", "JSON_REPAIRED", path, "comments, trailing commas or BOM in strict JSON", True)
     if not isinstance(data, dict):
         rep.add("error", "JSON_INVALID", path, "top level must be an object")
         return None
@@ -2366,9 +2266,7 @@ def check_settings(path: Path, base: Path, scope: str, policy: dict, rep: Report
             or any(attr.get(k) not in ("", None) for k in wanted)
             or not all(k in attr for k in wanted)
         ) and (scope == "user" or attr is not None):
-            rep.add(
-                "warn", "ATTR_ENABLED", path, "attribution not fully disabled (commit/pr)", True
-            )
+            rep.add("warn", "ATTR_ENABLED", path, "attribution not fully disabled (commit/pr)", True)
             new["attribution"] = {**(attr if isinstance(attr, dict) else {}), **wanted}
 
     if scope == "project" and new.get("disableAllHooks") is True:
@@ -2379,28 +2277,20 @@ def check_settings(path: Path, base: Path, scope: str, policy: dict, rep: Report
             "disableAllHooks=true silences every hook, guards included",
         )
     if scope == "project" and not local and new.get("enableAllProjectMcpServers") is True:
-        rep.add(
-            "warn", "SETTINGS_MCP_AUTO", path, "enableAllProjectMcpServers=true in a committed file"
-        )
+        rep.add("warn", "SETTINGS_MCP_AUTO", path, "enableAllProjectMcpServers=true in a committed file")
 
     sandbox_on = isinstance(new.get("sandbox"), dict) and bool(new["sandbox"].get("enabled"))
     if isinstance(new.get("permissions"), dict):
         rep.stats["permission rules"] = rep.stats.get("permission rules", 0) + sum(
             len(new["permissions"].get(k) or []) for k in ("allow", "ask", "deny")
         )
-        new["permissions"] = optimize_permissions(
-            new["permissions"], policy, path, rep, scope, sandbox_on
-        )
+        new["permissions"] = optimize_permissions(new["permissions"], policy, path, rep, scope, sandbox_on)
         if not new["permissions"]:
             new.pop("permissions")
 
     if "hooks" in new:
         new["hooks"] = check_hooks(new["hooks"], base, path, rep, scope)
-        if (
-            scope == "user"
-            and policy["user_scope"]["context_only"]
-            and isinstance(new["hooks"], dict)
-        ):
+        if scope == "user" and policy["user_scope"]["context_only"] and isinstance(new["hooks"], dict):
             blocking = [
                 e
                 for e, groups in new["hooks"].items()
@@ -2443,8 +2333,7 @@ def check_settings(path: Path, base: Path, scope: str, policy: dict, rep: Report
                 "warn",
                 "LOCAL_NOT_IGNORED",
                 path,
-                f"{rel} is committed: run git rm --cached {rel} (its allow rules then wait "
-                f"for trust)",
+                f"{rel} is committed: run git rm --cached {rel} (its allow rules then wait for trust)",
             )
         elif not is_ignored(base, rel):
             rep.add("warn", "LOCAL_NOT_IGNORED", path, f"{rel} is not gitignored", True)
@@ -2475,14 +2364,11 @@ def check_servers(servers: dict, path: Path, rep: Report, ctx: str, writable: bo
         kind = cfg.get("type") or ("http" if cfg.get("url") else "stdio")
         log(
             2,
-            f"{name}: {kind} {cfg.get('url') or cfg.get('command')}, "
-            f"{len(cfg.get('env') or {})} env var(s)",
+            f"{name}: {kind} {cfg.get('url') or cfg.get('command')}, {len(cfg.get('env') or {})} env var(s)",
             2,
         )
         if cfg.get("url") and "type" not in cfg:
-            rep.add(
-                "warn", "MCP_TYPE", path, f"{ctx}.{name}: url without type (set to http)", writable
-            )
+            rep.add("warn", "MCP_TYPE", path, f"{ctx}.{name}: url without type (set to http)", writable)
             if writable:
                 cfg = {"type": "http", **cfg}
         elif cfg.get("type") == "sse":
@@ -2533,9 +2419,7 @@ def check_mcp(path: Path, rep: Report, policy: dict) -> None:
         rep.add("error", "JSON_INVALID", path, f"invalid JSON, not auto-repairable: {e}")
         return
     if repaired:
-        rep.add(
-            "error", "JSON_REPAIRED", path, "comments, trailing commas or BOM in strict JSON", True
-        )
+        rep.add("error", "JSON_REPAIRED", path, "comments, trailing commas or BOM in strict JSON", True)
     if not isinstance(data, dict):
         rep.add("error", "MCP_SHAPE", path, "top level must be an object")
         return
@@ -2576,9 +2460,7 @@ def check_claude_json(rep: Report, repos: list[Path]) -> None:
     try:
         data = json.loads(raw)
     except json.JSONDecodeError as e:
-        rep.add(
-            "error", "JSON_INVALID", path, f"invalid JSON ({e}); restore from ~/.claude/backups/"
-        )
+        rep.add("error", "JSON_INVALID", path, f"invalid JSON ({e}); restore from ~/.claude/backups/")
         return
     log(1, f"{path} (read-only)", 1)
     if isinstance(data.get("mcpServers"), dict):
@@ -2625,9 +2507,7 @@ def check_imports(
             rep.add("error", "IMPORT_MISSING", path, f"@{ref} does not resolve")
             continue
         if depth > policy["instructions"]["max_import_depth"]:
-            rep.add(
-                "error", "IMPORT_DEPTH", path, f"@{ref} is {depth} hops deep (max 4): not loaded"
-            )
+            rep.add("error", "IMPORT_DEPTH", path, f"@{ref} is {depth} hops deep (max 4): not loaded")
             continue
         if root is not None:
             try:
@@ -2648,9 +2528,7 @@ def check_imports(
             check_imports(target, sub, rep, policy, root, depth + 1, seen)
 
 
-def check_instruction_file(
-    path: Path, scope: str, policy: dict, rep: Report, root: Path | None
-) -> str | None:
+def check_instruction_file(path: Path, scope: str, policy: dict, rep: Report, root: Path | None) -> str | None:
     try:
         size = path.stat().st_size
     except OSError:
@@ -2695,9 +2573,7 @@ def check_agents_md(repo: Path, policy: dict, rep: Report) -> None:
                 "CLAUDE.local.md is committed: git rm --cached CLAUDE.local.md",
             )
         elif not is_ignored(repo, "CLAUDE.local.md"):
-            rep.add(
-                "warn", "LOCAL_MD_NOT_IGNORED", local, "CLAUDE.local.md is not gitignored", True
-            )
+            rep.add("warn", "LOCAL_MD_NOT_IGNORED", local, "CLAUDE.local.md is not gitignored", True)
             add_gitignore(repo, "CLAUDE.local.md", rep)
     if not agents:
         return
@@ -2860,9 +2736,7 @@ def move_to_metadata(text: str, keys: list[str]) -> str:
     entries: list[list[str]] = []
     for line in lines:
         if entries and (
-            line.startswith((" ", "\t"))
-            or line.lstrip().startswith("- ")
-            and not re.match(r"^[\w-]+\s*:", line)
+            line.startswith((" ", "\t")) or line.lstrip().startswith("- ") and not re.match(r"^[\w-]+\s*:", line)
         ):
             entries[-1].append(line)
         else:
@@ -2882,11 +2756,7 @@ def move_to_metadata(text: str, keys: list[str]) -> str:
     if meta_idx is None:
         keep.append(["metadata:"] + block)
     else:
-        keep[meta_idx] = (
-            [re.sub(r"^metadata\s*:.*$", "metadata:", keep[meta_idx][0])]
-            + keep[meta_idx][1:]
-            + block
-        )
+        keep[meta_idx] = [re.sub(r"^metadata\s*:.*$", "metadata:", keep[meta_idx][0])] + keep[meta_idx][1:] + block
     return "---\n" + "\n".join(l for e in keep for l in e) + "\n---" + body
 
 
@@ -2942,8 +2812,7 @@ def check_skill(d: Path, policy: dict, rep: Report) -> str | None:
                 "info",
                 "SKILL_FIELD",
                 sk,
-                f"{trig_key} is ignored by Claude Code (copied into when_to_use, original "
-                f"kept under metadata)",
+                f"{trig_key} is ignored by Claude Code (copied into when_to_use, original kept under metadata)",
                 True,
             )
             meta = {**meta, "when_to_use": updates_trig}
@@ -2965,11 +2834,7 @@ def check_skill(d: Path, policy: dict, rep: Report) -> str | None:
             sk,
             f"custom field(s) ignored by Claude Code: {', '.join(unknown)}"
             + (" (moved under metadata:)" if can_move else "")
-            + (
-                "; put trigger phrases in description or when_to_use"
-                if len(movable) < len(unknown)
-                else ""
-            ),
+            + ("; put trigger phrases in description or when_to_use" if len(movable) < len(unknown) else ""),
             can_move,
         )
         if can_move:
@@ -2977,9 +2842,7 @@ def check_skill(d: Path, policy: dict, rep: Report) -> str | None:
     if pol["portable"]:
         extra = [k for k in meta if k in SKILL_FIELDS and k not in SKILL_SPEC_FIELDS]
         if extra:
-            rep.add(
-                "info", "SKILL_PORTABILITY", sk, f"Claude Code-only field(s): {', '.join(extra)}"
-            )
+            rep.add("info", "SKILL_PORTABILITY", sk, f"Claude Code-only field(s): {', '.join(extra)}")
     updates: dict[str, str] = {}
     if pending_when:
         updates["when_to_use"] = pending_when
@@ -3029,8 +2892,7 @@ def check_skill(d: Path, policy: dict, rep: Report) -> str | None:
             "warn",
             "SKILL_DESCRIPTION",
             sk,
-            f"description + when_to_use = {listing} chars (truncated at "
-            f"{pol['max_listing_chars']})",
+            f"description + when_to_use = {listing} chars (truncated at {pol['max_listing_chars']})",
         )
     elif pol["portable"] and len(desc) > pol["portable_description_chars"]:
         rep.add(
@@ -3046,15 +2908,10 @@ def check_skill(d: Path, policy: dict, rep: Report) -> str | None:
     if meta.get("context") != "fork":
         stray = [k for k in ("agent", "background") if k in meta]
         if stray:
-            rep.add(
-                "warn", "SKILL_FORK_FIELD", sk, f"{', '.join(stray)} ignored without context: fork"
-            )
+            rep.add("warn", "SKILL_FORK_FIELD", sk, f"{', '.join(stray)} ignored without context: fork")
     words = "|".join(map(re.escape, pol["side_effect_words"]))
     dmi = meta.get("disable-model-invocation", "").lower() in ("true", "yes", "on", "1")
-    if (
-        re.search(rf"\b({words})\b", f"{d.name} {name}".replace("_", " ").replace("-", " "), re.I)
-        and not dmi
-    ):
+    if re.search(rf"\b({words})\b", f"{d.name} {name}".replace("_", " ").replace("-", " "), re.I) and not dmi:
         gate = pol.get("gate_side_effects", True)
         rep.add(
             "warn",
@@ -3068,9 +2925,7 @@ def check_skill(d: Path, policy: dict, rep: Report) -> str | None:
             updates["disable-model-invocation"] = "true"
     tools = meta.get("allowed-tools", "")
     if re.search(r"(^|[\s,\[])(Bash|PowerShell)(\(\*\)|(?=[\s,\]]|$))|Bash\(\*", tools):
-        rep.add(
-            "warn", "SKILL_BROAD_TOOLS", sk, f"allowed-tools grants unrestricted shell: {tools}"
-        )
+        rep.add("warn", "SKILL_BROAD_TOOLS", sk, f"allowed-tools grants unrestricted shell: {tools}")
     if renames or updates or new != text or move_meta:
         out = set_frontmatter(new, updates, renames) if (renames or updates) else new
         if move_meta:
@@ -3083,9 +2938,7 @@ def check_skill(d: Path, policy: dict, rep: Report) -> str | None:
     return d.name
 
 
-def check_agent_assets(
-    root: Path, policy: dict, rep: Report, scope: str, project_root: Path | None
-) -> None:
+def check_agent_assets(root: Path, policy: dict, rep: Report, scope: str, project_root: Path | None) -> None:
     skills = root / "skills"
     names: set[str] = set()
     if skills.is_dir():
@@ -3132,9 +2985,7 @@ def check_agent_assets(
             rep.stats["commands"] = rep.stats.get("commands", 0) + 1
             cmd_name = ":".join(f.relative_to(commands).with_suffix("").parts)
             if cmd_name in names:
-                rep.add(
-                    "warn", "COMMAND_SHADOWED", f, f"skill '{cmd_name}' has the same name and wins"
-                )
+                rep.add("warn", "COMMAND_SHADOWED", f, f"skill '{cmd_name}' has the same name and wins")
             meta, _ = split_frontmatter(read_text(f) or "")
             if not (meta or {}).get("description"):
                 rep.add("info", "COMMAND_FRONTMATTER", f, "no description (first line is used)")
@@ -3184,8 +3035,7 @@ def check_subagent(f: Path, rep: Report) -> None:
             + ", ".join(missing)
             + (f" (filled: {', '.join(updates)})" if updates else "")
             + (
-                f" (cannot derive: {', '.join(still)}; if this file is not a subagent, move "
-                f"it out of agents/)"
+                f" (cannot derive: {', '.join(still)}; if this file is not a subagent, move it out of agents/)"
                 if still
                 else ""
             ),
@@ -3194,9 +3044,7 @@ def check_subagent(f: Path, rep: Report) -> None:
     tools = meta.get("tools", "")
     tool_renames = {}
     if tools:
-        names = [
-            re.sub(r"\(.*", "", t).strip() for t in re.split(r"[,\s\[\]]+", tools) if t.strip()
-        ]
+        names = [re.sub(r"\(.*", "", t).strip() for t in re.split(r"[,\s\[\]]+", tools) if t.strip()]
         bad = [t for t in names if t and not t.startswith("mcp__") and t not in KNOWN_TOOLS]
         for t in bad:
             if t in LEGACY_TOOLS:
@@ -3267,8 +3115,7 @@ HELPER_OBJECT_KEYS = ("statusLine", "subagentStatusLine", "fileSuggestion")
 HINTS.update(
     {
         "PLUGIN_MANIFEST": (
-            "Only 'name' is required (kebab-case); version should be semver; unknown "
-            "top-level fields are stripped.",
+            "Only 'name' is required (kebab-case); version should be semver; unknown top-level fields are stripped.",
             DOCS + "plugins/manifest-reference",
         ),
         "PLUGIN_PATH": (
@@ -3276,8 +3123,7 @@ HINTS.update(
             DOCS + "plugins/manifest-reference",
         ),
         "PLUGIN_LAYOUT": (
-            "Only plugin.json goes in .claude-plugin/; skills/, commands/, hooks/ live at "
-            "the plugin root.",
+            "Only plugin.json goes in .claude-plugin/; skills/, commands/, hooks/ live at the plugin root.",
             DOCS + "plugins/manifest-reference",
         ),
         "PLUGIN_CLI": (
@@ -3297,8 +3143,7 @@ HINTS.update(
             DOCS + "output-styles",
         ),
         "HELPER_SCRIPT": (
-            "Helpers (statusLine, apiKeyHelper, ...) run a command; a missing or "
-            "non-executable script fails silently.",
+            "Helpers (statusLine, apiKeyHelper, ...) run a command; a missing or non-executable script fails silently.",
             DOCS + "settings-reference",
         ),
         "HELPER_REPO": (
@@ -3311,8 +3156,7 @@ HINTS.update(
             DOCS + "permissions#read-and-edit",
         ),
         "SETTINGS_MCP_SERVERS": (
-            "MCP servers are declared in .mcp.json (project) or ~/.claude.json (user), not "
-            "in settings.json.",
+            "MCP servers are declared in .mcp.json (project) or ~/.claude.json (user), not in settings.json.",
             DOCS + "mcp",
         ),
         "DESKTOP_CONFIG": (
@@ -3321,8 +3165,7 @@ HINTS.update(
         ),
         "CI_ACTION": ("claude-code-action workflow hardening.", DOCS + "github-actions"),
         "API_KEY_LEAK": (
-            "An Anthropic API key in a file is readable by anyone with access: revoke and "
-            "rotate it.",
+            "An Anthropic API key in a file is readable by anyone with access: revoke and rotate it.",
             "https://console.anthropic.com/settings/keys",
         ),
         "MANAGED_SETTINGS": (
@@ -3339,14 +3182,8 @@ def check_helpers(settings: dict, base: Path, path: Path, rep: Report, scope: st
         val = settings.get(key)
         if val is None:
             continue
-        cmd = (
-            val if isinstance(val, str) else (val.get("command") if isinstance(val, dict) else None)
-        )
-        if (
-            key in HELPER_OBJECT_KEYS
-            and isinstance(val, dict)
-            and val.get("type") not in (None, "command")
-        ):
+        cmd = val if isinstance(val, str) else (val.get("command") if isinstance(val, dict) else None)
+        if key in HELPER_OBJECT_KEYS and isinstance(val, dict) and val.get("type") not in (None, "command"):
             rep.add("error", "HELPER_SCRIPT", path, f"{key}.type must be 'command'")
         if not cmd:
             rep.add("error", "HELPER_SCRIPT", path, f"{key}: no command")
@@ -3380,25 +3217,18 @@ def check_plugin_settings(settings: dict, path: Path, rep: Report, scope: str) -
                     f"enabledPlugins key {k!r} lacks '@marketplace'",
                 )
             if not isinstance(v, bool):
-                rep.add(
-                    "error", "ENABLED_PLUGINS", path, f"enabledPlugins[{k!r}] must be true or false"
-                )
+                rep.add("error", "ENABLED_PLUGINS", path, f"enabledPlugins[{k!r}] must be true or false")
     elif ep is not None:
         rep.add("error", "ENABLED_PLUGINS", path, "enabledPlugins must be an object")
     mk = settings.get("extraKnownMarketplaces")
     if isinstance(mk, dict):
         for name, cfg in mk.items():
-            if (
-                not isinstance(cfg, dict)
-                or not isinstance(cfg.get("source"), dict)
-                or not cfg["source"].get("source")
-            ):
+            if not isinstance(cfg, dict) or not isinstance(cfg.get("source"), dict) or not cfg["source"].get("source"):
                 rep.add(
                     "error",
                     "MARKETPLACE",
                     path,
-                    f"extraKnownMarketplaces.{name}: needs source.source (github, git, "
-                    f"directory, url)",
+                    f"extraKnownMarketplaces.{name}: needs source.source (github, git, directory, url)",
                 )
 
 
@@ -3442,8 +3272,7 @@ def move_settings_mcp(settings: dict, base: Path, path: Path, rep: Report, scope
             "warn",
             "SETTINGS_MCP_SERVERS",
             path,
-            f"mcpServers in settings.json is not read; names clash with .mcp.json: "
-            f"{', '.join(clash)}",
+            f"mcpServers in settings.json is not read; names clash with .mcp.json: {', '.join(clash)}",
         )
         return settings
     existing.update(servers)
@@ -3482,9 +3311,7 @@ def check_plugin_dir(root: Path, rep: Report, policy: dict) -> None:
         return
     new = copy.deepcopy(data)
     if repaired:
-        rep.add(
-            "error", "JSON_REPAIRED", mf, "comments, trailing commas or BOM in strict JSON", True
-        )
+        rep.add("error", "JSON_REPAIRED", mf, "comments, trailing commas or BOM in strict JSON", True)
     name = data.get("name")
     if not name:
         rep.add("error", "PLUGIN_MANIFEST", mf, "missing 'name'")
@@ -3511,11 +3338,7 @@ def check_plugin_dir(root: Path, rep: Report, policy: dict) -> None:
     for key in PLUGIN_COMPONENT_KEYS:
         val = data.get(key)
         paths = (
-            [val]
-            if isinstance(val, str)
-            else [p for p in val if isinstance(p, str)]
-            if isinstance(val, list)
-            else []
+            [val] if isinstance(val, str) else [p for p in val if isinstance(p, str)] if isinstance(val, list) else []
         )
         fixed = []
         for p in paths:
@@ -3601,9 +3424,7 @@ def check_marketplace(root: Path, rep: Report, policy: dict) -> None:
         rep.add("error", "JSON_INVALID", mf, f"invalid JSON: {e}")
         return
     if repaired:
-        rep.add(
-            "error", "JSON_REPAIRED", mf, "comments, trailing commas or BOM in strict JSON", True
-        )
+        rep.add("error", "JSON_REPAIRED", mf, "comments, trailing commas or BOM in strict JSON", True)
         rep.edit(mf, raw, dump_json(data))
     if not data.get("name"):
         rep.add("error", "MARKETPLACE", mf, "missing 'name'")
@@ -3651,9 +3472,7 @@ def check_output_styles(root: Path, rep: Report) -> None:
             rep.edit(f, t, t.lstrip("\ufeff \t\r\n"))
         if not meta or not meta.get("description"):
             rep.add("info", "OUTPUT_STYLE", f, "no description in frontmatter")
-        unknown = [
-            k for k in (meta or {}) if k not in ("name", "description", "keep-coding-instructions")
-        ]
+        unknown = [k for k in (meta or {}) if k not in ("name", "description", "keep-coding-instructions")]
         if unknown:
             rep.add("info", "OUTPUT_STYLE", f, f"unrecognised field(s): {', '.join(unknown)}")
 
@@ -3661,9 +3480,7 @@ def check_output_styles(root: Path, rep: Report) -> None:
 def check_misplaced(repo: Path, rep: Report) -> None:
     def rename(src: Path, dst: Path, code: str, why: str) -> None:
         if dst.exists() or any(d == dst for _, d in rep.moves):
-            rep.add(
-                "warn", code, src, f"{why}; {dst.relative_to(repo)} already exists: merge by hand"
-            )
+            rep.add("warn", code, src, f"{why}; {dst.relative_to(repo)} already exists: merge by hand")
             return
         rep.add("warn", code, src, f"{why} (moved to {dst.relative_to(repo)})", True)
         rep.moves.append((src, dst))
@@ -3754,16 +3571,10 @@ def check_workflows(repo: Path, rep: Report) -> None:
                     wf,
                     f"action pinned to tag @{ref}; a commit SHA is immutable",
                 )
-        if re.search(
-            r"(anthropic_api_key|claude_code_oauth_token)\s*:\s*['\"]?(?!\$\{\{)\S{12,}", text
-        ):
-            rep.add(
-                "error", "CI_ACTION", wf, "credential written literally: use ${{ secrets.NAME }}"
-            )
+        if re.search(r"(anthropic_api_key|claude_code_oauth_token)\s*:\s*['\"]?(?!\$\{\{)\S{12,}", text):
+            rep.add("error", "CI_ACTION", wf, "credential written literally: use ${{ secrets.NAME }}")
         if re.search(r"dangerously-skip-permissions|permission-mode\W+bypassPermissions", text):
-            rep.add(
-                "warn", "CI_ACTION", wf, "permissions bypassed in CI: list allowed tools instead"
-            )
+            rep.add("warn", "CI_ACTION", wf, "permissions bypassed in CI: list allowed tools instead")
         if re.search(r"(allowed_tools|allowedTools)\W+[^\n]*\bBash(\(\*\))?(?=[\s,\"']|$)", text):
             rep.add("warn", "CI_ACTION", wf, "unrestricted Bash allowed in CI")
         if re.search(r"(?m)^\s*pull_request_target\s*:", text):
@@ -3785,8 +3596,7 @@ def check_workflows(repo: Path, rep: Report) -> None:
                 "info",
                 "CI_ACTION",
                 wf,
-                "issue_comment trigger without author_association filter: anyone who can "
-                "comment can trigger it",
+                "issue_comment trigger without author_association filter: anyone who can comment can trigger it",
             )
 
 
@@ -3794,9 +3604,7 @@ def check_repo_secrets(repo: Path, rep: Report) -> None:
     skip = {".git", "node_modules", ".venv", "venv", "dist", "build", "__pycache__", ".cache"}
     for dirpath, dirnames, filenames in os.walk(repo):
         dirnames[:] = [
-            d
-            for d in dirnames
-            if d not in skip and not (d == "worktrees" and Path(dirpath).name == ".claude")
+            d for d in dirnames if d not in skip and not (d == "worktrees" and Path(dirpath).name == ".claude")
         ]
         for fn in filenames:
             p = Path(dirpath) / fn
@@ -3835,8 +3643,7 @@ def check_user_extras(rep: Report) -> None:
                 "warn",
                 "API_KEY_LEAK",
                 home / rc,
-                "Anthropic API key in plaintext shell startup file (prefer a secret manager "
-                "/ vault)",
+                "Anthropic API key in plaintext shell startup file (prefer a secret manager / vault)",
             )
     kb = config_dir() / "keybindings.json"
     raw = read_text(kb)
@@ -3844,9 +3651,7 @@ def check_user_extras(rep: Report) -> None:
         try:
             data, repaired = lenient_json(raw)
             if repaired:
-                rep.add(
-                    "error", "KEYBINDINGS", kb, "comments or trailing commas in strict JSON", True
-                )
+                rep.add("error", "KEYBINDINGS", kb, "comments or trailing commas in strict JSON", True)
                 rep.edit(kb, raw, dump_json(data))
         except json.JSONDecodeError as e:
             rep.add("error", "KEYBINDINGS", kb, f"invalid JSON: {e}")
@@ -3868,9 +3673,7 @@ def check_user_extras(rep: Report) -> None:
             rep.add("error", "JSON_INVALID", dc, f"invalid JSON: {e}")
             continue
         if repaired:
-            rep.add(
-                "error", "JSON_REPAIRED", dc, "comments or trailing commas in strict JSON", True
-            )
+            rep.add("error", "JSON_REPAIRED", dc, "comments or trailing commas in strict JSON", True)
             rep.edit(dc, raw, dump_json(data))
         if isinstance(data.get("mcpServers"), dict):
             check_servers(data["mcpServers"], dc, rep, "mcpServers", False)
@@ -4015,8 +3818,7 @@ HINTS.update(
             "https://github.com/llmtrim/llmtrim#install",
         ),
         "RTK_MISSING": (
-            "rtk-prefixed allow rules only match once the rtk hook rewrites commands; "
-            "without rtk they never match.",
+            "rtk-prefixed allow rules only match once the rtk hook rewrites commands; without rtk they never match.",
             "https://github.com/rtk-ai/rtk#installation",
         ),
         "RTK_WRONG_PACKAGE": (
@@ -4028,13 +3830,11 @@ HINTS.update(
             "https://github.com/rtk-ai/rtk#windows",
         ),
         "RTK_NO_HOOK": (
-            "Without the PreToolUse hook nothing is rewritten: no savings, and rtk-prefixed "
-            "rules never match.",
+            "Without the PreToolUse hook nothing is rewritten: no savings, and rtk-prefixed rules never match.",
             "https://github.com/rtk-ai/rtk#auto-rewrite-hook",
         ),
         "RTK_LEGACY_HOOK": (
-            "The legacy rtk-rewrite.sh hook needs a Unix shell and jq; the native hook "
-            "replaces it.",
+            "The legacy rtk-rewrite.sh hook needs a Unix shell and jq; the native hook replaces it.",
             "https://github.com/rtk-ai/rtk#windows",
         ),
         "RTK_HOOK_MATCHER": (
@@ -4051,8 +3851,7 @@ HINTS.update(
             "https://github.com/rtk-ai/rtk#configuration",
         ),
         "RTK_AWARENESS": (
-            "awareness 'full' is for agents without hook support; with the hook it only "
-            "adds context.",
+            "awareness 'full' is for agents without hook support; with the hook it only adds context.",
             "https://github.com/rtk-ai/rtk#setup",
         ),
         "RTK_RETRIEVER": (
@@ -4061,8 +3860,7 @@ HINTS.update(
             "https://github.com/rtk-ai/rtk#configuration",
         ),
         "RTK_TELEMETRY": (
-            "Telemetry is opt-in; disable it with 'rtk telemetry disable' or "
-            "RTK_TELEMETRY_DISABLED=1.",
+            "Telemetry is opt-in; disable it with 'rtk telemetry disable' or RTK_TELEMETRY_DISABLED=1.",
             "https://github.com/rtk-ai/rtk#privacy--telemetry",
         ),
         "RTK_READ_TOOLS": (
@@ -4111,9 +3909,7 @@ def detect_rtk(use_cli: bool) -> None:
     gain = _run(["rtk", "gain", "--help"])
     RTK["genuine"] = bool(gain and gain.returncode == 0)
     helptext = _run(["rtk", "--help"])
-    cmds = set(
-        re.findall(r"(?m)^\s{2,}([a-z][\w-]*)[\s,]", (helptext.stdout if helptext else "") or "")
-    )
+    cmds = set(re.findall(r"(?m)^\s{2,}([a-z][\w-]*)[\s,]", (helptext.stdout if helptext else "") or ""))
     RTK["help_commands"] = cmds if len(cmds) >= 10 else set()
     # `rtk rewrite` prints the rewritten command on stdout when it supports it and
     # nothing when it doesn't. Its exit code is unreliable (rtk 0.42.1 exits 3 on a
@@ -4131,11 +3927,7 @@ def detect_rtk(use_cli: bool) -> None:
 def rtk_rewrites(cmd: str) -> bool:
     """Would the rtk hook rewrite this command prefix?"""
     first = cmd.split()[0] if cmd.split() else ""
-    if (
-        not first
-        or first in RTK["exclude"]
-        or any(cmd == e or cmd.startswith(e + " ") for e in RTK["exclude"])
-    ):
+    if not first or first in RTK["exclude"] or any(cmd == e or cmd.startswith(e + " ") for e in RTK["exclude"]):
         return False
     if RTK["rewrite_cli"]:
         cache = RTK["rewrite_cache"]
@@ -4167,14 +3959,10 @@ def rtk_settings_hooks(policy: dict, repos: list[Path]) -> list[tuple[Path, str,
             data = lenient_json(raw)[0]
         except json.JSONDecodeError:
             continue
-        for g in (
-            ((data.get("hooks") or {}).get("PreToolUse") or []) if isinstance(data, dict) else []
-        ):
+        for g in ((data.get("hooks") or {}).get("PreToolUse") or []) if isinstance(data, dict) else []:
             for h in (g or {}).get("hooks", []) if isinstance(g, dict) else []:
                 cmd = (
-                    " ".join([str(h.get("command", "")), *map(str, h.get("args") or [])])
-                    if isinstance(h, dict)
-                    else ""
+                    " ".join([str(h.get("command", "")), *map(str, h.get("args") or [])]) if isinstance(h, dict) else ""
                 )
                 if re.search(r"\brtk\b|rtk-rewrite", cmd):
                     found.append((f, str(g.get("matcher", "")), cmd))
@@ -4186,9 +3974,7 @@ def check_rtk(policy: dict, rep: Report, repos: list[Path], user_scope: bool) ->
     if not pol["require_rtk"]:
         return
     if RTK["config"] and "__error__" in RTK["config"]:
-        rep.add(
-            "error", "RTK_CONFIG", RTK["config_path"], f"invalid TOML: {RTK['config']['__error__']}"
-        )
+        rep.add("error", "RTK_CONFIG", RTK["config_path"], f"invalid TOML: {RTK['config']['__error__']}")
     if RTK["path"] is None and RTK["genuine"] is None:
         if shutil.which("rtk") is None and RTK.get("checked_cli"):
             rep.add(
@@ -4220,11 +4006,7 @@ def check_rtk(policy: dict, rep: Report, repos: list[Path], user_scope: bool) ->
             "RTK_NO_HOOK",
             user_settings,
             "no rtk PreToolUse hook"
-            + (
-                " (native hook added to user settings)"
-                if fixable
-                else ": run 'rtk init -g --hook-only'"
-            ),
+            + (" (native hook added to user settings)" if fixable else ": run 'rtk init -g --hook-only'"),
             fixable,
         )
         if fixable:
@@ -4264,9 +4046,7 @@ def check_rtk(policy: dict, rep: Report, repos: list[Path], user_scope: bool) ->
                 f"legacy shell hook ({cmd[:50]}): rerun 'rtk init -g' to migrate",
             )
         if matcher not in ("", "*") and not re.search(r"(^|[|,\s])Bash($|[|,\s])|\.\*", matcher):
-            rep.add(
-                "warn", "RTK_HOOK_MATCHER", f, f"rtk hook matcher {matcher!r} does not match Bash"
-            )
+            rep.add("warn", "RTK_HOOK_MATCHER", f, f"rtk hook matcher {matcher!r} does not match Bash")
     cfg = RTK["config"] or {}
     level = str((cfg.get("awareness") or {}).get("level", "")).lower()
     if hooks and level == "full":
@@ -4283,16 +4063,10 @@ def check_rtk(policy: dict, rep: Report, repos: list[Path], user_scope: bool) ->
         rep.add("info", "RTK_RETRIEVER", RTK["config_path"], "failure output recovery disabled")
     user_env = {}
     try:
-        user_env = (
-            lenient_json(rep.current(config_dir() / "settings.json") or "{}")[0].get("env") or {}
-        )
+        user_env = lenient_json(rep.current(config_dir() / "settings.json") or "{}")[0].get("env") or {}
     except (json.JSONDecodeError, AttributeError):
         pass
-    if (
-        RTK["path"]
-        and not os.environ.get("RTK_TELEMETRY_DISABLED")
-        and not user_env.get("RTK_TELEMETRY_DISABLED")
-    ):
+    if RTK["path"] and not os.environ.get("RTK_TELEMETRY_DISABLED") and not user_env.get("RTK_TELEMETRY_DISABLED"):
         res = _run(["rtk", "telemetry", "status"], timeout=5)
         out = ((res.stdout or "") + (res.stderr or "")).lower() if res else ""
         if re.search(r"\b(enabled|granted|consent: yes|opted in)\b", out) and "disabled" not in out:
@@ -4488,23 +4262,15 @@ def detect_stack(repo: Path) -> dict:
             if exists("bun.lockb", "bun.lock")
             else "npm"
         )
-        s["web_ui"] = any(
-            d in deps for d in ("react", "next", "vue", "svelte", "vite", "@angular/core")
-        )
+        s["web_ui"] = any(d in deps for d in ("react", "next", "vue", "svelte", "vite", "@angular/core"))
         s["sentry"] = any(d.startswith("@sentry/") for d in deps)
         s["supabase"] = "@supabase/supabase-js" in deps
-    py_blob = " ".join(
-        filter(None, (read_text(repo / f) for f in ("pyproject.toml", "requirements.txt")))
-    ).lower()
+    py_blob = " ".join(filter(None, (read_text(repo / f) for f in ("pyproject.toml", "requirements.txt")))).lower()
     s["sentry"] = s.get("sentry") or "sentry-sdk" in py_blob or "sentry_sdk" in py_blob
     s["supabase"] = s.get("supabase") or "supabase" in py_blob or (repo / "supabase").is_dir()
     s["unity"] = (repo / "ProjectSettings" / "ProjectVersion.txt").exists()
-    s["docker"] = exists(
-        "Dockerfile", "docker-compose.yml", "docker-compose.yaml", "compose.yml", "compose.yaml"
-    )
-    s["compose"] = exists(
-        "docker-compose.yml", "docker-compose.yaml", "compose.yml", "compose.yaml"
-    )
+    s["docker"] = exists("Dockerfile", "docker-compose.yml", "docker-compose.yaml", "compose.yml", "compose.yaml")
+    s["compose"] = exists("docker-compose.yml", "docker-compose.yaml", "compose.yml", "compose.yaml")
     s["k8s"] = exists("k8s", "kubernetes", "manifests", "kustomization.yaml", "deploy/k8s")
     s["helm"] = exists("Chart.yaml", "charts", "helm")
     s["terraform"] = any(repo.glob("*.tf")) or any(repo.glob("*/*.tf"))
@@ -4553,11 +4319,7 @@ def generated_permissions(stack: dict, policy: dict) -> dict:
         pm = stack["pm"]
         for name in ("test", "lint", "build", "typecheck", "check", "format"):
             if name in stack["scripts"]:
-                allow.append(
-                    f"Bash({pm} test *)"
-                    if name == "test" and pm == "npm"
-                    else f"Bash({pm} run {name} *)"
-                )
+                allow.append(f"Bash({pm} test *)" if name == "test" and pm == "npm" else f"Bash({pm} run {name} *)")
         allow += ["Bash(npx tsc --noEmit *)", "Bash(npx prettier --check *)"]
     if stack["docker"]:
         allow += ["Bash(docker ps *)", "Bash(docker images *)"]
@@ -4597,16 +4359,10 @@ def generated_permissions(stack: dict, policy: dict) -> dict:
     allow += g["extra_allow"]
     ask += [f"Bash({p} *)" for p in perms["external_action_prefixes"]] + g["extra_ask"]
     deny = (
-        list(perms["required_deny"])
-        + GENERATED_DENY_READS
-        + (UNITY_DENY if stack["unity"] else [])
-        + g["extra_deny"]
+        list(perms["required_deny"]) + GENERATED_DENY_READS + (UNITY_DENY if stack["unity"] else []) + g["extra_deny"]
     )
     if perms["require_rtk"]:
-        allow = [
-            rtk_wrap(r, perms["rtk_exempt"]) if (c := command_of(r)) and rtk_rewrites(c) else r
-            for r in allow
-        ]
+        allow = [rtk_wrap(r, perms["rtk_exempt"]) if (c := command_of(r)) and rtk_rewrites(c) else r for r in allow]
         if perms.get("rtk_twin_deny", True):
             ask += [t for r in ask if (t := rtk_twin(r, perms["rtk_exempt"]))]
             deny += [t for r in deny if (t := rtk_twin(r, perms["rtk_exempt"]))]
@@ -4788,9 +4544,7 @@ def gen_agents(repo: Path, stack: dict, policy: dict, rep: Report) -> None:
     for name in policy["generate"]["agents"]:
         if name not in AGENT_TEMPLATES:
             continue
-        if name == "infra-reviewer" and not (
-            stack["k8s"] or stack["helm"] or stack["terraform"] or stack["docker"]
-        ):
+        if name == "infra-reviewer" and not (stack["k8s"] or stack["helm"] or stack["terraform"] or stack["docker"]):
             continue
         if name == "test-runner" and not check_commands_for(stack):
             continue
@@ -4818,9 +4572,7 @@ def gen_mcp(repo: Path, stack: dict, policy: dict, rep: Report) -> None:
         servers["playwright"] = MCP_CATALOG["playwright"]
     servers = dict(list(servers.items())[: policy["mcp"]["max_servers"]])
     if servers:
-        write_json_merged(
-            repo / ".mcp.json", {"mcpServers": servers}, rep, "MCP servers " + ", ".join(servers)
-        )
+        write_json_merged(repo / ".mcp.json", {"mcpServers": servers}, rep, "MCP servers " + ", ".join(servers))
 
 
 def generate_project(repo: Path, policy: dict, rep: Report) -> None:
@@ -4840,9 +4592,7 @@ def generate_project(repo: Path, policy: dict, rep: Report) -> None:
             "permissions": generated_permissions(stack, policy),
         }
         if g["format_hook"] and (stack["python"] or stack["pm"] or stack["terraform"]):
-            gen_new_file(
-                repo / ".claude" / "hooks" / "format.py", FORMAT_HOOK, rep, "formatter hook", 0o755
-            )
+            gen_new_file(repo / ".claude" / "hooks" / "format.py", FORMAT_HOOK, rep, "formatter hook", 0o755)
             wanted["hooks"] = {
                 "PostToolUse": [
                     {
@@ -4887,11 +4637,7 @@ def generate_user(policy: dict, rep: Report) -> None:
         }
         if policy.get("tokens", {}).get("hold_cross_session", True):
             wanted["crossSessionInbound"] = "hold"
-        if (
-            perms["require_rtk"]
-            and RTK["genuine"]
-            and (RTK["version"] is None or RTK["version"] >= RTK_NATIVE_HOOK)
-        ):
+        if perms["require_rtk"] and RTK["genuine"] and (RTK["version"] is None or RTK["version"] >= RTK_NATIVE_HOOK):
             wanted["hooks"] = {
                 "PreToolUse": [
                     {
@@ -4942,8 +4688,7 @@ mode = "sqlite"
                 "info",
                 "GENERATE_USER_MCP",
                 "~/.claude.json",
-                f"user MCP server {name}: claude mcp add --scope user --transport http "
-                f"{name} {spec['url']}",
+                f"user MCP server {name}: claude mcp add --scope user --transport http {name} {spec['url']}",
             )
 
 
@@ -5006,8 +4751,7 @@ HINTS.update(
             DOCS + "costs#install-code-intelligence-plugins-for-typed-languages",
         ),
         "TOKEN_IMPORTS": (
-            "Imported files load at launch too: splitting into @imports organizes, it does "
-            "not save tokens.",
+            "Imported files load at launch too: splitting into @imports organizes, it does not save tokens.",
             DOCS + "memory#my-claude-md-is-too-large",
         ),
         "TOKEN_SUBAGENT_MODEL": (
@@ -5068,12 +4812,7 @@ def _skill_listing(roots: list[Path], rep: Report, policy: dict) -> list[tuple[P
             out.append(
                 (
                     ag,
-                    (
-                        len((meta or {}).get("name", ""))
-                        + len((meta or {}).get("description", ""))
-                        + 20
-                    )
-                    // 4,
+                    (len((meta or {}).get("name", "")) + len((meta or {}).get("description", "")) + 20) // 4,
                 )
             )
     return out
@@ -5113,9 +4852,7 @@ def token_budget(repo: Path | None, user: bool, policy: dict, rep: Report) -> di
         ]
         present = [f for f in claude_files if f.exists()]
         if not present:
-            present = [
-                f for f in (repo / "AGENTS.md", repo / ".claude" / "AGENTS.md") if f.exists()
-            ]
+            present = [f for f in (repo / "AGENTS.md", repo / ".claude" / "AGENTS.md") if f.exists()]
         for f in present:
             parts["instructions"] += _with_imports(f, seen)
         parts["rules"] += _unscoped_rules(repo / ".claude", seen)
@@ -5129,17 +4866,13 @@ def token_budget(repo: Path | None, user: bool, policy: dict, rep: Report) -> di
             parts["memory"].append((mem, est(clipped)))
         servers = {}
         try:
-            servers.update(
-                (json.loads(read_text(repo / ".mcp.json") or "{}").get("mcpServers") or {})
-            )
+            servers.update((json.loads(read_text(repo / ".mcp.json") or "{}").get("mcpServers") or {}))
         except json.JSONDecodeError:
             pass
         try:
             cj = json.loads(read_text(Path.home() / ".claude.json") or "{}")
             servers.update(cj.get("mcpServers") or {})
-            servers.update(
-                ((cj.get("projects") or {}).get(str(repo.resolve())) or {}).get("mcpServers") or {}
-            )
+            servers.update(((cj.get("projects") or {}).get(str(repo.resolve())) or {}).get("mcpServers") or {})
         except json.JSONDecodeError:
             pass
         per = policy["tokens"]["mcp_server_estimate"]
@@ -5157,21 +4890,14 @@ def token_budget(repo: Path | None, user: bool, policy: dict, rep: Report) -> di
     pack_limit = policy["tokens"].get("agent_pack_tokens", 1000)
     for g, n, t in grouped:
         if "/agents" in g and n >= 5 and t >= pack_limit:
-            rep.add(
-                "warn", "TOKEN_AGENT_PACK", g, f"{n} subagents ~{t} tokens listed in every request"
-            )
-    imported = [
-        (p, t)
-        for p, t in parts["instructions"]
-        if p.name not in ("CLAUDE.md", "AGENTS.md", "CLAUDE.local.md")
-    ]
+            rep.add("warn", "TOKEN_AGENT_PACK", g, f"{n} subagents ~{t} tokens listed in every request")
+    imported = [(p, t) for p, t in parts["instructions"] if p.name not in ("CLAUDE.md", "AGENTS.md", "CLAUDE.local.md")]
     if imported and sum(t for _, t in imported) > 1500:
         rep.add(
             "info",
             "TOKEN_IMPORTS",
             imported[0][0],
-            f"{len(imported)} imported file(s), ~{sum(t for _, t in imported)} tokens loaded "
-            f"at launch",
+            f"{len(imported)} imported file(s), ~{sum(t for _, t in imported)} tokens loaded at launch",
         )
     if total > policy["tokens"]["max_always_loaded"]:
         rep.add(
@@ -5211,14 +4937,9 @@ def check_token_levers(repo: Path, policy: dict, rep: Report, stack: dict | None
                     "info",
                     "MCP_PREFER_CLI",
                     repo / ".mcp.json",
-                    f"{cli} is installed: the '{name}' MCP server adds a tool listing the "
-                    f"CLI doesn't",
+                    f"{cli} is installed: the '{name}' MCP server adds a tool listing the CLI doesn't",
                 )
-    for sub in (
-        sorted((repo / ".claude" / "agents").glob("*.md"))
-        if (repo / ".claude" / "agents").is_dir()
-        else []
-    ):
+    for sub in sorted((repo / ".claude" / "agents").glob("*.md")) if (repo / ".claude" / "agents").is_dir() else []:
         meta, _ = split_frontmatter(read_text(sub) or "")
         text = f"{sub.stem} {(meta or {}).get('description', '')}".lower()
         if re.search(r"\b(test|lint|log|triage|format)", text) and not (meta or {}).get("model"):
@@ -5248,10 +4969,7 @@ def check_token_levers(repo: Path, policy: dict, rep: Report, stack: dict | None
             enabled += list((json.loads(read_text(f) or "{}").get("enabledPlugins") or {}))
         except json.JSONDecodeError:
             pass
-    if typed and not any(
-        re.search(r"lsp|pyright|typescript|pylsp|basedpyright|vtsls|gopls", p, re.I)
-        for p in enabled
-    ):
+    if typed and not any(re.search(r"lsp|pyright|typescript|pylsp|basedpyright|vtsls|gopls", p, re.I) for p in enabled):
         rep.add(
             "info",
             "TOKEN_LSP",
@@ -5288,9 +5006,7 @@ def render_token_budget(budget: dict, color: bool, before: dict | None = None) -
     groups = budget.get("groups", [])[:6]
     if groups:
         lines.append("  biggest groups:")
-        lines += [
-            f"    {g_['group']:52} {g_['items']:>4} item(s)  ~{g_['tokens']}" for g_ in groups
-        ]
+        lines += [f"    {g_['group']:52} {g_['items']:>4} item(s)  ~{g_['tokens']}" for g_ in groups]
     if budget.get("potential"):
         lines.append(
             f"  {g}potential: ~{budget['potential']} tokens/session reclaimable"
@@ -5325,18 +5041,15 @@ HINTS.update(
             DOCS + "skills#resolve-skills-that-share-a-name",
         ),
         "DUP_SIMILAR": (
-            "Very similar name and description: the model has to pick between "
-            "near-duplicates. Keep one.",
+            "Very similar name and description: the model has to pick between near-duplicates. Keep one.",
             "",
         ),
         "DUP_FAMILY": (
-            "Items generated from one template are not duplicates, but each one is listed "
-            "in every request.",
+            "Items generated from one template are not duplicates, but each one is listed in every request.",
             "",
         ),
         "DUP_ACROSS_PROJECTS": (
-            "The same skill copied in many repositories drifts over time; one shared source "
-            "is easier to maintain.",
+            "The same skill copied in many repositories drifts over time; one shared source is easier to maintain.",
             "",
         ),
         "INTERACTIVE": (
@@ -5478,16 +5191,10 @@ def find_duplicates(
     clusters: dict[int, list[dict]] = {}
     for i, it in enumerate(items):
         clusters.setdefault(find(i), []).append(it)
-    return [
-        (reason.get(r, "DUP_SIMILAR"), members)
-        for r, members in clusters.items()
-        if len(members) > 1
-    ]
+    return [(reason.get(r, "DUP_SIMILAR"), members) for r, members in clusters.items() if len(members) > 1]
 
 
-def session_duplicates(
-    user_roots: list[Path], project_roots: list[Path]
-) -> list[tuple[str, list[dict]]]:
+def session_duplicates(user_roots: list[Path], project_roots: list[Path]) -> list[tuple[str, list[dict]]]:
     """Duplicates that coexist in one session: user scope alone, then user scope + each project."""
     user_items = collect_items([r for r in user_roots if r.is_dir()])
     seen: set = set()
@@ -5510,15 +5217,11 @@ def session_duplicates(
     return out
 
 
-def check_duplicates(
-    user_roots: list[Path], project_roots: list[Path], rep: Report
-) -> list[tuple[str, list[dict]]]:
+def check_duplicates(user_roots: list[Path], project_roots: list[Path], rep: Report) -> list[tuple[str, list[dict]]]:
     dups = session_duplicates(user_roots, project_roots)
     rep.stats["duplicate groups"] = len(dups)
     for why, members in dups:
-        names = ", ".join(f"{m['kind']}:{m['name']}" for m in members[:4]) + (
-            " ..." if len(members) > 4 else ""
-        )
+        names = ", ".join(f"{m['kind']}:{m['name']}" for m in members[:4]) + (" ..." if len(members) > 4 else "")
         if why == "DUP_SIMILAR" and is_generated_family(members):
             stem = os.path.commonprefix([m["name"] for m in members]).rstrip("-_")
             toks = sum((len(m["desc"]) + 40) // 4 for m in members)
@@ -5616,8 +5319,7 @@ DEFAULT_POLICY["restructure"] = {
 HINTS.update(
     {
         "RESTRUCTURE": (
-            "A restructuring that makes the setup load less and work better; apply it with "
-            "-i (reversible).",
+            "A restructuring that makes the setup load less and work better; apply it with -i (reversible).",
             DOCS + "features-overview",
         ),
     }
@@ -5685,15 +5387,7 @@ def compute_proposals(roots: list[Path], repos: list[Path], policy: dict) -> lis
             for p, fs in sorted(packs.items(), key=lambda kv: -len(kv[1])):
                 if len(fs) >= pol["min_pack_agents"]:
                     tok = sum(
-                        (
-                            len(
-                                ((split_frontmatter(read_text(f) or "")[0]) or {}).get(
-                                    "description", ""
-                                )
-                            )
-                            + 40
-                        )
-                        // 4
+                        (len(((split_frontmatter(read_text(f) or "")[0]) or {}).get("description", "")) + 40) // 4
                         for f in fs
                     )
                     props.append(
@@ -5715,11 +5409,7 @@ def compute_proposals(roots: list[Path], repos: list[Path], policy: dict) -> lis
                 if len(ds) >= pol["min_skill_family"] and len(prefix) > 2:
                     tok = sum(
                         (
-                            len(
-                                ((split_frontmatter(read_text(d / "SKILL.md") or "")[0]) or {}).get(
-                                    "description", ""
-                                )
-                            )
+                            len(((split_frontmatter(read_text(d / "SKILL.md") or "")[0]) or {}).get("description", ""))
                             + 30
                         )
                         // 4
@@ -5808,9 +5498,7 @@ def compute_proposals(roots: list[Path], repos: list[Path], policy: dict) -> lis
                             "title": f"scope rule {short_path(str(f))} to {hits[0][0]}",
                         }
                     )
-    cfgs = [config_dir() / "CLAUDE.md"] + [
-        r / n for r in repos for n in ("CLAUDE.md", ".claude/CLAUDE.md")
-    ]
+    cfgs = [config_dir() / "CLAUDE.md"] + [r / n for r in repos for n in ("CLAUDE.md", ".claude/CLAUDE.md")]
     for c in cfgs:
         text = read_text(c) or ""
         for title, lines in _sections(text)[1:]:
@@ -5913,9 +5601,7 @@ def apply_proposal(p: dict, policy: dict, restore: list[str], trash_root: Path) 
             f"needs it: /plugin -> "
             f"marketplace '{mname}' -> install '{plugin}' with the project scope"
             + (
-                " (its skills are then invoked as /"
-                + plugin
-                + ":<skill>, or by their bare name when unique)"
+                " (its skills are then invoked as /" + plugin + ":<skill>, or by their bare name when unique)"
                 if kind == "skill-family"
                 else ""
             )
@@ -5953,7 +5639,9 @@ def apply_proposal(p: dict, policy: dict, restore: list[str], trash_root: Path) 
             + "\n"
         )
         sk.write_text(new, encoding="utf-8")
-        return f"SKILL.md now {new.count(chr(10)) + 1} lines, {len(moved)} section(s) in references/ (backup in ~/.cache)"
+        return (
+            f"SKILL.md now {new.count(chr(10)) + 1} lines, {len(moved)} section(s) in references/ (backup in ~/.cache)"
+        )
     if kind == "command-to-skill":
         cmd_file: Path = p["path"]
         dest = p["root"] / "skills" / cmd_file.stem / "SKILL.md"
@@ -5990,11 +5678,7 @@ def apply_proposal(p: dict, policy: dict, restore: list[str], trash_root: Path) 
             f"{yaml_scalar('Procedure: ' + title + '. Use when this procedure is needed.')}\n---\n\n{body}\n",
             encoding="utf-8",
         )
-        out = [
-            l
-            for t, ls in secs
-            for l in (ls if t != title else [f"## {title}", "", f"Follow the /{slug} skill."])
-        ]
+        out = [l for t, ls in secs for l in (ls if t != title else [f"## {title}", "", f"Follow the /{slug} skill."])]
         c.write_text("\n".join(out) + "\n", encoding="utf-8")
         restore.append(f"rm -r '{skill.parent}'  # and restore {c.name} from ~/.cache/claude-lint")
         return f"section moved to skill /{slug}; review its description"
@@ -6006,10 +5690,7 @@ def render_proposals(props: list[dict], color: bool) -> str:
         return ""
     b, r0 = ("\033[1m", "\033[0m") if color else ("", "")
     total = sum(p["gain"] for p in props)
-    lines = [
-        f"{b}RESTRUCTURE{r0}  {len(props)} proposal(s), up to ~{total} tokens less per "
-        f"session (apply with -i)"
-    ]
+    lines = [f"{b}RESTRUCTURE{r0}  {len(props)} proposal(s), up to ~{total} tokens less per session (apply with -i)"]
     for p in props[:12]:
         gain = f"~{p['gain']} tok/session" if p["gain"] else "per-use"
         lines.append(f"  - {p['title']}  [{gain}]")
@@ -6347,9 +6028,7 @@ def proposal_desc(p: dict) -> str:
     return p["title"]
 
 
-def render_brief(
-    rep: Report, fixed: list[Finding], fix: bool, repos_count: int, color: bool
-) -> str:
+def render_brief(rep: Report, fixed: list[Finding], fix: bool, repos_count: int, color: bool) -> str:
     b, dim, r0 = ("\033[1m", "\033[2m", "\033[0m") if color else ("", "", "")
     red, yel, grn = ("\033[31m", "\033[33m", "\033[32m") if color else ("", "", "")
     out = [
@@ -6387,9 +6066,7 @@ def render_brief(
             fixable = sum(1 for f in items if f.fixable)
             n = len(items)
             if code == "TOKEN_AGENT_PACK":
-                toks = sum(
-                    int(m.group(1)) for f in items if (m := re.search(r"~(\d+) tokens", f.message))
-                )
+                toks = sum(int(m.group(1)) for f in items if (m := re.search(r"~(\d+) tokens", f.message)))
                 what = f"{what} (~{toks} tokens)"
             level = max(items, key=lambda f: LEVELS.index(f.level) * -1).level
             mark = {"error": f"{red}●{r0}", "warn": f"{yel}●{r0}", "info": f"{dim}○{r0}"}[level]
@@ -6433,8 +6110,7 @@ def render_brief(
                     + _loc(
                         f"{len(props)} restructuration(s) proposée(s), jusqu'à ~{gain} "
                         f"tokens de moins par session. Les 3 plus rentables :",
-                        f"{len(props)} restructuring(s) proposed, up to ~{gain} fewer tokens "
-                        f"per session. Top 3:",
+                        f"{len(props)} restructuring(s) proposed, up to ~{gain} fewer tokens per session. Top 3:",
                     )
                 )
                 for p in props[:3]:
@@ -6467,8 +6143,7 @@ def render_brief(
     if auto and not fix:
         steps.append(
             _loc(
-                f"lancer avec --fix : corrige {auto} point(s) sans rien demander (sauvegarde "
-                f"automatique)",
+                f"lancer avec --fix : corrige {auto} point(s) sans rien demander (sauvegarde automatique)",
                 f"run with --fix: fixes {auto} item(s) with no prompts (automatic backup)",
             )
         )
@@ -6523,11 +6198,7 @@ class Tty:
 
     def rule(self, title: str = "") -> None:
         line = "─" * max(0, self.width - len(title) - 3)
-        print(
-            f"\n{self.b}── {title} {line}{self.r}"
-            if title
-            else f"{self.dim}{'─' * self.width}{self.r}"
-        )
+        print(f"\n{self.b}── {title} {line}{self.r}" if title else f"{self.dim}{'─' * self.width}{self.r}")
 
     def short(self, p: str, width: int) -> str:
         p = home_path(str(p))
@@ -6587,8 +6258,7 @@ def advice(why: str, members: list[dict]) -> tuple[list[int], str]:
         proj = [i for i, m in enumerate(members) if _scope_of(m) == "projet"]
         if kind in ("skill", "command"):
             return proj, (
-                "dans ce projet, la version utilisateur passe avant : la copie du projet "
-                "n'est jamais utilisée"
+                "dans ce projet, la version utilisateur passe avant : la copie du projet n'est jamais utilisée"
                 if why != "DUP_SIMILAR"
                 else "proches mais pas identiques : à toi de juger"
             )
@@ -6601,9 +6271,7 @@ def advice(why: str, members: list[dict]) -> tuple[list[int], str]:
     mt = [m["file"].stat().st_mtime for m in members]
     best = max(range(len(members)), key=lambda i: (members[i]["lines"], mt[i]))
     if why == "DUP_EXACT":
-        return [
-            i for i in range(len(members)) if i != best
-        ], "contenu identique : une seule copie suffit"
+        return [i for i in range(len(members)) if i != best], "contenu identique : une seule copie suffit"
     if why == "DUP_NAME":
         return [
             i for i in range(len(members)) if i != best
@@ -6655,10 +6323,7 @@ def _family_to_plugin(members: list[dict], name: str, policy: dict, restore: lis
 def interactive(rep: Report, repos: list[Path], policy: dict, user_scope: bool) -> int:
     t = Tty()
     if not sys.stdin.isatty():
-        print(
-            "\n-i a besoin d'un vrai terminal (pas d'un pipe) : relance-le directement dans "
-            "ton shell."
-        )
+        print("\n-i a besoin d'un vrai terminal (pas d'un pipe) : relance-le directement dans ton shell.")
         return 0
     cfg = config_dir()
     roots = ([cfg] if user_scope else []) + [r / ".claude" for r in repos]
@@ -6713,8 +6378,7 @@ def interactive(rep: Report, repos: list[Path], policy: dict, user_scope: bool) 
         ),
         (
             "restructure",
-            f"Restructurations ({len(props)}), ~{sum(p['gain'] for p in props)} "
-            f"tokens/session en jeu",
+            f"Restructurations ({len(props)}), ~{sum(p['gain'] for p in props)} tokens/session en jeu",
             len(props),
         ),
         ("descriptions", f"Descriptions de skills trop longues ({len(long_desc)})", len(long_desc)),
@@ -6725,19 +6389,16 @@ def interactive(rep: Report, repos: list[Path], policy: dict, user_scope: bool) 
         print(f"\n{t.grn}Rien à revoir.{t.r}")
         return 0
     t.rule("REVUE INTERACTIVE")
-    print(
-        f"Rien n'est supprimé : ce que tu retires part dans "
-        f"{t.cyan}{home_path(str(trash_root))}{t.r},"
-    )
+    print(f"Rien n'est supprimé : ce que tu retires part dans {t.cyan}{home_path(str(trash_root))}{t.r},")
     print("et un script restore.sh annule toute la session. À chaque question : ? pour l'aide.\n")
     for i, (_, label, _) in enumerate(sections, 1):
         print(f"  {t.b}{i}{t.r}. {label}")
     pick = _ask("\nSections à revoir (ex. 1,3 ; Entrée = toutes ; q = quitter) : ")
     if pick.lower() == "q":
         return 0
-    chosen = [
-        sections[int(x) - 1][0] for x in re.findall(r"\d+", pick) if 0 < int(x) <= len(sections)
-    ] or [s[0] for s in sections]
+    chosen = [sections[int(x) - 1][0] for x in re.findall(r"\d+", pick) if 0 < int(x) <= len(sections)] or [
+        s[0] for s in sections
+    ]
 
     # ---- duplicates
     if "dups" in chosen:
@@ -6773,10 +6434,7 @@ def interactive(rep: Report, repos: list[Path], policy: dict, user_scope: bool) 
                             f"{t.dim}retiré {t.short(str(members[k]['path']), t.width - 24)}{t.r}"
                         )
                 continue
-            print(
-                f"\n{t.b}[{n}/{len(dups)}] {label}{t.r} · "
-                f"{_fr_plural(len(members), members[0]['kind'])}"
-            )
+            print(f"\n{t.b}[{n}/{len(dups)}] {label}{t.r} · {_fr_plural(len(members), members[0]['kind'])}")
             descs = [m["desc"] for m in members]
             pre, suf = _affixes(descs)
             if len(pre) + len(suf) > 30:
@@ -6814,18 +6472,11 @@ def interactive(rep: Report, repos: list[Path], policy: dict, user_scope: bool) 
                         "",
                     )
                     low = ans.lower()
-                    if (
-                        low.startswith("v")
-                        and low[1:].isdigit()
-                        and 0 < int(low[1:]) <= len(members)
-                    ):
+                    if low.startswith("v") and low[1:].isdigit() and 0 < int(low[1:]) <= len(members):
                         _show_file(Path(members[int(low[1:]) - 1]["path"]), t)
                         continue
                     if ans == "?":
-                        print(
-                            "  Retirer = déplacer dans la corbeille de la session "
-                            "(restore.sh pour annuler)."
-                        )
+                        print("  Retirer = déplacer dans la corbeille de la session (restore.sh pour annuler).")
                         continue
                     break
             low = ans.lower()
@@ -6838,9 +6489,7 @@ def interactive(rep: Report, repos: list[Path], policy: dict, user_scope: bool) 
                 auto_all = True
                 ans = ""
             targets = (
-                remove
-                if ans == ""
-                else [int(x) - 1 for x in re.findall(r"\d+", ans) if 0 < int(x) <= len(members)]
+                remove if ans == "" else [int(x) - 1 for x in re.findall(r"\d+", ans) if 0 < int(x) <= len(members)]
             )
             for k in targets:
                 if not Path(members[k]["path"]).exists():
@@ -6874,8 +6523,7 @@ def interactive(rep: Report, repos: list[Path], policy: dict, user_scope: bool) 
             )
             print("  " + ", ".join(nm[len(stem) :].lstrip("-_") or nm for nm in names))
             ans = _ask(
-                "  Entrée = garder · p = en faire un plugin · k = mettre de côté (parked/) "
-                "· q = fin : ",
+                "  Entrée = garder · p = en faire un plugin · k = mettre de côté (parked/) · q = fin : ",
                 "",
             ).lower()
             if ans == "q":
@@ -6980,9 +6628,7 @@ def interactive(rep: Report, repos: list[Path], policy: dict, user_scope: bool) 
                 break
             if ans == "o":
                 new = set_frontmatter(text, {"description": proposal})
-                new = move_to_metadata(
-                    set_frontmatter(new, {"full_description": desc}), ["full_description"]
-                )
+                new = move_to_metadata(set_frontmatter(new, {"full_description": desc}), ["full_description"])
                 try:
                     backup([sk])
                     sk.write_text(new, encoding="utf-8")
@@ -7002,8 +6648,7 @@ def interactive(rep: Report, repos: list[Path], policy: dict, user_scope: bool) 
                 )
                 if (
                     _ask(
-                        "  o = passer à Sonnet par défaut (/model opus quand il le faut) · "
-                        "Entrée = garder : ",
+                        "  o = passer à Sonnet par défaut (/model opus quand il le faut) · Entrée = garder : ",
                         "",
                     ).lower()
                     == "o"
@@ -7026,10 +6671,7 @@ def interactive(rep: Report, repos: list[Path], policy: dict, user_scope: bool) 
     else:
         print("  aucune modification")
     if restore:
-        print(
-            f"\n  Pour tout annuler : {t.cyan}{home_path(str(restore.script))}{t.r}"
-            f"  (ou : claude-lint.py --restore)"
-        )
+        print(f"\n  Pour tout annuler : {t.cyan}{home_path(str(restore.script))}{t.r}  (ou : claude-lint.py --restore)")
     return sum(v for k, v in done.items() if "gardés" not in k)
 
 
@@ -7038,10 +6680,7 @@ def restore_trash(target: str | None) -> int:
     Returns 1 when the requested session is missing or nothing could be restored."""
     # Also read trash written under the tool's former name, so sessions from before
     # the rename stay restorable.
-    bases = [
-        Path(os.path.expanduser(p))
-        for p in ("~/.cache/claude-lint/trash", "~/.cache/agent-config-lint/trash")
-    ]
+    bases = [Path(os.path.expanduser(p)) for p in ("~/.cache/claude-lint/trash", "~/.cache/agent-config-lint/trash")]
     sessions = sorted(d for b in bases if b.is_dir() for d in b.iterdir() if d.is_dir())
     if target:
         root = Path(target).expanduser()
@@ -7080,11 +6719,7 @@ def restore_trash(target: str | None) -> int:
         parts.append(_fr_plural(failed, "échec"))
     print(f"Session {root.name} : " + ", ".join(parts) + ".")
     if len(sessions) > 1 and not target:
-        print(
-            "Autres sessions : "
-            + ", ".join(s.name for s in sessions[:-1])
-            + " (--restore <dossier>)"
-        )
+        print("Autres sessions : " + ", ".join(s.name for s in sessions[:-1]) + " (--restore <dossier>)")
     return 1 if (moved == 0 and failed) else 0
 
 
@@ -7132,9 +6767,7 @@ def check_attribution(repo: Path, policy: dict, rep: Report, history: bool) -> N
     scanned = skipped = 0
     for dirpath, dirnames, filenames in os.walk(repo):
         dirnames[:] = [
-            d
-            for d in dirnames
-            if d not in skip and not (d == "worktrees" and Path(dirpath).name == ".claude")
+            d for d in dirnames if d not in skip and not (d == "worktrees" and Path(dirpath).name == ".claude")
         ]
         for fn in filenames:
             # Suffix check first (a string test), and resolve() only for a file
@@ -7173,8 +6806,7 @@ def check_attribution(repo: Path, policy: dict, rep: Report, history: bool) -> N
                     "error",
                     "ATTR_TRACE",
                     f"{p}:{bad[0]}",
-                    f"assistant attribution on {len(bad)} line(s)"
-                    + (" (lines removed)" if agent_file else ""),
+                    f"assistant attribution on {len(bad)} line(s)" + (" (lines removed)" if agent_file else ""),
                     agent_file,
                 )
                 if agent_file:
@@ -7209,8 +6841,7 @@ def check_attribution(repo: Path, policy: dict, rep: Report, history: bool) -> N
     # strips a Co-Authored-By / Generated-with trailer counts (covers hooks installed
     # under this tool's former name too).
     strips = bool(hook_text) and (
-        HOOK_SIGNATURE in hook_text
-        or re.search(r"[Cc]o-[Aa]uthored-[Bb]y|[Gg]enerated with|attribution", hook_text)
+        HOOK_SIGNATURE in hook_text or re.search(r"[Cc]o-[Aa]uthored-[Bb]y|[Gg]enerated with|attribution", hook_text)
     )
     guarded = strips or ("commit-msg" in precommit and "attribution" in precommit.lower())
     if guarded:
@@ -7223,9 +6854,7 @@ def check_attribution(repo: Path, policy: dict, rep: Report, history: bool) -> N
             "existing commit-msg hook without attribution stripping",
         )
     elif pol["install_commit_msg_hook"]:
-        rep.add(
-            "warn", "ATTR_HOOK_MISSING", repo, "no commit-msg guard stripping attribution", True
-        )
+        rep.add("warn", "ATTR_HOOK_MISSING", repo, "no commit-msg guard stripping attribution", True)
         rep.new_files[hook] = (COMMIT_MSG_HOOK, 0o755)
 
 
@@ -7238,11 +6867,7 @@ def detect_commands(repo: Path) -> str:
     cmds: list[str] = []
     mk = read_text(repo / "Makefile") or ""
     targets = re.findall(r"^([a-zA-Z][\w-]*):(?!=)", mk, re.M)
-    cmds += [
-        f"- `make {t}`"
-        for t in ("up", "down", "build", "test", "lint", "fmt", "run", "dev")
-        if t in targets
-    ]
+    cmds += [f"- `make {t}`" for t in ("up", "down", "build", "test", "lint", "fmt", "run", "dev") if t in targets]
     pkg = read_text(repo / "package.json")
     if pkg:
         try:
@@ -7280,9 +6905,7 @@ def scaffold_project(repo: Path, policy: dict, rep: Report) -> None:
         return
     agents, claude = repo / "AGENTS.md", repo / "CLAUDE.md"
     if (repo / policy["instructions"]["doctrine_dir"]).is_dir():
-        missing = [
-            f for f in policy["instructions"]["rendered_files"][:2] if not (repo / f).exists()
-        ]
+        missing = [f for f in policy["instructions"]["rendered_files"][:2] if not (repo / f).exists()]
         if missing:
             rep.add(
                 "warn",
@@ -7306,11 +6929,7 @@ def scaffold_project(repo: Path, policy: dict, rep: Report) -> None:
             0o644,
         )
         if policy["instructions"]["claude_md_import"]:
-            extra = (
-                COMPACT_SECTION
-                if policy.get("tokens", {}).get("compact_instructions", True)
-                else ""
-            )
+            extra = COMPACT_SECTION if policy.get("tokens", {}).get("compact_instructions", True) else ""
             rep.new_files[claude] = ("@AGENTS.md\n" + extra, 0o644)
     elif (
         has_agents
@@ -7418,9 +7037,7 @@ def lint_repo(repo: Path, policy: dict, rep: Report, history: bool, user_text: s
     check_rendered(repo, policy, rep)
     if user_text and texts:
         min_len = policy["instructions"]["min_duplicate_line_len"]
-        norm = lambda t: {
-            l.strip().lower() for l in strip_code(t).splitlines() if len(l.strip()) >= min_len
-        }
+        norm = lambda t: {l.strip().lower() for l in strip_code(t).splitlines() if len(l.strip()) >= min_len}
         dup = norm(user_text) & set().union(*(norm(t) for t in texts))
         log(1, f"{len(dup)} line(s) shared with user instructions", 1)
         if len(dup) >= 3:
@@ -7447,11 +7064,7 @@ def discover_repos(root: Path, max_depth: int = 3) -> list[Path]:
             dirnames[:] = []
             continue
         depth = len(p.parts) - base
-        dirnames[:] = (
-            [d for d in dirnames if d not in skip and not d.startswith(".")]
-            if depth < max_depth
-            else []
-        )
+        dirnames[:] = [d for d in dirnames if d not in skip and not d.startswith(".")] if depth < max_depth else []
     if found:
         log(1, f"{root} is not a git repository: {len(found)} repositories found below it")
         return sorted(found)
@@ -7465,9 +7078,7 @@ def run_lint(repos: list[Path], policy: dict, args: argparse.Namespace, history:
         run_plugin_checks("user", config_dir(), policy, rep)
     check_rtk(policy, rep, repos, bool(args.user or args.user_only))
     check_llmtrim(rep, repos, bool(args.user or args.user_only))
-    rep.budget = token_budget(
-        repos[0] if repos else None, bool(args.user or args.user_only), policy, rep
-    )
+    rep.budget = token_budget(repos[0] if repos else None, bool(args.user or args.user_only), policy, rep)
     user_roots = [config_dir()] if (args.user or args.user_only) else []
     dup_roots = user_roots + [r / ".claude" for r in repos]
     check_duplicates(user_roots, [r / ".claude" for r in repos], rep)
@@ -7489,9 +7100,7 @@ def run_lint(repos: list[Path], policy: dict, args: argparse.Namespace, history:
         log(1, f"{r}: {len(rep.findings) - before} finding(s) in {time.perf_counter() - t0:.2f}s")
     progress(len(repos), len(repos), "done")
     if isinstance(rep.budget, dict):
-        rep.budget["potential"] = sum(_finding_gain(f) for f in rep.findings) + sum(
-            p["gain"] for p in rep.proposals
-        )
+        rep.budget["potential"] = sum(_finding_gain(f) for f in rep.findings) + sum(p["gain"] for p in rep.proposals)
     return rep
 
 
@@ -7662,7 +7271,7 @@ def render_text(
             out.append("== Remaining findings (details)")
         lvl_c = {k: (COLORS[k] if color else "") for k in LEVELS}
         for kind, items in grouped_findings(
-            [f for f in rep.findings if not quiet or f.level == "error"]
+            [f for f in visible_findings(rep.findings) if not quiet or f.level == "error"]
         ):
             if kind == "group":
                 out += render_group(items, lvl_c, r0, indent="", mark="")
@@ -7694,22 +7303,10 @@ def render_text(
     if not fix and not quiet:
         for p, (old, new) in rep.edits.items():
             out.append(
-                redact(
-                    "".join(
-                        difflib.unified_diff(
-                            old.splitlines(True), new.splitlines(True), f"a{p}", f"b{p}"
-                        )
-                    )
-                )
+                redact("".join(difflib.unified_diff(old.splitlines(True), new.splitlines(True), f"a{p}", f"b{p}")))
             )
         for p, (content, _) in rep.new_files.items():
-            out.append(
-                redact(
-                    "".join(
-                        difflib.unified_diff([], content.splitlines(True), "/dev/null", f"b{p}")
-                    )
-                )
-            )
+            out.append(redact("".join(difflib.unified_diff([], content.splitlines(True), "/dev/null", f"b{p}"))))
         out += [f"chmod +x {p}" for p in rep.chmods]
         out += [f"mv {short_path(str(s))} {short_path(str(d))}" for s, d in rep.moves]
     out.append(render_summary(rep, fix, color, quiet, fixed, applied, failures, backups))
@@ -7727,6 +7324,17 @@ def short_path(p: str) -> str:
 
 GROUP_THRESHOLD = 5
 SHOW_ALL = False
+MIN_LEVEL = "info"  # hide findings below this level in the report (--min-level)
+
+
+def _below_min(level: str) -> bool:
+    return LEVELS.index(level) > LEVELS.index(MIN_LEVEL)
+
+
+def visible_findings(findings: list[Finding]) -> list[Finding]:
+    return [f for f in findings if not _below_min(f.level)]
+
+
 CATEGORIES = [
     ("PERM_", "permissions"),
     ("HOOK_", "hooks"),
@@ -7780,9 +7388,7 @@ def grouped_findings(findings: list[Finding]) -> list[tuple[str, list[Finding]]]
         by.setdefault((f.level, f.code), []).append(f)
     order = {lvl: i for i, lvl in enumerate(LEVELS)}
     out: list[tuple[str, list[Finding]]] = []
-    for (_lvl, _code), items in sorted(
-        by.items(), key=lambda kv: (order[kv[0][0]], -len(kv[1]), kv[0][1])
-    ):
+    for (_lvl, _code), items in sorted(by.items(), key=lambda kv: (order[kv[0][0]], -len(kv[1]), kv[0][1])):
         if SHOW_ALL or len(items) <= GROUP_THRESHOLD:
             out += [("one", [f]) for f in sorted(items, key=lambda f: f.path)]
         else:
@@ -7790,9 +7396,7 @@ def grouped_findings(findings: list[Finding]) -> list[tuple[str, list[Finding]]]
     return out
 
 
-def render_group(
-    items: list[Finding], lvl_color: dict, r0: str, indent: str = "  ", mark: str = "✘ "
-) -> list[str]:
+def render_group(items: list[Finding], lvl_color: dict, r0: str, indent: str = "  ", mark: str = "✘ ") -> list[str]:
     f0 = items[0]
     msgs: dict[str, int] = {}
     for f in items:
@@ -7803,8 +7407,7 @@ def render_group(
     return [
         f"{indent}{lvl_color[f0.level]}{mark}{f0.level.upper():5}{r0} {f0.code:24} x{len(items)}"
         + (f"  ({fixable} fixable)" if fixable else ""),
-        f"{indent}        most common ({n_common}): "
-        f"{items[0].message if len(msgs) == 1 else common}",
+        f"{indent}        most common ({n_common}): {items[0].message if len(msgs) == 1 else common}",
         f"{indent}        in: {', '.join(files[:3])}"
         + (f" +{len(files) - 3} more" if len(files) > 3 else "")
         + ("  (--all to list every one)" if not SHOW_ALL else ""),
@@ -7815,26 +7418,17 @@ def render_stats(rep: Report, first: Report | None, fixed: list[Finding], color:
     b, r0 = ("\033[1m", "\033[0m") if color else ("", "")
     lines = [f"{b}STATS{r0}"]
     if rep.stats:
-        lines.append(
-            "  checked: "
-            + ", ".join(f"{v} {k}" for k, v in sorted(rep.stats.items(), key=lambda kv: -kv[1]))
-        )
+        lines.append("  checked: " + ", ".join(f"{v} {k}" for k, v in sorted(rep.stats.items(), key=lambda kv: -kv[1])))
     cats: dict[str, dict[str, int]] = {}
     for f in rep.findings:
-        c = cats.setdefault(
-            category(f.code), {"error": 0, "warn": 0, "info": 0, "fixed": 0, "found": 0}
-        )
+        c = cats.setdefault(category(f.code), {"error": 0, "warn": 0, "info": 0, "fixed": 0, "found": 0})
         c[f.level] += 1
     for f in fixed:
-        c = cats.setdefault(
-            category(f.code), {"error": 0, "warn": 0, "info": 0, "fixed": 0, "found": 0}
-        )
+        c = cats.setdefault(category(f.code), {"error": 0, "warn": 0, "info": 0, "fixed": 0, "found": 0})
         c["fixed"] += 1
     if first is not None:
         for f in first.findings:
-            cats.setdefault(
-                category(f.code), {"error": 0, "warn": 0, "info": 0, "fixed": 0, "found": 0}
-            )["found"] += 1
+            cats.setdefault(category(f.code), {"error": 0, "warn": 0, "info": 0, "fixed": 0, "found": 0})["found"] += 1
     if cats:
         lines.append(
             f"  {'category':14} {'found':>6} {'fixed':>6} {'error':>6} {'warn':>6} "
@@ -7845,10 +7439,7 @@ def render_stats(rep: Report, first: Report | None, fixed: list[Finding], color:
             key=lambda kv: -(kv[1]["found"] or kv[1]["error"] + kv[1]["warn"] + kv[1]["info"]),
         ):
             found = c["found"] or c["error"] + c["warn"] + c["info"]
-            lines.append(
-                f"  {name:14} {found:>6} {c['fixed']:>6} {c['error']:>6} {c['warn']:>6} "
-                f"{c['info']:>6}"
-            )
+            lines.append(f"  {name:14} {found:>6} {c['fixed']:>6} {c['error']:>6} {c['warn']:>6} {c['info']:>6}")
     codes: dict[str, int] = {}
     for f in rep.findings:
         codes[f.code] = codes.get(f.code, 0) + 1
@@ -7874,9 +7465,7 @@ def render_summary(
 ) -> str:
     """Final recap: what was (or would be) fixed, and what still needs a human."""
     g, red, yel, cyan, b, r0 = (
-        ("\033[32m", "\033[31m", "\033[33m", "\033[36m", "\033[1m", "\033[0m")
-        if color
-        else ("",) * 6
+        ("\033[32m", "\033[31m", "\033[33m", "\033[36m", "\033[1m", "\033[0m") if color else ("",) * 6
     )
     lvl_color = {"error": red, "warn": yel, "info": cyan}
     rule = "=" * 72
@@ -7884,18 +7473,15 @@ def render_summary(
     if fix:
         lines.append(
             f"{b}SUMMARY{r0}  (claude-lint {VERSION})  {len(fixed)} issue(s) fixed, "
-            f"{len(applied)} change(s) written"
-            + (f", {len(failures)} write failure(s)" if failures else "")
+            f"{len(applied)} change(s) written" + (f", {len(failures)} write failure(s)" if failures else "")
         )
         done = fixed
         title_done, mark_done = "FIXED OR GENERATED", f"{g}✔{r0}"
     else:
-        lines.append(
-            f"{b}SUMMARY{r0}  read-only run: nothing was modified  (claude-lint {VERSION})"
-        )
+        lines.append(f"{b}SUMMARY{r0}  read-only run: nothing was modified  (claude-lint {VERSION})")
         done = [f for f in rep.findings if f.fixable]
         title_done, mark_done = "WOULD BE FIXED OR GENERATED by --fix", f"{g}○{r0}"
-    manual = [f for f in rep.findings if not f.fixable or fix]
+    manual = [f for f in visible_findings(rep.findings) if not f.fixable or fix]
 
     groups: dict[str, list[Finding]] = {}
     for f in done:
@@ -7922,9 +7508,7 @@ def render_summary(
             lines += render_group(items, lvl_color, r0)
             continue
         f = items[0]
-        lines.append(
-            f"  {lvl_color[f.level]}✘ {f.level.upper():5}{r0} {f.code:24} {short_path(f.path)}"
-        )
+        lines.append(f"  {lvl_color[f.level]}✘ {f.level.upper():5}{r0} {f.code:24} {short_path(f.path)}")
         lines.append(f"          {f.message}")
     if failures:
         lines.append(f"{red}NOT WRITTEN ({len(failures)}){r0}")
@@ -7940,16 +7524,12 @@ def render_summary(
     if rp:
         lines += [rp, rule]
     lines += [render_stats(rep, FIRST_REPORT, fixed if fix else [], color), rule]
-    counts = (
-        f"{rep.count('error')} error(s), {rep.count('warn')} warning(s), {rep.count('info')} info"
-    )
+    counts = f"{rep.count('error')} error(s), {rep.count('warn')} warning(s), {rep.count('info')} info"
     dups = sum(1 for f in rep.findings if f.code.startswith("DUP_"))
     packs = [f for f in rep.findings if f.code == "TOKEN_AGENT_PACK"]
     longdesc = sum(1 for f in rep.findings if f.code == "TOKEN_SKILL_DESC")
     if (dups or packs or longdesc or getattr(rep, "proposals", [])) and not INTERACTIVE_RAN:
-        pack_tokens = sum(
-            int(m.group(1)) for f in packs if (m := re.search(r"~(\d+) tokens", f.message))
-        )
+        pack_tokens = sum(int(m.group(1)) for f in packs if (m := re.search(r"~(\d+) tokens", f.message)))
         lines.append(
             f"NEXT: run again with -i to review {dups} duplicate group(s), "
             f"{len(getattr(rep, 'proposals', []))} restructuring"
@@ -8001,12 +7581,7 @@ def _norm_handlers(hooks: Any) -> set[str]:
             for h in (g or {}).get("hooks", []) if isinstance(g, dict) else []:
                 if not isinstance(h, dict):
                     continue
-                target = (
-                    h.get("command")
-                    or h.get("url")
-                    or f"{h.get('server')}:{h.get('tool')}"
-                    or h.get("prompt")
-                )
+                target = h.get("command") or h.get("url") or f"{h.get('server')}:{h.get('tool')}" or h.get("prompt")
                 target = " ".join([str(target), *map(str, h.get("args") or [])])
                 target = re.sub(r"[\"']?\$\{?CLAUDE_PROJECT_DIR\}?[\"']?/|^\./", "", target.strip())
                 sigs.add(f"{event}:{target}")
@@ -8031,9 +7606,9 @@ def settings_violations(old: dict, new: dict) -> list[str]:
             pools = [pn.get(key) or []] + [pn.get(k) or [] for k in stricter]
             if not any(r in pool or any(covers(n, r) for n in pool) for pool in pools):
                 v.append(f"{key} rule removed {r!r}")
-    if pn.get("defaultMode") in ("bypassPermissions", "auto", "acceptEdits") and pn.get(
+    if pn.get("defaultMode") in ("bypassPermissions", "auto", "acceptEdits") and pn.get("defaultMode") != po.get(
         "defaultMode"
-    ) != po.get("defaultMode"):
+    ):
         v.append(f"defaultMode set to {pn.get('defaultMode')!r}")
     for k in ("disableBypassPermissionsMode", "disableAutoMode"):
         if po.get(k) and pn.get(k) != po.get(k):
@@ -8081,12 +7656,8 @@ def mcp_violations(old: dict, new: dict) -> list[str]:
     v = [f"new MCP server {n!r}" for n in set(sn) - set(so)]
     for n in set(sn) & set(so):
         a, b = so[n] if isinstance(so[n], dict) else {}, sn[n] if isinstance(sn[n], dict) else {}
-        old_cmd = " ".join(
-            [str(a.get("command") or a.get("url") or ""), *map(str, a.get("args") or [])]
-        ).split()
-        new_cmd = " ".join(
-            [str(b.get("command") or b.get("url") or ""), *map(str, b.get("args") or [])]
-        ).split()
+        old_cmd = " ".join([str(a.get("command") or a.get("url") or ""), *map(str, a.get("args") or [])]).split()
+        new_cmd = " ".join([str(b.get("command") or b.get("url") or ""), *map(str, b.get("args") or [])]).split()
         if old_cmd != new_cmd:
             v.append(f"MCP server {n!r} command/url changed")
         if set(b.get("env") or {}) - set(a.get("env") or {}):
@@ -8113,13 +7684,11 @@ def frontmatter_violations(old: str, new: str) -> list[str]:
         v.append("disallowed tools reduced")
     if ("hooks" in frontmatter_block(new)) and "hooks" not in frontmatter_block(old):
         v.append("frontmatter hooks added")
-    if mn.get("permissionMode") in ("bypassPermissions", "auto", "acceptEdits") and mn.get(
+    if mn.get("permissionMode") in ("bypassPermissions", "auto", "acceptEdits") and mn.get("permissionMode") != mo.get(
         "permissionMode"
-    ) != mo.get("permissionMode"):
+    ):
         v.append("permissionMode loosened")
-    if (
-        mn.get("mcpServers") or "mcpServers" in frontmatter_block(new)
-    ) and "mcpServers" not in frontmatter_block(old):
+    if (mn.get("mcpServers") or "mcpServers" in frontmatter_block(new)) and "mcpServers" not in frontmatter_block(old):
         v.append("inline mcpServers added")
     if re.search(r"(?m)^\s*!`|^```!", new) and not re.search(r"(?m)^\s*!`|^```!", old):
         v.append("shell injection (!`cmd`) added")
@@ -8225,9 +7794,7 @@ def guard_check(data: dict) -> str | None:
             n = json.loads(new)
         except json.JSONDecodeError as e:
             return f"guard: settings must stay strict JSON ({e})"
-        violations = settings_violations(
-            o if isinstance(o, dict) else {}, n if isinstance(n, dict) else {}
-        )
+        violations = settings_violations(o if isinstance(o, dict) else {}, n if isinstance(n, dict) else {})
     elif name == ".mcp.json":
         try:
             o = lenient_json(old)[0] if old.strip() else {}
@@ -8269,11 +7836,7 @@ def guard_check(data: dict) -> str | None:
         except json.JSONDecodeError as e:
             return f"guard: hooks.json must stay strict JSON ({e})"
         violations = settings_violations({"hooks": o.get("hooks")}, {"hooks": n.get("hooks")})
-    elif (
-        path.suffix in (".yml", ".yaml")
-        and "/.github/workflows/" in str(path)
-        and "claude-code" in new
-    ):
+    elif path.suffix in (".yml", ".yaml") and "/.github/workflows/" in str(path) and "claude-code" in new:
         risky = [
             (
                 r"dangerously-skip-permissions|permission-mode\W+bypassPermissions",
@@ -8286,16 +7849,12 @@ def guard_check(data: dict) -> str | None:
             ),
         ]
         violations = [msg for pat, msg in risky if re.search(pat, new) and not re.search(pat, old)]
-        if re.search(r"(?m)^\s*permissions\s*:", old) and not re.search(
-            r"(?m)^\s*permissions\s*:", new
-        ):
+        if re.search(r"(?m)^\s*permissions\s*:", old) and not re.search(r"(?m)^\s*permissions\s*:", new):
             violations.append("workflow permissions block removed")
     elif name in (".claude-lint.toml", ".agent-lint.toml"):
         violations = lint_toml_violations(old, new)
     elif name.endswith(".md") and (
-        "/.claude/skills/" in str(path)
-        or "/.claude/agents/" in str(path)
-        or "/.claude/commands/" in str(path)
+        "/.claude/skills/" in str(path) or "/.claude/agents/" in str(path) or "/.claude/commands/" in str(path)
     ):
         violations = frontmatter_violations(old, new)
     if violations:
@@ -8630,16 +8189,12 @@ def main(argv: list[str] | None = None) -> int:
             "run with --print-policy to print every default as TOML."
         ),
     )
-    ap.add_argument(
-        "repos", nargs="*", type=Path, help="repositories or folders of repositories (default: cwd)"
-    )
+    ap.add_argument("repos", nargs="*", type=Path, help="repositories or folders of repositories (default: cwd)")
     ap.add_argument("--user", action="store_true", help="also check user scope")
     ap.add_argument("--user-only", action="store_true", help="check user scope only")
     ap.add_argument("--fix", action="store_true", help="apply repairs (with backup)")
     ap.add_argument("--no-scaffold", action="store_true", help="do not create missing files")
-    ap.add_argument(
-        "--format", choices=("text", "json"), default="text", help="output format (default: text)"
-    )
+    ap.add_argument("--format", choices=("text", "json"), default="text", help="output format (default: text)")
     ap.add_argument("--policy", type=Path, help="policy TOML (default: <repo>/.claude-lint.toml)")
     ap.add_argument("--strict", action="store_true", help="fail on warnings too")
     ap.add_argument("--no-history", action="store_true", help="skip git history scan")
@@ -8654,8 +8209,7 @@ def main(argv: list[str] | None = None) -> int:
         "-i",
         "--interactive",
         action="store_true",
-        help="review duplicates, subagent packs, long descriptions and model choice one by "
-        "one (reversible)",
+        help="review duplicates, subagent packs, long descriptions and model choice one by one (reversible)",
     )
     ap.add_argument(
         "--restore",
@@ -8664,15 +8218,15 @@ def main(argv: list[str] | None = None) -> int:
         metavar="TRASH_DIR",
         help="move back everything removed by the last -i session (or the given trash folder)",
     )
+    ap.add_argument("--details", action="store_true", help="full per-file report instead of the brief one")
+    ap.add_argument("--all", action="store_true", help="list every finding instead of grouping repeated ones")
     ap.add_argument(
-        "--details", action="store_true", help="full per-file report instead of the brief one"
+        "--min-level",
+        choices=("error", "warn", "info"),
+        default="info",
+        help="hide findings below this level (e.g. --min-level warn drops info noise)",
     )
-    ap.add_argument(
-        "--all", action="store_true", help="list every finding instead of grouping repeated ones"
-    )
-    ap.add_argument(
-        "--rtk-report", action="store_true", help="append 'rtk gain' and 'rtk discover' output"
-    )
+    ap.add_argument("--rtk-report", action="store_true", help="append 'rtk gain' and 'rtk discover' output")
     ap.add_argument(
         "--lang",
         choices=("en", "fr"),
@@ -8701,9 +8255,7 @@ def main(argv: list[str] | None = None) -> int:
         metavar="FILE",
         help="write guarded session settings for 'claude --settings FILE'",
     )
-    ap.add_argument(
-        "--dump-reference", action="store_true", help="print built-in reference data as JSON"
-    )
+    ap.add_argument("--dump-reference", action="store_true", help="print built-in reference data as JSON")
     ap.add_argument(
         "--print-catalog",
         action="store_true",
@@ -8723,23 +8275,20 @@ def main(argv: list[str] | None = None) -> int:
         help="extra directory of check plugins (repeatable); also loaded from "
         "<config dir>/plugins and <repo>/.claude-lint/plugins",
     )
-    ap.add_argument(
-        "--list-plugins", action="store_true", help="list discovered check plugins and exit"
-    )
+    ap.add_argument("--list-plugins", action="store_true", help="list discovered check plugins and exit")
     # No arguments at all: show help (with defaults) instead of silently scanning cwd.
     if not (argv if argv is not None else sys.argv[1:]):
         ap.print_help()
         return 0
     args = ap.parse_args(argv)
-    global VERBOSITY, SCAFFOLD, CLI_VERSION, SHOW_ALL, FIRST_REPORT, LANG, PROGRESS
+    global VERBOSITY, SCAFFOLD, CLI_VERSION, SHOW_ALL, FIRST_REPORT, LANG, PROGRESS, MIN_LEVEL
     if args.restore is not None:
         return restore_trash(args.restore or None)
     VERBOSITY, SCAFFOLD, SHOW_ALL = args.verbose, not args.no_scaffold, args.all
+    MIN_LEVEL = args.min_level
     # Progress bar by default: interactive stderr, no -v (which logs per repo),
     # no -q, text output only. Keeps pipes, JSON and CI silent.
-    PROGRESS = (
-        sys.stderr.isatty() and args.verbose == 0 and not args.quiet and args.format == "text"
-    )
+    PROGRESS = sys.stderr.isatty() and args.verbose == 0 and not args.quiet and args.format == "text"
     if args.catalog:
         load_catalog(args.catalog)
     LANG = args.lang or ("fr" if os.environ.get("LANG", "").lower().startswith("fr") else "en")
@@ -8747,9 +8296,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.list_plugins:
         dirs = ", ".join(str(d) for d in plugin_dirs(args.plugin_dir)) or "(none)"
         print(f"plugin dirs: {dirs}")
-        print(
-            f"loaded plugins ({len(_PLUGINS_LOADED)}): " + (", ".join(_PLUGINS_LOADED) or "(none)")
-        )
+        print(f"loaded plugins ({len(_PLUGINS_LOADED)}): " + (", ".join(_PLUGINS_LOADED) or "(none)"))
         print(f"registered checks: {len(_PLUGIN_CHECKS)}")
         for code, scope, _ in _PLUGIN_CHECKS:
             print(f"  {scope:8} {code}")
@@ -8788,9 +8335,7 @@ def main(argv: list[str] | None = None) -> int:
         log(1, "claude CLI: " + (".".join(map(str, CLI_VERSION)) if CLI_VERSION else "not found"))
 
     run_started = time.perf_counter()
-    targets = (
-        [] if args.user_only else [r.expanduser().resolve() for r in (args.repos or [Path.cwd()])]
-    )
+    targets = [] if args.user_only else [r.expanduser().resolve() for r in (args.repos or [Path.cwd()])]
     for r in targets:
         if not r.is_dir():
             print(f"not a directory: {r}", file=sys.stderr)
@@ -8865,11 +8410,7 @@ def main(argv: list[str] | None = None) -> int:
                     "applied": applied,
                     "pending_changes": [str(p) for p in [*rep.edits, *rep.new_files, *rep.chmods]]
                     + [f"{s} -> {d}" for s, d in rep.moves],
-                    "hints": {
-                        c: {"why": HINTS[c][0], "ref": HINTS[c][1]}
-                        for c in sorted(codes)
-                        if c in HINTS
-                    },
+                    "hints": {c: {"why": HINTS[c][0], "ref": HINTS[c][1]} for c in sorted(codes) if c in HINTS},
                     "fix_mode": args.fix,
                     "backups": backups,
                     "token_budget": getattr(rep, "budget", None),
@@ -8898,18 +8439,12 @@ def main(argv: list[str] | None = None) -> int:
     else:
         if repos and (len(repos) > 1 or VERBOSITY):
             print("repositories: " + ", ".join(str(r) for r in repos))
-        print(
-            render_text(
-                rep, args.fix, sys.stdout.isatty(), args.quiet, fixed, applied, failures, backups
-            )
-        )
+        print(render_text(rep, args.fix, sys.stdout.isatty(), args.quiet, fixed, applied, failures, backups))
         if args.rtk_report:
             report = rtk_report()
             print("\n== rtk report\n" + (report or "rtk not available"))
     code = 1 if rep.count("error") or (args.strict and rep.count("warn")) else 0
-    write_run_log(
-        argv or sys.argv[1:], repos, rep, fixed, applied, time.perf_counter() - run_started, code
-    )
+    write_run_log(argv or sys.argv[1:], repos, rep, fixed, applied, time.perf_counter() - run_started, code)
     return code
 
 

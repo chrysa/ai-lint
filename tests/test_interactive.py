@@ -62,12 +62,7 @@ def test_interactive_single_answer_never_crashes(env, linter_module, monkeypatch
 
 @pytest.mark.parametrize(
     "seq",
-    [
-        list(c)
-        for c in itertools.product(
-            ["", "1", "1,2,3"], ["", "A", "s", "g", "2"], ["", "S", "a", "o", "p"]
-        )
-    ],
+    [list(c) for c in itertools.product(["", "1", "1,2,3"], ["", "A", "s", "g", "2"], ["", "S", "a", "o", "p"])],
 )
 def test_interactive_answer_sequences_never_crash(env, linter_module, monkeypatch, seq):
     rc = _run_interactive(linter_module, seq + [""] * 40, env.repos, monkeypatch)

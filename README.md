@@ -102,6 +102,7 @@ The full report ends with:
 | `--details` | Full per-file report instead of the brief one |
 | `--lang en\|fr` | Language of the brief report. Defaults to French when `$LANG` starts with `fr`, English otherwise. The interactive review is always French |
 | `--all` | List every finding (repeated findings are grouped by default, above 5 of the same kind) |
+| `--min-level error\|warn\|info` | Hide findings below this level (e.g. `--min-level warn` drops the info noise) |
 | `--print-policy` | Print the default policy as TOML |
 | `--print-catalog` | Print the editable catalog (reference sets + per-check metadata) as YAML |
 | `--catalog FILE` | Load an edited catalog: extend the known keys/events/tools/fields, and override any check's severity (`error`/`warn`/`info`/`off`), `enabled`, or `→ fix` action |

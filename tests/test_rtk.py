@@ -32,9 +32,7 @@ def _fake_run_factory(supported_prefixes):
         if cmd[:2] == ["rtk", "gain"]:
             return _Res(0, "usage")
         if cmd == ["rtk", "--help"]:
-            return _Res(
-                0, "  git   thing\n  cargo build\n" + "\n".join(f"  cmd{i} x" for i in range(12))
-            )
+            return _Res(0, "  git   thing\n  cargo build\n" + "\n".join(f"  cmd{i} x" for i in range(12)))
         return _Res(0, "")
 
     return fake
