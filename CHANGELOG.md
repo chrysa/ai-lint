@@ -2,6 +2,21 @@
 
 All notable changes to `claude-lint`. Dates are ISO 8601.
 
+## 2026.09.29-32
+
+### Added
+- Configurable model and effort expectations under `[tokens]` in the policy
+  (`.claude-lint.toml`, overridable per key): `preferred_model`, `heavy_models`,
+  `subagent_model`, `max_effort`, `effort_levels`. `TOKEN_MODEL` /
+  `TOKEN_SUBAGENT_MODEL` now read these instead of hard-coding `opus`/`haiku`.
+- New check `TOKEN_EFFORT`: flags a user/project `effortLevel` above
+  `tokens.max_effort` (a high floor spends reasoning tokens every turn). Set
+  `max_effort = ""` to disable.
+- Responsibility scopes under `[scopes]`: expected scope per item type
+  (`skill`, `agent`, `command`, `mcp`, `secret`). New checks `SCOPE_SECRET`
+  (a secret-looking `env` value in a committed settings file) and
+  `SCOPE_MISMATCH` (an item outside the scopes its type allows).
+
 ## 2026.09.29-31
 
 ### Changed

@@ -82,6 +82,18 @@ hold_cross_session = true
 compact_instructions = true
 mcp_server_estimate = 150
 agent_pack_tokens = 1000
+preferred_model = "sonnet"
+heavy_models = ["opus"]
+subagent_model = "haiku"
+max_effort = "high"
+effort_levels = ["low", "medium", "high"]
+
+[scopes]
+skill = ["project", "user"]
+agent = ["project", "user"]
+command = ["project", "user"]
+mcp = ["project", "user", "local"]
+secret = ["local"]
 
 [restructure]
 marketplace_name = "personal"

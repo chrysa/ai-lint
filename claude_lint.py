@@ -71,7 +71,7 @@ try:
 except ModuleNotFoundError:  # Python < 3.11: policy files unsupported, defaults apply
     tomllib = None
 
-VERSION = "2026.09.29-31"
+VERSION = "2026.09.29-32"
 DOCS = "https://code.claude.com/docs/en/"
 ISSUES = "https://github.com/anthropics/claude-code/issues/"
 
@@ -4720,6 +4720,26 @@ DEFAULT_POLICY["tokens"] = {
     "compact_instructions": True,  # generated CLAUDE.md gets a compaction section
     "mcp_server_estimate": 150,  # deferred tool listing: names + server instructions, per server
     "agent_pack_tokens": 1000,  # warn when one agents/ subdirectory lists more than this
+    # Configurable model / effort expectations. The token checks read these
+    # instead of hard-coding "sonnet"/"opus": a team can set its own preferred
+    # default model, the models it considers heavy (flagged as a session default),
+    # a lighter model for mechanical subagents, and an effort ceiling.
+    "preferred_model": "sonnet",  # recommended default model for a session
+    "heavy_models": ["opus"],  # models flagged when set as the session default
+    "subagent_model": "haiku",  # suggested model for mechanical subagents
+    "max_effort": "high",  # effortLevel above this is flagged; "" disables the check
+    "effort_levels": ["low", "medium", "high"],  # ordered, low to high
+}
+# Expected scope per config item type: where each kind of thing should live.
+# A finding fires when an item is found outside the scopes listed for its type.
+# "project" = a repo's .claude/, "user" = ~/.claude*, "local" = per-repo
+# .claude/settings.local.json (git-ignored). Editable via the catalog [scopes].
+DEFAULT_POLICY["scopes"] = {
+    "skill": ["project", "user"],  # skills belong to a repo or the user config
+    "agent": ["project", "user"],  # subagents likewise
+    "command": ["project", "user"],
+    "mcp": ["project", "user", "local"],  # local scope is fine for personal servers
+    "secret": ["local"],  # secrets only in git-ignored local settings, never committed
 }
 GENERATED_DENY_READS.extend(
     [
@@ -4778,6 +4798,18 @@ HINTS.update(
         "TOKEN_SUBAGENT_MODEL": (
             "Verbose, mechanical subagents (test runs, log triage) can run on a smaller model.",
             DOCS + "costs#delegate-verbose-operations-to-subagents",
+        ),
+        "TOKEN_EFFORT": (
+            "effortLevel sets how much reasoning is spent per turn; a high floor costs tokens every turn.",
+            DOCS + "costs#choose-the-right-model",
+        ),
+        "SCOPE_SECRET": (
+            "Secrets in a committed settings file get shared and versioned; keep them in settings.local.json.",
+            DOCS + "settings-reference",
+        ),
+        "SCOPE_MISMATCH": (
+            "Each config item type has an expected scope (policy.scopes); an out-of-scope item is likely misplaced.",
+            DOCS + "settings-reference",
         ),
     }
 )
@@ -4935,6 +4967,72 @@ def token_budget(repo: Path | None, user: bool, policy: dict, rep: Report) -> di
     }
 
 
+def _effort_rank(level: str, order: list[str]) -> int:
+    """Position of an effortLevel in the ordered scale, -1 if unknown."""
+    try:
+        return order.index(level.strip().lower())
+    except (ValueError, AttributeError):
+        return -1
+
+
+def check_effort_levels(repo: Path, policy: dict, rep: Report) -> None:
+    """Flag an effortLevel set above the configured ceiling. A high floor burns
+    tokens on every turn; the ceiling is policy.tokens.max_effort ("" disables)."""
+    ceiling = policy["tokens"].get("max_effort", "")
+    order = [str(x).lower() for x in policy["tokens"].get("effort_levels", ["low", "medium", "high"])]
+    if not ceiling:
+        return
+    cap = _effort_rank(ceiling, order)
+    if cap < 0:
+        return
+    for label, path in (("user", config_dir() / "settings.json"), ("project", repo / ".claude" / "settings.json")):
+        data = load_json_file(path)
+        level = str(data.get("effortLevel", ""))
+        if not level:
+            continue
+        rank = _effort_rank(level, order)
+        if rank > cap:
+            rep.add(
+                "info",
+                "TOKEN_EFFORT",
+                path,
+                f"{label} effortLevel {level!r} above ceiling {ceiling!r}: high effort is spent every turn",
+            )
+
+
+def check_scopes(repo: Path, policy: dict, rep: Report) -> None:
+    """Flag config items living outside the scope their type is expected in
+    (policy.scopes). Catches secrets in committed settings and, when the catalog
+    tightens a type to a single scope, items that drifted out of it."""
+    scopes = policy.get("scopes", {})
+    # Secrets: any hard value under env in a committed (non-local) settings file.
+    secret_scopes = scopes.get("secret", ["local"])
+    if "project" not in secret_scopes:
+        committed = repo / ".claude" / "settings.json"
+        env = (load_json_file(committed).get("env") or {}) if committed.is_file() else {}
+        for key, val in env.items():
+            if isinstance(val, str) and re.search(r"(key|token|secret|password|pat)\b", key, re.I) and val:
+                rep.add(
+                    "warn",
+                    "SCOPE_SECRET",
+                    committed,
+                    f"env.{key} holds a value in a committed settings file: secrets belong in settings.local.json",
+                )
+    # Skills/agents present only in a project when the policy restricts them to user.
+    for kind, sub, pat in (("skill", "skills", "*/SKILL.md"), ("agent", "agents", "*.md")):
+        allowed = scopes.get(kind, ["project", "user"])
+        if "project" in allowed:
+            continue
+        d = repo / ".claude" / sub
+        for item in sorted(d.glob(pat)) if d.is_dir() else []:
+            rep.add(
+                "info",
+                "SCOPE_MISMATCH",
+                item,
+                f"{kind} in project scope, but policy allows only {allowed}",
+            )
+
+
 def check_token_levers(repo: Path, policy: dict, rep: Report, stack: dict | None = None) -> None:
     if policy["tokens"]["prefer_cli_over_mcp"]:
         servers = load_json_file(repo / ".mcp.json").get("mcpServers") or {}
@@ -4968,25 +5066,30 @@ def check_token_levers(repo: Path, policy: dict, rep: Report, stack: dict | None
     for sub in sorted((repo / ".claude" / "agents").glob("*.md")) if (repo / ".claude" / "agents").is_dir() else []:
         meta = frontmatter_of(sub)
         text = f"{sub.stem} {(meta or {}).get('description', '')}".lower()
+        sub_model = policy["tokens"].get("subagent_model", "haiku")
         if re.search(r"\b(test|lint|log|triage|format)", text) and not (meta or {}).get("model"):
             rep.add(
                 "info",
                 "TOKEN_SUBAGENT_MODEL",
                 sub,
-                "mechanical subagent without 'model': consider model: haiku",
+                f"mechanical subagent without 'model': consider model: {sub_model}",
             )
+    heavy = [m.lower() for m in policy["tokens"].get("heavy_models", ["opus"])]
+    preferred = policy["tokens"].get("preferred_model", "sonnet")
     user_s = read_text(config_dir() / "settings.json")
     try:
         model = str((json.loads(user_s) if user_s else {}).get("model", ""))
     except json.JSONDecodeError:
         model = ""
-    if "opus" in model.lower() and not any(f.code == "TOKEN_MODEL" for f in rep.findings):
+    if any(h in model.lower() for h in heavy) and not any(f.code == "TOKEN_MODEL" for f in rep.findings):
         rep.add(
             "info",
             "TOKEN_MODEL",
             config_dir() / "settings.json",
-            f"default model {model!r}: Opus for every session and inheriting subagents",
+            f"default model {model!r}: heavy model for every session and inheriting subagents "
+            f"(prefer {preferred}, escalate per task)",
         )
+    check_effort_levels(repo, policy, rep)
     stack = stack or detect_stack(repo)
     typed = stack["python"] or bool(stack["pm"])
     enabled = []
@@ -5857,6 +5960,13 @@ BRIEF_FR = {
         "subagents mécaniques sans modèle léger",
         "ajouter 'model: haiku'",
     ),
+    "TOKEN_EFFORT": ("tokens", "effortLevel au-dessus du plafond", "baisser effortLevel dans settings.json"),
+    "SCOPE_SECRET": (
+        "scopes",
+        "secret dans un fichier settings versionné",
+        "déplacer vers settings.local.json (git-ignored)",
+    ),
+    "SCOPE_MISMATCH": ("scopes", "élément hors du scope attendu", "déplacer vers le scope autorisé par la policy"),
     "DUP_EXACT": ("dups", "copies identiques chargées ensemble", "-i : choisir celle à garder"),
     "DUP_NAME": ("dups", "même nom chargé deux fois (un seul sert)", "-i : choisir celle à garder"),
     "DUP_SIMILAR": (
@@ -5985,6 +6095,13 @@ BRIEF_EN = {
         "mechanical subagents without a light model",
         "add 'model: haiku'",
     ),
+    "TOKEN_EFFORT": ("tokens", "effortLevel above the ceiling", "lower effortLevel in settings.json"),
+    "SCOPE_SECRET": (
+        "scopes",
+        "secret in a versioned settings file",
+        "move it to settings.local.json (git-ignored)",
+    ),
+    "SCOPE_MISMATCH": ("scopes", "item outside its expected scope", "move it to a scope the policy allows"),
     "DUP_EXACT": ("dups", "identical copies loaded together", "-i: pick the one to keep"),
     "DUP_NAME": ("dups", "same name loaded twice (only one runs)", "-i: pick the one to keep"),
     "DUP_SIMILAR": (
@@ -7112,6 +7229,7 @@ def run_lint(repos: list[Path], policy: dict, args: argparse.Namespace, history:
     rep.proposals = compute_proposals(dup_roots, repos, policy)
     for r in repos:
         check_token_levers(r, policy, rep)
+        check_scopes(r, policy, rep)
     if getattr(args, "generate", False):
         if args.user or args.user_only:
             generate_user(policy, rep)

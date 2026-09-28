@@ -392,6 +392,36 @@ change. Main knobs: `permissions.require_rtk`, `permissions.rtk_twin_deny`,
 `permissions.required_deny` (rtk also reads its own `exclude_commands`), `skills.portable`, `skills.gate_side_effects`,
 `instructions.claude_md_import`, `scaffold.*`.
 
+### Model, effort and scopes
+
+Under `[tokens]` you set what the token checks expect, instead of them hard-coding
+model names:
+
+```toml
+[tokens]
+preferred_model = "sonnet"      # recommended session default
+heavy_models = ["opus"]         # flagged (TOKEN_MODEL) when set as the default
+subagent_model = "haiku"        # suggested for mechanical subagents
+max_effort = "high"             # effortLevel above this is flagged; "" disables
+effort_levels = ["low", "medium", "high"]
+```
+
+`[scopes]` declares where each item type is expected to live
+(`project` = a repo's `.claude/`, `user` = `~/.claude*`, `local` =
+git-ignored `settings.local.json`). An item found outside its scopes is flagged:
+
+```toml
+[scopes]
+skill   = ["project", "user"]
+agent   = ["project", "user"]
+command = ["project", "user"]
+mcp     = ["project", "user", "local"]
+secret  = ["local"]             # secrets never in committed settings
+```
+
+Related checks: `TOKEN_MODEL`, `TOKEN_SUBAGENT_MODEL`, `TOKEN_EFFORT`,
+`SCOPE_SECRET`, `SCOPE_MISMATCH`. See the built-in policy with `--print-policy`.
+
 ## Catalog (editable checks)
 
 The reference data (known settings keys, hook events, tools, skill/agent fields)
