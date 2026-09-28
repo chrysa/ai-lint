@@ -71,7 +71,7 @@ try:
 except ModuleNotFoundError:  # Python < 3.11: policy files unsupported, defaults apply
     tomllib = None
 
-VERSION = "2026.09.28-22"
+VERSION = "2026.09.28-23"
 DOCS = "https://code.claude.com/docs/en/"
 ISSUES = "https://github.com/anthropics/claude-code/issues/"
 
@@ -81,49 +81,121 @@ ISSUES = "https://github.com/anthropics/claude-code/issues/"
 
 DEFAULT_POLICY: dict[str, Any] = {
     "instructions": {
-        "user_max_lines": 150,          # user scope loads in every session of every project
-        "project_warn_lines": 200,      # documented target: under 200 lines per file
+        "user_max_lines": 150,  # user scope loads in every session of every project
+        "project_warn_lines": 200,  # documented target: under 200 lines per file
         "warn_tokens": 5000,
-        "max_import_depth": 4,          # documented maximum: four hops
+        "max_import_depth": 4,  # documented maximum: four hops
         "doctrine_dir": "doctrine/rules",
         "generated_marker": "GENERATED",
         "rendered_files": ["CLAUDE.md", "AGENTS.md", ".github/copilot-instructions.md"],
-        "claude_md_import": True,       # keep CLAUDE.md = "@AGENTS.md" for CLIs < 2.1.277 / Bedrock
+        "claude_md_import": True,  # keep CLAUDE.md = "@AGENTS.md" for CLIs < 2.1.277 / Bedrock
         "min_duplicate_line_len": 30,
     },
     "permissions": {
-        "require_rtk": True,            # route Bash allow rules through rtk
-        "rtk_twin_deny": True,          # mirror deny/ask rules with and without rtk (issue #79400)
+        "require_rtk": True,  # route Bash allow rules through rtk
+        "rtk_twin_deny": True,  # mirror deny/ask rules with and without rtk (issue #79400)
         "rtk_exempt": ["rtk"],
-        "rule_style": "keep",           # keep | space | colon  (trailing wildcard form)
-        "external_action_prefixes": [   # must be "ask", never "allow"
-            "git push", "gh pr create", "gh pr merge", "gh release", "gh repo",
-            "kubectl apply", "kubectl delete", "kubectl patch", "helm install", "helm upgrade",
-            "helm uninstall", "argocd", "terraform apply", "terraform destroy", "tofu apply",
-            "tofu destroy", "bao write", "vault write", "docker push", "npm publish",
-            "twine upload", "rm -rf",
+        "rule_style": "keep",  # keep | space | colon  (trailing wildcard form)
+        "external_action_prefixes": [  # must be "ask", never "allow"
+            "git push",
+            "gh pr create",
+            "gh pr merge",
+            "gh release",
+            "gh repo",
+            "kubectl apply",
+            "kubectl delete",
+            "kubectl patch",
+            "helm install",
+            "helm upgrade",
+            "helm uninstall",
+            "argocd",
+            "terraform apply",
+            "terraform destroy",
+            "tofu apply",
+            "tofu destroy",
+            "bao write",
+            "vault write",
+            "docker push",
+            "npm publish",
+            "twine upload",
+            "rm -rf",
         ],
-        "forbidden_allow": ["Bash", "Bash(*)", "Bash(sudo:*)", "Bash(sudo *)",
-                            "Bash(rtk *)", "Bash(rtk:*)", "PowerShell", "PowerShell(*)"],
-        "exec_runners": [               # a wildcard right after these allows anything
-            "npx", "bunx", "pnpm dlx", "yarn dlx", "uvx", "uv run", "poetry run", "pipenv run",
-            "docker exec", "docker run", "docker compose exec", "docker compose run",
-            "kubectl exec", "devbox run", "direnv exec", "mise exec", "nix run", "nix-shell",
-            "sh -c", "bash -c", "zsh -c", "env", "eval", "exec", "xargs", "python -c",
-            "python3 -c", "node -e", "sudo", "watch", "timeout", "rtk",
+        "forbidden_allow": [
+            "Bash",
+            "Bash(*)",
+            "Bash(sudo:*)",
+            "Bash(sudo *)",
+            "Bash(rtk *)",
+            "Bash(rtk:*)",
+            "PowerShell",
+            "PowerShell(*)",
+        ],
+        "exec_runners": [  # a wildcard right after these allows anything
+            "npx",
+            "bunx",
+            "pnpm dlx",
+            "yarn dlx",
+            "uvx",
+            "uv run",
+            "poetry run",
+            "pipenv run",
+            "docker exec",
+            "docker run",
+            "docker compose exec",
+            "docker compose run",
+            "kubectl exec",
+            "devbox run",
+            "direnv exec",
+            "mise exec",
+            "nix run",
+            "nix-shell",
+            "sh -c",
+            "bash -c",
+            "zsh -c",
+            "env",
+            "eval",
+            "exec",
+            "xargs",
+            "python -c",
+            "python3 -c",
+            "node -e",
+            "sudo",
+            "watch",
+            "timeout",
+            "rtk",
         ],
         "required_deny": [
-            "Read(**/.env)", "Read(**/.env.*)", "Read(**/secrets/**)", "Read(**/*.pem)",
-            "Read(**/*.key)", "Read(~/.ssh/**)", "Read(~/.aws/**)", "Read(~/.kube/**)",
-            "Read(~/.vault-token)", "Read(!.env.example)",
+            "Read(**/.env)",
+            "Read(**/.env.*)",
+            "Read(**/secrets/**)",
+            "Read(**/*.pem)",
+            "Read(**/*.key)",
+            "Read(~/.ssh/**)",
+            "Read(~/.aws/**)",
+            "Read(~/.kube/**)",
+            "Read(~/.vault-token)",
+            "Read(!.env.example)",
         ],
     },
     "user_scope": {"context_only": True},
     "attribution": {
         "scan_history_commits": 200,
         "install_commit_msg_hook": True,
-        "scan_extensions": [".md", ".txt", ".rst", ".py", ".ts", ".tsx", ".js",
-                            ".yml", ".yaml", ".toml", ".json", ".cs", ".sh"],
+        "scan_extensions": [
+            ".md",
+            ".txt",
+            ".rst",
+            ".py",
+            ".ts",
+            ".tsx",
+            ".js",
+            ".yml",
+            ".yaml",
+            ".toml",
+            ".json",
+            ".cs",
+            ".sh",
+        ],
         "max_file_bytes": 1_000_000,
     },
     "scaffold": {
@@ -133,21 +205,36 @@ DEFAULT_POLICY: dict[str, Any] = {
         "schema_url": "https://json.schemastore.org/claude-code-settings.json",
     },
     "skills": {
-        "portable": True,               # stay within the Agent Skills spec (agentskills.io)
-        "max_listing_chars": 1536,      # description + when_to_use truncation in the listing
+        "portable": True,  # stay within the Agent Skills spec (agentskills.io)
+        "max_listing_chars": 1536,  # description + when_to_use truncation in the listing
         "portable_description_chars": 1024,
         "max_lines": 500,
         "name_pattern": r"^[a-z0-9][a-z0-9-]{0,63}$",
-        "gate_side_effects": True,      # add disable-model-invocation to deploy/release/... skills
-        "side_effect_words": ["deploy", "release", "publish", "push", "send", "delete",
-                              "drop", "destroy", "migrate", "rollback", "merge"],
+        "gate_side_effects": True,  # add disable-model-invocation to deploy/release/... skills
+        "side_effect_words": [
+            "deploy",
+            "release",
+            "publish",
+            "push",
+            "send",
+            "delete",
+            "drop",
+            "destroy",
+            "migrate",
+            "rollback",
+            "merge",
+        ],
     },
     "mcp": {"max_servers": 6},
     # Reference data extensions: the ONLY table an audit agent may edit (the guard enforces it).
     # Lets the linter follow new docs (keys, events, tools, fields) without code changes.
     "reference": {
-        "extra_settings_keys": [], "extra_hook_events": [], "extra_tools": [],
-        "extra_skill_fields": [], "extra_agent_fields": [], "docs_checked": "",
+        "extra_settings_keys": [],
+        "extra_hook_events": [],
+        "extra_tools": [],
+        "extra_skill_fields": [],
+        "extra_agent_fields": [],
+        "docs_checked": "",
     },
     "memory": {"max_lines": 200, "max_bytes": 25_000},
 }
@@ -157,28 +244,96 @@ DEFAULT_POLICY: dict[str, Any] = {
 # --------------------------------------------------------------------------- #
 
 KNOWN_SETTINGS_KEYS = {
-    "$schema", "additionalDirectories", "agent", "allowManagedHooksOnly",
-    "allowManagedPermissionRulesOnly", "allowedHttpHookUrls", "alwaysThinkingEnabled",
-    "apiKeyHelper", "askUserQuestionTimeout", "attribution", "autoMemoryDirectory",
-    "autoMemoryEnabled", "autoMode", "autoUpdates", "autoUpdatesChannel", "availableModels",
-    "awsAuthRefresh", "awsCredentialExport", "bashOutputMaxChars", "claudeMd",
-    "claudeMdExcludes", "cleanupPeriodDays", "companyAnnouncements", "crossSessionInbound",
-    "defaultShell", "deniedMcpServers", "allowedMcpServers", "disableAllHooks",
-    "disableArtifact", "disableBundledSkills", "disableClaudeAiConnectors",
-    "disableCommandPluginSources", "disableSkillShellExecution", "disabledMcpjsonServers",
-    "effortLevel", "enableAllProjectMcpServers", "enableArtifact", "enabledMcpjsonServers",
-    "enabledPlugins", "env", "extraKnownMarketplaces", "fallbackModel", "feedbackDrafts",
-    "fileSuggestion", "forceLoginMethod", "forceLoginOrgUUID", "hooks",
-    "httpHookAllowedEnvVars", "includeCoAuthoredBy", "includeGitInstructions",
-    "isolatePeerMachines", "language", "maxEffortLevel", "model", "modelOverrides",
-    "modelPicker", "modelSettings", "otelHeadersHelper", "outputStyle", "permissions",
-    "pluginConfigs", "processWrapper", "remoteControlAtStartup", "requiredMinimumVersion",
-    "respectGitignore", "sandbox", "skillListingBudgetFraction", "skillListingMaxDescChars",
-    "skillOverrides", "spinnerTipsEnabled", "statusLine", "strictPluginOnlyCustomization",
-    "subagentStatusLine", "syncClaudeAiPlugins", "syncClaudeAiSkills", "theme",
-    "useAutoModeDuringPlan", "autoContinueAtUsageLimit", "agentPushNotifEnabled", "inputNeededNotifEnabled",
-    "tui", "skipWorkflowUsageWarning", "workflowSizeGuideline", "modelPricing", "disableBypassPermissionsMode",
-    "disableWorkflows", "ultracode", "subagentPromptCacheTtl", "strictKnownMarketplaces", "blockedMarketplaces",
+    "$schema",
+    "additionalDirectories",
+    "agent",
+    "allowManagedHooksOnly",
+    "allowManagedPermissionRulesOnly",
+    "allowedHttpHookUrls",
+    "alwaysThinkingEnabled",
+    "apiKeyHelper",
+    "askUserQuestionTimeout",
+    "attribution",
+    "autoMemoryDirectory",
+    "autoMemoryEnabled",
+    "autoMode",
+    "autoUpdates",
+    "autoUpdatesChannel",
+    "availableModels",
+    "awsAuthRefresh",
+    "awsCredentialExport",
+    "bashOutputMaxChars",
+    "claudeMd",
+    "claudeMdExcludes",
+    "cleanupPeriodDays",
+    "companyAnnouncements",
+    "crossSessionInbound",
+    "defaultShell",
+    "deniedMcpServers",
+    "allowedMcpServers",
+    "disableAllHooks",
+    "disableArtifact",
+    "disableBundledSkills",
+    "disableClaudeAiConnectors",
+    "disableCommandPluginSources",
+    "disableSkillShellExecution",
+    "disabledMcpjsonServers",
+    "effortLevel",
+    "enableAllProjectMcpServers",
+    "enableArtifact",
+    "enabledMcpjsonServers",
+    "enabledPlugins",
+    "env",
+    "extraKnownMarketplaces",
+    "fallbackModel",
+    "feedbackDrafts",
+    "fileSuggestion",
+    "forceLoginMethod",
+    "forceLoginOrgUUID",
+    "hooks",
+    "httpHookAllowedEnvVars",
+    "includeCoAuthoredBy",
+    "includeGitInstructions",
+    "isolatePeerMachines",
+    "language",
+    "maxEffortLevel",
+    "model",
+    "modelOverrides",
+    "modelPicker",
+    "modelSettings",
+    "otelHeadersHelper",
+    "outputStyle",
+    "permissions",
+    "pluginConfigs",
+    "processWrapper",
+    "remoteControlAtStartup",
+    "requiredMinimumVersion",
+    "respectGitignore",
+    "sandbox",
+    "skillListingBudgetFraction",
+    "skillListingMaxDescChars",
+    "skillOverrides",
+    "spinnerTipsEnabled",
+    "statusLine",
+    "strictPluginOnlyCustomization",
+    "subagentStatusLine",
+    "syncClaudeAiPlugins",
+    "syncClaudeAiSkills",
+    "theme",
+    "useAutoModeDuringPlan",
+    "autoContinueAtUsageLimit",
+    "agentPushNotifEnabled",
+    "inputNeededNotifEnabled",
+    "tui",
+    "skipWorkflowUsageWarning",
+    "workflowSizeGuideline",
+    "modelPricing",
+    "disableBypassPermissionsMode",
+    "disableWorkflows",
+    "ultracode",
+    "subagentPromptCacheTtl",
+    "strictKnownMarketplaces",
+    "blockedMarketplaces",
 }
 # Keys a repository file cannot set (dead config in .claude/settings*.json).
 PROJECT_DEAD_KEYS = {
@@ -191,71 +346,261 @@ PROJECT_DEAD_KEYS = {
     "forceLoginOrgUUID": "managed settings only",
 }
 KNOWN_TOOLS = {
-    "Agent", "Artifact", "AskUserQuestion", "Bash", "CronCreate", "CronDelete", "CronList",
-    "Edit", "EndConversation", "EnterPlanMode", "EnterWorktree", "ExitPlanMode",
-    "ExitWorktree", "Glob", "Grep", "ListAgents", "ListMcpResourcesTool", "LSP", "Monitor",
-    "NotebookEdit", "PowerShell", "PushNotification", "Read", "ReadMcpResourceTool",
-    "RemoteTrigger", "ReportFindings", "ScheduleWakeup", "SendFeedback", "SendMessage",
-    "SendUserFile", "ShareOnboardingGuide", "Skill", "SubagentHandback", "TaskCreate",
-    "TaskGet", "TaskList", "TaskOutput", "TaskStop", "TaskUpdate", "TodoWrite", "ToolSearch",
-    "WaitForMcpServers", "WebFetch", "WebSearch", "Workflow", "Write",
+    "Agent",
+    "Artifact",
+    "AskUserQuestion",
+    "Bash",
+    "CronCreate",
+    "CronDelete",
+    "CronList",
+    "Edit",
+    "EndConversation",
+    "EnterPlanMode",
+    "EnterWorktree",
+    "ExitPlanMode",
+    "ExitWorktree",
+    "Glob",
+    "Grep",
+    "ListAgents",
+    "ListMcpResourcesTool",
+    "LSP",
+    "Monitor",
+    "NotebookEdit",
+    "PowerShell",
+    "PushNotification",
+    "Read",
+    "ReadMcpResourceTool",
+    "RemoteTrigger",
+    "ReportFindings",
+    "ScheduleWakeup",
+    "SendFeedback",
+    "SendMessage",
+    "SendUserFile",
+    "ShareOnboardingGuide",
+    "Skill",
+    "SubagentHandback",
+    "TaskCreate",
+    "TaskGet",
+    "TaskList",
+    "TaskOutput",
+    "TaskStop",
+    "TaskUpdate",
+    "TodoWrite",
+    "ToolSearch",
+    "WaitForMcpServers",
+    "WebFetch",
+    "WebSearch",
+    "Workflow",
+    "Write",
 }
 RULE_ONLY_TOOLS = {"Cd"}
-LEGACY_TOOLS = {"Task": "Agent", "MultiEdit": "Edit", "KillShell": "TaskStop",
-                "BashOutput": "TaskOutput", "NotebookRead": "Read", "LS": "Read"}
-SPECIFIER_TOOLS = {"Bash", "Monitor", "PowerShell", "Read", "Grep", "Glob", "LSP", "Edit",
-                   "Write", "NotebookEdit", "Skill", "Agent", "WebFetch", "Cd"}
+LEGACY_TOOLS = {
+    "Task": "Agent",
+    "MultiEdit": "Edit",
+    "KillShell": "TaskStop",
+    "BashOutput": "TaskOutput",
+    "NotebookRead": "Read",
+    "LS": "Read",
+}
+SPECIFIER_TOOLS = {
+    "Bash",
+    "Monitor",
+    "PowerShell",
+    "Read",
+    "Grep",
+    "Glob",
+    "LSP",
+    "Edit",
+    "Write",
+    "NotebookEdit",
+    "Skill",
+    "Agent",
+    "WebFetch",
+    "Cd",
+}
 # Path rules are only consulted for Read and Edit (docs: permissions#read-and-edit).
-PATH_TOOL_REMAP = {"Write": "Edit", "NotebookEdit": "Edit", "MultiEdit": "Edit",
-                   "Glob": "Read", "Grep": "Read", "LSP": "Read"}
+PATH_TOOL_REMAP = {
+    "Write": "Edit",
+    "NotebookEdit": "Edit",
+    "MultiEdit": "Edit",
+    "Glob": "Read",
+    "Grep": "Read",
+    "LSP": "Read",
+}
 PRIMARY_PARAMS = {"command", "file_path", "path", "notebook_path", "url"}
-READONLY_BUILTINS = {"ls", "cat", "echo", "pwd", "head", "tail", "grep", "find", "wc",
-                     "which", "diff", "stat", "du", "cd"}
-ABS_ROOTS = {"home", "Users", "etc", "tmp", "var", "opt", "mnt", "srv", "root", "usr",
-             "private", "Volumes", "media", "run", "data"}
+READONLY_BUILTINS = {
+    "ls",
+    "cat",
+    "echo",
+    "pwd",
+    "head",
+    "tail",
+    "grep",
+    "find",
+    "wc",
+    "which",
+    "diff",
+    "stat",
+    "du",
+    "cd",
+}
+ABS_ROOTS = {
+    "home",
+    "Users",
+    "etc",
+    "tmp",
+    "var",
+    "opt",
+    "mnt",
+    "srv",
+    "root",
+    "usr",
+    "private",
+    "Volumes",
+    "media",
+    "run",
+    "data",
+}
 
 KNOWN_HOOK_EVENTS = {
-    "SessionStart", "Setup", "UserPromptSubmit", "UserPromptExpansion", "PreToolUse",
-    "PermissionRequest", "PermissionDenied", "PostToolUse", "PostToolUseFailure",
-    "PostToolBatch", "Notification", "MessageDisplay", "SubagentStart", "SubagentStop",
-    "TaskCreated", "TaskCompleted", "Stop", "StopFailure", "TeammateIdle",
-    "InstructionsLoaded", "ConfigChange", "CwdChanged", "DirectoryAdded", "FileChanged",
-    "WorktreeCreate", "WorktreeRemove", "PreCompact", "PostCompact", "PreModelSwitch",
-    "PostModelSwitch", "Elicitation", "ElicitationResult", "SessionEnd",
+    "SessionStart",
+    "Setup",
+    "UserPromptSubmit",
+    "UserPromptExpansion",
+    "PreToolUse",
+    "PermissionRequest",
+    "PermissionDenied",
+    "PostToolUse",
+    "PostToolUseFailure",
+    "PostToolBatch",
+    "Notification",
+    "MessageDisplay",
+    "SubagentStart",
+    "SubagentStop",
+    "TaskCreated",
+    "TaskCompleted",
+    "Stop",
+    "StopFailure",
+    "TeammateIdle",
+    "InstructionsLoaded",
+    "ConfigChange",
+    "CwdChanged",
+    "DirectoryAdded",
+    "FileChanged",
+    "WorktreeCreate",
+    "WorktreeRemove",
+    "PreCompact",
+    "PostCompact",
+    "PreModelSwitch",
+    "PostModelSwitch",
+    "Elicitation",
+    "ElicitationResult",
+    "SessionEnd",
 }
-TOOL_EVENTS = {"PreToolUse", "PostToolUse", "PostToolUseFailure", "PermissionRequest",
-               "PermissionDenied"}
-NO_MATCHER_EVENTS = {"UserPromptSubmit", "PostToolBatch", "Stop", "TeammateIdle",
-                     "TaskCreated", "TaskCompleted", "WorktreeCreate", "WorktreeRemove",
-                     "MessageDisplay", "CwdChanged"}
-HOOK_TYPES = {"command": ("command",), "http": ("url",), "mcp_tool": ("server", "tool"),
-              "prompt": ("prompt",), "agent": ("prompt",)}
+TOOL_EVENTS = {
+    "PreToolUse",
+    "PostToolUse",
+    "PostToolUseFailure",
+    "PermissionRequest",
+    "PermissionDenied",
+}
+NO_MATCHER_EVENTS = {
+    "UserPromptSubmit",
+    "PostToolBatch",
+    "Stop",
+    "TeammateIdle",
+    "TaskCreated",
+    "TaskCompleted",
+    "WorktreeCreate",
+    "WorktreeRemove",
+    "MessageDisplay",
+    "CwdChanged",
+}
+HOOK_TYPES = {
+    "command": ("command",),
+    "http": ("url",),
+    "mcp_tool": ("server", "tool"),
+    "prompt": ("prompt",),
+    "agent": ("prompt",),
+}
 SHELL_META = re.compile(r"[|&;<>`()]|\$\((?!\s)|\s&&\s|\|\|")
 
-SKILL_FIELDS = {"name", "description", "when_to_use", "argument-hint", "arguments",
-                "disable-model-invocation", "user-invocable", "allowed-tools",
-                "disallowed-tools", "model", "effort", "context", "agent", "background",
-                "hooks", "paths", "shell", "metadata", "license", "compatibility"}
-SKILL_SPEC_FIELDS = {"name", "description", "license", "compatibility", "metadata",
-                     "allowed-tools"}
-SKILL_TYPOS = {"allowed_tools": "allowed-tools", "allowedTools": "allowed-tools",
-               "disallowed_tools": "disallowed-tools", "disallowedTools": "disallowed-tools",
-               "disable_model_invocation": "disable-model-invocation",
-               "disableModelInvocation": "disable-model-invocation",
-               "user_invocable": "user-invocable", "userInvocable": "user-invocable",
-               "when-to-use": "when_to_use", "whenToUse": "when_to_use",
-               "argument_hint": "argument-hint", "argumentHint": "argument-hint"}
-AGENT_FIELDS = {"name", "description", "tools", "disallowedTools", "model", "permissionMode",
-                "maxTurns", "skills", "mcpServers", "hooks", "memory", "background",
-                "effort", "isolation", "color", "initialPrompt"}
-AGENT_TYPOS = {"allowed-tools": "tools", "allowed_tools": "tools", "allowedTools": "tools",
-               "disallowed-tools": "disallowedTools", "disallowed_tools": "disallowedTools",
-               "permission-mode": "permissionMode", "permission_mode": "permissionMode",
-               "max-turns": "maxTurns", "max_turns": "maxTurns"}
-RULE_TYPOS = {"globs": "paths", "glob": "paths", "applyTo": "paths", "files": "paths",
-              "include": "paths", "path": "paths"}
+SKILL_FIELDS = {
+    "name",
+    "description",
+    "when_to_use",
+    "argument-hint",
+    "arguments",
+    "disable-model-invocation",
+    "user-invocable",
+    "allowed-tools",
+    "disallowed-tools",
+    "model",
+    "effort",
+    "context",
+    "agent",
+    "background",
+    "hooks",
+    "paths",
+    "shell",
+    "metadata",
+    "license",
+    "compatibility",
+}
+SKILL_SPEC_FIELDS = {"name", "description", "license", "compatibility", "metadata", "allowed-tools"}
+SKILL_TYPOS = {
+    "allowed_tools": "allowed-tools",
+    "allowedTools": "allowed-tools",
+    "disallowed_tools": "disallowed-tools",
+    "disallowedTools": "disallowed-tools",
+    "disable_model_invocation": "disable-model-invocation",
+    "disableModelInvocation": "disable-model-invocation",
+    "user_invocable": "user-invocable",
+    "userInvocable": "user-invocable",
+    "when-to-use": "when_to_use",
+    "whenToUse": "when_to_use",
+    "argument_hint": "argument-hint",
+    "argumentHint": "argument-hint",
+}
+AGENT_FIELDS = {
+    "name",
+    "description",
+    "tools",
+    "disallowedTools",
+    "model",
+    "permissionMode",
+    "maxTurns",
+    "skills",
+    "mcpServers",
+    "hooks",
+    "memory",
+    "background",
+    "effort",
+    "isolation",
+    "color",
+    "initialPrompt",
+}
+AGENT_TYPOS = {
+    "allowed-tools": "tools",
+    "allowed_tools": "tools",
+    "allowedTools": "tools",
+    "disallowed-tools": "disallowedTools",
+    "disallowed_tools": "disallowedTools",
+    "permission-mode": "permissionMode",
+    "permission_mode": "permissionMode",
+    "max-turns": "maxTurns",
+    "max_turns": "maxTurns",
+}
+RULE_TYPOS = {
+    "globs": "paths",
+    "glob": "paths",
+    "applyTo": "paths",
+    "files": "paths",
+    "include": "paths",
+    "path": "paths",
+}
 
-ATTRIBUTION_PATTERNS = [   # written so this source file never matches itself
+ATTRIBUTION_PATTERNS = [  # written so this source file never matches itself
     re.compile(r"Co-Authored-By:\s*Claude", re.I),
     re.compile(r"Generated with \[?Claude Code", re.I),
     re.compile(r"noreply@anthropic\.com", re.I),
@@ -263,21 +608,32 @@ ATTRIBUTION_PATTERNS = [   # written so this source file never matches itself
 # A line that forbids attribution ("NEVER add Co-Authored-By...", "strip the
 # Generated-with line") is documentation, not a trace: don't flag it.
 ATTR_NEGATION = re.compile(
-    r"\b(never|do ?n['o]t|no|without|strip|remove|forbid|avoid|jamais|sans|ne pas|retire|supprime|interdit)\b",
-    re.I)
+    r"\b(never|do ?n['o]t|no|without|strip|remove|forbid|avoid|jamais|sans|ne "
+    r"pas|retire|supprime|interdit)\b",
+    re.I,
+)
 
 
 def _is_attribution(line: str) -> bool:
     return any(p.search(line) for p in ATTRIBUTION_PATTERNS) and not ATTR_NEGATION.search(line)
+
+
 SECRET_VALUE_PATTERNS = [
-    re.compile(r"^gh[pousr]_[A-Za-z0-9]{20,}$"), re.compile(r"^github_pat_[A-Za-z0-9_]{20,}$"),
-    re.compile(r"^sk-[A-Za-z0-9_-]{20,}$"), re.compile(r"^xox[abpr]-[A-Za-z0-9-]{10,}$"),
-    re.compile(r"^AKIA[0-9A-Z]{16}$"), re.compile(r"-----BEGIN [A-Z ]*PRIVATE KEY-----"),
-    re.compile(r"^(ntn|secret|hvs|s)\.?_?[A-Za-z0-9]{20,}$"), re.compile(r"^glpat-[\w-]{20,}$"),
+    re.compile(r"^gh[pousr]_[A-Za-z0-9]{20,}$"),
+    re.compile(r"^github_pat_[A-Za-z0-9_]{20,}$"),
+    re.compile(r"^sk-[A-Za-z0-9_-]{20,}$"),
+    re.compile(r"^xox[abpr]-[A-Za-z0-9-]{10,}$"),
+    re.compile(r"^AKIA[0-9A-Z]{16}$"),
+    re.compile(r"-----BEGIN [A-Z ]*PRIVATE KEY-----"),
+    re.compile(r"^(ntn|secret|hvs|s)\.?_?[A-Za-z0-9]{20,}$"),
+    re.compile(r"^glpat-[\w-]{20,}$"),
 ]
 SECRET_REDACT_RE = re.compile(
-    r"(gh[pousr]_|github_pat_|sk-|xox[abpr]-|AKIA|ntn_|secret_|hvs\.|glpat-)[A-Za-z0-9_-]{8,}")
-SECRET_KEY_RE = re.compile(r"(TOKEN|SECRET|PASSWORD|PASSWD|API_?KEY|PRIVATE_KEY|AUTHORIZATION)", re.I)
+    r"(gh[pousr]_|github_pat_|sk-|xox[abpr]-|AKIA|ntn_|secret_|hvs\.|glpat-)[A-Za-z0-9_-]{8,}"
+)
+SECRET_KEY_RE = re.compile(
+    r"(TOKEN|SECRET|PASSWORD|PASSWD|API_?KEY|PRIVATE_KEY|AUTHORIZATION)", re.I
+)
 
 COMMIT_MSG_HOOK = """#!/usr/bin/env sh
 # Strip AI-assistant attribution trailers from commit messages.
@@ -320,122 +676,436 @@ AGENTS_SKELETON = """# {name}
 # --------------------------------------------------------------------------- #
 
 HINTS: dict[str, tuple[str, str]] = {  # code -> (why/how, reference)
-    "JSON_INVALID": ("The file is rejected as a whole: none of its settings apply.", DOCS + "settings#fix-a-broken-settings-file"),
-    "JSON_REPAIRED": ("Settings files are strict JSON: comments or trailing commas make Claude Code reject the file.", DOCS + "settings#edit-a-settings-file"),
-    "SETTINGS_SCHEMA": ("$schema gives editor autocomplete and inline validation.", DOCS + "settings#edit-a-settings-file"),
-    "SETTINGS_UNKNOWN_KEY": ("Typo, or a key newer than this script: check the settings reference.", DOCS + "settings-reference"),
-    "SETTINGS_DEAD_KEY": ("A repository file cannot set this key; it has no effect there.", DOCS + "settings#a-committed-key-doesnt-reach-teammates"),
-    "SETTINGS_DISABLE_HOOKS": ("disableAllHooks in project settings overrides your user value and silences every guard hook.", DOCS + "hooks#disable-or-remove-hooks"),
-    "SETTINGS_MCP_AUTO": ("Auto-approves any MCP server a repository adds to .mcp.json.", DOCS + "permissions#what-runs-before-you-trust-a-folder"),
-    "SETTINGS_BUG_55507": ("Known issue: a project permissions block can drop a user-level defaultMode.", ISSUES + "55507"),
+    "JSON_INVALID": (
+        "The file is rejected as a whole: none of its settings apply.",
+        DOCS + "settings#fix-a-broken-settings-file",
+    ),
+    "JSON_REPAIRED": (
+        "Settings files are strict JSON: comments or trailing commas make Claude Code "
+        "reject the file.",
+        DOCS + "settings#edit-a-settings-file",
+    ),
+    "SETTINGS_SCHEMA": (
+        "$schema gives editor autocomplete and inline validation.",
+        DOCS + "settings#edit-a-settings-file",
+    ),
+    "SETTINGS_UNKNOWN_KEY": (
+        "Typo, or a key newer than this script: check the settings reference.",
+        DOCS + "settings-reference",
+    ),
+    "SETTINGS_DEAD_KEY": (
+        "A repository file cannot set this key; it has no effect there.",
+        DOCS + "settings#a-committed-key-doesnt-reach-teammates",
+    ),
+    "SETTINGS_DISABLE_HOOKS": (
+        "disableAllHooks in project settings overrides your user value and silences every "
+        "guard hook.",
+        DOCS + "hooks#disable-or-remove-hooks",
+    ),
+    "SETTINGS_MCP_AUTO": (
+        "Auto-approves any MCP server a repository adds to .mcp.json.",
+        DOCS + "permissions#what-runs-before-you-trust-a-folder",
+    ),
+    "SETTINGS_BUG_55507": (
+        "Known issue: a project permissions block can drop a user-level defaultMode.",
+        ISSUES + "55507",
+    ),
     "ATTR_DEPRECATED": ("Replaced by the 'attribution' key.", DOCS + "settings-reference"),
-    "ATTR_ENABLED": ("Empty strings for commit and pr stop the CLI from adding its byline.", DOCS + "settings-reference"),
+    "ATTR_ENABLED": (
+        "Empty strings for commit and pr stop the CLI from adding its byline.",
+        DOCS + "settings-reference",
+    ),
     "ATTR_TRACE": ("Generated files and docs must carry no assistant signature.", ""),
-    "ATTR_HISTORY": ("Published commits: rewriting history is an explicit decision (force-push).", ""),
-    "ATTR_HOOK_MISSING": ("The model can write the trailer itself in 'git commit -m'; a commit-msg hook removes it deterministically.", ""),
-    "ATTR_HOOK_CONFLICT": ("Merge the two sed lines of the attribution guard into your existing commit-msg hook.", ""),
-    "PERM_SYNTAX": ("Rules are Tool or Tool(specifier); a malformed rule is skipped with a startup warning.", DOCS + "permissions#permission-rule-syntax"),
-    "PERM_LEGACY_TOOL": ("Renamed or removed tool: rules and matchers use canonical names only.", DOCS + "tools-reference"),
-    "PERM_PATH_TOOL": ("Path rules on Write, NotebookEdit, Glob, Grep or MultiEdit are accepted but never consulted: use Edit(...) or Read(...).", DOCS + "permissions#read-and-edit"),
-    "PERM_PRIMARY_PARAM": ("Parameter rules on a primary field (command, file_path, path, url) are ignored: bypassable by compound commands.", DOCS + "permissions#match-by-input-parameter"),
-    "PERM_MCP_PARENS": ("mcp__ rules with parentheses are skipped when a settings file loads; use --disallowedTools for parameter rules.", DOCS + "permissions#match-by-input-parameter"),
-    "PERM_COLON_MID": ("':*' is only a wildcard at the end; elsewhere the colon is literal and the rule never matches.", DOCS + "permissions#wildcard-patterns"),
-    "PERM_ABS_PATH": ("A single leading slash anchors at the settings source, not the filesystem root; use // for absolute paths.", DOCS + "permissions#read-and-edit"),
-    "PERM_USER_ANCHOR": ("In user settings, /path resolves under ~/.claude, not the project.", DOCS + "permissions#read-and-edit"),
-    "PERM_WEBFETCH": ("WebFetch rules match hostnames through the domain: prefix.", DOCS + "permissions#webfetch"),
-    "PERM_NO_SPECIFIER": ("This tool accepts only the bare name.", DOCS + "tools-reference#configure-tools-with-permission-rules-and-hooks"),
-    "PERM_UNKNOWN_TOOL": ("The rule matches nothing; check the canonical tool name.", DOCS + "tools-reference"),
+    "ATTR_HISTORY": (
+        "Published commits: rewriting history is an explicit decision (force-push).",
+        "",
+    ),
+    "ATTR_HOOK_MISSING": (
+        "The model can write the trailer itself in 'git commit -m'; a commit-msg hook "
+        "removes it deterministically.",
+        "",
+    ),
+    "ATTR_HOOK_CONFLICT": (
+        "Merge the two sed lines of the attribution guard into your existing commit-msg hook.",
+        "",
+    ),
+    "PERM_SYNTAX": (
+        "Rules are Tool or Tool(specifier); a malformed rule is skipped with a startup warning.",
+        DOCS + "permissions#permission-rule-syntax",
+    ),
+    "PERM_LEGACY_TOOL": (
+        "Renamed or removed tool: rules and matchers use canonical names only.",
+        DOCS + "tools-reference",
+    ),
+    "PERM_PATH_TOOL": (
+        "Path rules on Write, NotebookEdit, Glob, Grep or MultiEdit are accepted but never "
+        "consulted: use Edit(...) or Read(...).",
+        DOCS + "permissions#read-and-edit",
+    ),
+    "PERM_PRIMARY_PARAM": (
+        "Parameter rules on a primary field (command, file_path, path, url) are ignored: "
+        "bypassable by compound commands.",
+        DOCS + "permissions#match-by-input-parameter",
+    ),
+    "PERM_MCP_PARENS": (
+        "mcp__ rules with parentheses are skipped when a settings file loads; use "
+        "--disallowedTools for parameter rules.",
+        DOCS + "permissions#match-by-input-parameter",
+    ),
+    "PERM_COLON_MID": (
+        "':*' is only a wildcard at the end; elsewhere the colon is literal and the rule "
+        "never matches.",
+        DOCS + "permissions#wildcard-patterns",
+    ),
+    "PERM_ABS_PATH": (
+        "A single leading slash anchors at the settings source, not the filesystem root; "
+        "use // for absolute paths.",
+        DOCS + "permissions#read-and-edit",
+    ),
+    "PERM_USER_ANCHOR": (
+        "In user settings, /path resolves under ~/.claude, not the project.",
+        DOCS + "permissions#read-and-edit",
+    ),
+    "PERM_WEBFETCH": (
+        "WebFetch rules match hostnames through the domain: prefix.",
+        DOCS + "permissions#webfetch",
+    ),
+    "PERM_NO_SPECIFIER": (
+        "This tool accepts only the bare name.",
+        DOCS + "tools-reference#configure-tools-with-permission-rules-and-hooks",
+    ),
+    "PERM_UNKNOWN_TOOL": (
+        "The rule matches nothing; check the canonical tool name.",
+        DOCS + "tools-reference",
+    ),
     "PERM_DUPLICATE": ("Harmless but noisy; removed.", ""),
-    "PERM_TOO_BROAD": ("Unrestricted shell (or rtk, which runs its argument) removes every guard.", DOCS + "permissions#bash"),
-    "PERM_UNANCHORED_GLOB": ("Allow rules accept tool-name globs only after mcp__<server>__; this one is skipped.", DOCS + "permissions#tool-name-wildcards"),
-    "PERM_WILDCARD_EARLY": ("A * before the subcommand allows every subcommand, including options like git -c.", DOCS + "permissions#wildcard-patterns"),
-    "PERM_EXEC_RUNNER": ("Environment runners execute their arguments: the rule allows any command after them.", DOCS + "permissions#process-wrappers"),
-    "PERM_EXTERNAL_ACTION": ("Effects outside the sandbox need human approval: 'ask', not 'allow'.", ""),
-    "PERM_DEAD_ALLOW": ("Deny is evaluated first; an allow can never carve an exception out of it.", DOCS + "permissions#manage-permissions"),
-    "PERM_ASK_SHADOW": ("A matching ask rule prompts even when a narrower allow matches.", DOCS + "permissions#manage-permissions"),
-    "PERM_READONLY": ("Built-in read-only commands already run without a prompt.", DOCS + "permissions#read-only-commands"),
+    "PERM_TOO_BROAD": (
+        "Unrestricted shell (or rtk, which runs its argument) removes every guard.",
+        DOCS + "permissions#bash",
+    ),
+    "PERM_UNANCHORED_GLOB": (
+        "Allow rules accept tool-name globs only after mcp__<server>__; this one is skipped.",
+        DOCS + "permissions#tool-name-wildcards",
+    ),
+    "PERM_WILDCARD_EARLY": (
+        "A * before the subcommand allows every subcommand, including options like git -c.",
+        DOCS + "permissions#wildcard-patterns",
+    ),
+    "PERM_EXEC_RUNNER": (
+        "Environment runners execute their arguments: the rule allows any command after them.",
+        DOCS + "permissions#process-wrappers",
+    ),
+    "PERM_EXTERNAL_ACTION": (
+        "Effects outside the sandbox need human approval: 'ask', not 'allow'.",
+        "",
+    ),
+    "PERM_DEAD_ALLOW": (
+        "Deny is evaluated first; an allow can never carve an exception out of it.",
+        DOCS + "permissions#manage-permissions",
+    ),
+    "PERM_ASK_SHADOW": (
+        "A matching ask rule prompts even when a narrower allow matches.",
+        DOCS + "permissions#manage-permissions",
+    ),
+    "PERM_READONLY": (
+        "Built-in read-only commands already run without a prompt.",
+        DOCS + "permissions#read-only-commands",
+    ),
     "PERM_RTK": ("Routing through rtk compresses command output and saves context tokens.", ""),
-    "PERM_RTK_TWIN": ("Known issue: deny rules do not reliably block rtk-prefixed commands; mirror both forms.", ISSUES + "79400"),
-    "PERM_STYLE": ("':*' and ' *' are equivalent at the end; the permission dialog writes the space form.", DOCS + "permissions#wildcard-patterns"),
+    "PERM_RTK_TWIN": (
+        "Known issue: deny rules do not reliably block rtk-prefixed commands; mirror both forms.",
+        ISSUES + "79400",
+    ),
+    "PERM_STYLE": (
+        "':*' and ' *' are equivalent at the end; the permission dialog writes the space form.",
+        DOCS + "permissions#wildcard-patterns",
+    ),
     "PERM_SHADOWED": ("A broader rule already covers this one.", ""),
-    "PERM_MISSING_DENY": ("Blocks secret files for the file tools and recognised Bash readers (cat, head, ...). Not an OS boundary: use the sandbox for that.", DOCS + "settings-reference#exclude-sensitive-files"),
-    "PERM_BYPASS": ("Every tool call runs without confirmation, including writes to .git and .claude.", DOCS + "permissions#permission-modes"),
-    "PERM_MODE_DEAD": ("auto and bypassPermissions don't take effect from project or local settings.", DOCS + "settings#a-value-you-set-is-ignored"),
-    "PERM_NET_DENY": ("Bash deny rules miss /usr/bin/curl or sh -c 'curl'; the sandbox network allowlist is the real boundary.", DOCS + "permissions#bash-rule-limits"),
-    "SECRET_INLINE": ("Committed or plaintext config is readable by anyone with access; reference ${VAR} or the vault.", ""),
-    "HOOK_SHAPE": ("Expected {Event: [{matcher?, hooks: [{type, ...}]}]}.", DOCS + "hooks#configuration"),
-    "HOOK_EVENT": ("Unknown events never fire and are skipped with a warning.", DOCS + "hooks#hook-lifecycle"),
-    "HOOK_LEGACY_FORMAT": ("Old or flattened shape; converted to matcher groups.", DOCS + "hooks#configuration"),
+    "PERM_MISSING_DENY": (
+        "Blocks secret files for the file tools and recognised Bash readers (cat, head, "
+        "...). Not an OS boundary: use the sandbox for that.",
+        DOCS + "settings-reference#exclude-sensitive-files",
+    ),
+    "PERM_BYPASS": (
+        "Every tool call runs without confirmation, including writes to .git and .claude.",
+        DOCS + "permissions#permission-modes",
+    ),
+    "PERM_MODE_DEAD": (
+        "auto and bypassPermissions don't take effect from project or local settings.",
+        DOCS + "settings#a-value-you-set-is-ignored",
+    ),
+    "PERM_NET_DENY": (
+        "Bash deny rules miss /usr/bin/curl or sh -c 'curl'; the sandbox network allowlist "
+        "is the real boundary.",
+        DOCS + "permissions#bash-rule-limits",
+    ),
+    "SECRET_INLINE": (
+        "Committed or plaintext config is readable by anyone with access; reference ${VAR} "
+        "or the vault.",
+        "",
+    ),
+    "HOOK_SHAPE": (
+        "Expected {Event: [{matcher?, hooks: [{type, ...}]}]}.",
+        DOCS + "hooks#configuration",
+    ),
+    "HOOK_EVENT": (
+        "Unknown events never fire and are skipped with a warning.",
+        DOCS + "hooks#hook-lifecycle",
+    ),
+    "HOOK_LEGACY_FORMAT": (
+        "Old or flattened shape; converted to matcher groups.",
+        DOCS + "hooks#configuration",
+    ),
     "HOOK_NO_TYPE": ("Each handler needs a type; set to command.", DOCS + "hooks#common-fields"),
-    "HOOK_TYPE": ("Handler types: command, http, mcp_tool, prompt, agent.", DOCS + "hooks#hook-handler-fields"),
-    "HOOK_IF_DEAD": ("'if' is only evaluated on tool events; elsewhere the handler never runs.", DOCS + "hooks#common-fields"),
-    "HOOK_MATCHER_IGNORED": ("This event has no matcher support; the field is silently ignored.", DOCS + "hooks#matcher-patterns"),
-    "HOOK_MATCHER_MCP": ("mcp__server is compared as an exact tool name and matches nothing; append __.*", DOCS + "hooks#match-mcp-tools"),
-    "HOOK_MATCHER_TOOL": ("Matchers use canonical tool names; this one never fires.", DOCS + "hooks#matcher-patterns"),
-    "HOOK_MATCHER_REGEX": ("Regex matchers are unanchored: Edit.* also matches NotebookEdit. Anchor with ^...$.", DOCS + "hooks#matcher-patterns"),
+    "HOOK_TYPE": (
+        "Handler types: command, http, mcp_tool, prompt, agent.",
+        DOCS + "hooks#hook-handler-fields",
+    ),
+    "HOOK_IF_DEAD": (
+        "'if' is only evaluated on tool events; elsewhere the handler never runs.",
+        DOCS + "hooks#common-fields",
+    ),
+    "HOOK_MATCHER_IGNORED": (
+        "This event has no matcher support; the field is silently ignored.",
+        DOCS + "hooks#matcher-patterns",
+    ),
+    "HOOK_MATCHER_MCP": (
+        "mcp__server is compared as an exact tool name and matches nothing; append __.*",
+        DOCS + "hooks#match-mcp-tools",
+    ),
+    "HOOK_MATCHER_TOOL": (
+        "Matchers use canonical tool names; this one never fires.",
+        DOCS + "hooks#matcher-patterns",
+    ),
+    "HOOK_MATCHER_REGEX": (
+        "Regex matchers are unanchored: Edit.* also matches NotebookEdit. Anchor with ^...$.",
+        DOCS + "hooks#matcher-patterns",
+    ),
     "HOOK_ONCE": ("'once' is only honored in skill frontmatter.", DOCS + "hooks#common-fields"),
-    "HOOK_MISSING_SCRIPT": ("A missing script exits 127: non-blocking, so the guard is silently disabled.", DOCS + "hooks#other-exit-codes"),
-    "HOOK_NOT_EXECUTABLE": ("chmod +x the script, or the hook fails as non-blocking.", DOCS + "hooks#other-exit-codes"),
-    "HOOK_RELATIVE_PATH": ("Hooks run in the current directory, which moves with cd; anchor on ${CLAUDE_PROJECT_DIR} in exec form.", DOCS + "hooks#reference-scripts-by-path"),
-    "HOOK_EXEC_FORM": ("Exec form (command + args) passes paths without shell quoting issues.", DOCS + "hooks#exec-form-and-shell-form"),
-    "HOOK_EXIT1": ("Only exit 2 (or a JSON decision) blocks; exit 1 is a non-blocking error and the action proceeds.", DOCS + "hooks#exit-code-2"),
-    "HOOK_ASYNC_GATE": ("An async PreToolUse hook runs in the background and cannot block the call.", DOCS + "hooks#command-hook-fields"),
-    "HOOK_TIMEOUT": ("A PreToolUse hook that times out does not block; the call continues to the normal permission flow.", DOCS + "hooks#timeouts"),
-    "HOOK_HTTP_ENV": ("Header variables resolve only when listed in allowedEnvVars; otherwise they become empty.", DOCS + "hooks#http-hook-fields"),
-    "HOOK_MCP_LAUNCH": ("mcp_tool hooks are skipped at launch on SessionStart and always on Setup.", DOCS + "hooks#mcp-tool-hook-fields"),
-    "HOOK_DUP_CONTEXT": ("AGENTS.md is read natively since v2.1.277; printing it from a hook adds a second copy.", DOCS + "memory#remove-an-earlier-agents-md-workaround"),
-    "USER_SCOPE_HOOKS": ("Blocking hooks belong to each project; user scope carries context only.", ""),
-    "LOCAL_NOT_IGNORED": ("Personal overrides must stay out of commits; a tracked local file also waits for workspace trust.", DOCS + "permissions#when-your-local-settings-file-needs-trust"),
+    "HOOK_MISSING_SCRIPT": (
+        "A missing script exits 127: non-blocking, so the guard is silently disabled.",
+        DOCS + "hooks#other-exit-codes",
+    ),
+    "HOOK_NOT_EXECUTABLE": (
+        "chmod +x the script, or the hook fails as non-blocking.",
+        DOCS + "hooks#other-exit-codes",
+    ),
+    "HOOK_RELATIVE_PATH": (
+        "Hooks run in the current directory, which moves with cd; anchor on "
+        "${CLAUDE_PROJECT_DIR} in exec form.",
+        DOCS + "hooks#reference-scripts-by-path",
+    ),
+    "HOOK_EXEC_FORM": (
+        "Exec form (command + args) passes paths without shell quoting issues.",
+        DOCS + "hooks#exec-form-and-shell-form",
+    ),
+    "HOOK_EXIT1": (
+        "Only exit 2 (or a JSON decision) blocks; exit 1 is a non-blocking error and the "
+        "action proceeds.",
+        DOCS + "hooks#exit-code-2",
+    ),
+    "HOOK_ASYNC_GATE": (
+        "An async PreToolUse hook runs in the background and cannot block the call.",
+        DOCS + "hooks#command-hook-fields",
+    ),
+    "HOOK_TIMEOUT": (
+        "A PreToolUse hook that times out does not block; the call continues to the normal "
+        "permission flow.",
+        DOCS + "hooks#timeouts",
+    ),
+    "HOOK_HTTP_ENV": (
+        "Header variables resolve only when listed in allowedEnvVars; otherwise they become empty.",
+        DOCS + "hooks#http-hook-fields",
+    ),
+    "HOOK_MCP_LAUNCH": (
+        "mcp_tool hooks are skipped at launch on SessionStart and always on Setup.",
+        DOCS + "hooks#mcp-tool-hook-fields",
+    ),
+    "HOOK_DUP_CONTEXT": (
+        "AGENTS.md is read natively since v2.1.277; printing it from a hook adds a second copy.",
+        DOCS + "memory#remove-an-earlier-agents-md-workaround",
+    ),
+    "USER_SCOPE_HOOKS": (
+        "Blocking hooks belong to each project; user scope carries context only.",
+        "",
+    ),
+    "LOCAL_NOT_IGNORED": (
+        "Personal overrides must stay out of commits; a tracked local file also waits for "
+        "workspace trust.",
+        DOCS + "permissions#when-your-local-settings-file-needs-trust",
+    ),
     "JSON_FORMAT": ("Canonical 2-space formatting keeps diffs readable.", ""),
     "MCP_SHAPE": ("Each server needs 'command' (stdio) or 'url' with a type (http).", DOCS + "mcp"),
-    "MCP_TYPE": ("A url server without 'type' is treated as stdio and fails to connect.", DOCS + "mcp"),
+    "MCP_TYPE": (
+        "A url server without 'type' is treated as stdio and fails to connect.",
+        DOCS + "mcp",
+    ),
     "MCP_SSE": ("The SSE transport is deprecated; prefer http.", DOCS + "mcp"),
     "MCP_COMMAND_ARGS": ("'command' is the executable; arguments go in 'args'.", DOCS + "mcp"),
     "MCP_MISPLACED": ("Servers must live under 'mcpServers'.", DOCS + "mcp"),
-    "MCP_TOO_MANY": ("Each server's tools cost context; keep what this project uses.", DOCS + "mcp#scale-with-mcp-tool-search"),
-    "IMPORT_MISSING": ("The @import silently loads nothing.", DOCS + "memory#import-additional-files"),
-    "IMPORT_DEPTH": ("Imports recurse at most four hops; deeper files are not loaded.", DOCS + "memory#import-additional-files"),
-    "IMPORT_EXTERNAL": ("Imports outside the working directory need a one-time approval dialog.", DOCS + "memory#import-additional-files"),
-    "INSTR_USER_TOO_LONG": ("Loaded in every session of every project; import bulk on demand instead.", DOCS + "memory#write-effective-instructions"),
-    "INSTR_TOO_LARGE": ("Files over 4 MiB are skipped entirely.", DOCS + "memory#my-claude-md-is-too-large"),
-    "INSTR_LONG": ("Target under 200 lines; move procedures to skills and scoped content to .claude/rules/.", DOCS + "memory#write-effective-instructions"),
+    "MCP_TOO_MANY": (
+        "Each server's tools cost context; keep what this project uses.",
+        DOCS + "mcp#scale-with-mcp-tool-search",
+    ),
+    "IMPORT_MISSING": (
+        "The @import silently loads nothing.",
+        DOCS + "memory#import-additional-files",
+    ),
+    "IMPORT_DEPTH": (
+        "Imports recurse at most four hops; deeper files are not loaded.",
+        DOCS + "memory#import-additional-files",
+    ),
+    "IMPORT_EXTERNAL": (
+        "Imports outside the working directory need a one-time approval dialog.",
+        DOCS + "memory#import-additional-files",
+    ),
+    "INSTR_USER_TOO_LONG": (
+        "Loaded in every session of every project; import bulk on demand instead.",
+        DOCS + "memory#write-effective-instructions",
+    ),
+    "INSTR_TOO_LARGE": (
+        "Files over 4 MiB are skipped entirely.",
+        DOCS + "memory#my-claude-md-is-too-large",
+    ),
+    "INSTR_LONG": (
+        "Target under 200 lines; move procedures to skills and scoped content to .claude/rules/.",
+        DOCS + "memory#write-effective-instructions",
+    ),
     "INSTR_DUPLICATED": ("Same lines in user and project instructions are paid twice.", ""),
-    "AGENTS_IGNORED": ("With a CLAUDE.md present, AGENTS.md is not read by default; import it.", DOCS + "memory#agents-md"),
-    "AGENTS_MENTION": ("A sentence asking to read AGENTS.md only works if Claude decides to open it; use @AGENTS.md.", DOCS + "memory#remove-an-earlier-agents-md-workaround"),
-    "AGENTS_SHADOWED_LOCAL": ("CLAUDE.local.md counts as a CLAUDE.md: AGENTS.md stops loading.", DOCS + "memory#when-claude-code-reads-agents-md"),
-    "AGENTS_OLD_CLI": ("Reading AGENTS.md natively needs v2.1.277+ (v2.1.281+ on Bedrock); keep a CLAUDE.md import.", DOCS + "memory#when-agents-md-support-is-unavailable"),
-    "AGENTS_SYMLINK": ("A symlinked CLAUDE.md breaks on Windows clones without core.symlinks; prefer the @AGENTS.md import.", DOCS + "memory#share-one-file-with-other-coding-tools"),
+    "AGENTS_IGNORED": (
+        "With a CLAUDE.md present, AGENTS.md is not read by default; import it.",
+        DOCS + "memory#agents-md",
+    ),
+    "AGENTS_MENTION": (
+        "A sentence asking to read AGENTS.md only works if Claude decides to open it; use "
+        "@AGENTS.md.",
+        DOCS + "memory#remove-an-earlier-agents-md-workaround",
+    ),
+    "AGENTS_SHADOWED_LOCAL": (
+        "CLAUDE.local.md counts as a CLAUDE.md: AGENTS.md stops loading.",
+        DOCS + "memory#when-claude-code-reads-agents-md",
+    ),
+    "AGENTS_OLD_CLI": (
+        "Reading AGENTS.md natively needs v2.1.277+ (v2.1.281+ on Bedrock); keep a "
+        "CLAUDE.md import.",
+        DOCS + "memory#when-agents-md-support-is-unavailable",
+    ),
+    "AGENTS_SYMLINK": (
+        "A symlinked CLAUDE.md breaks on Windows clones without core.symlinks; prefer the "
+        "@AGENTS.md import.",
+        DOCS + "memory#share-one-file-with-other-coding-tools",
+    ),
     "RENDER_HAND_EDITED": ("Edit doctrine/rules/ and re-render; hand edits are lost.", ""),
-    "LOCAL_MD_NOT_IGNORED": ("CLAUDE.local.md holds personal notes; keep it out of commits.", DOCS + "memory#import-additional-files"),
-    "RULE_UNSCOPED": ("Rules without 'paths' load in every session.", DOCS + "memory#path-specific-rules"),
-    "RULE_FIELD": ("'paths' is the only field read from a rule; others are ignored.", DOCS + "memory#rules-frontmatter-reference"),
-    "RULE_PATTERN": ("An unbalanced [ makes the pattern invalid: it matches nothing.", DOCS + "memory#path-specific-rules"),
-    "RULE_EXTERNAL": ("A rule symlinked outside the project needs external-import approval; ~/.claude/rules/ doesn't.", DOCS + "memory#share-rules-across-projects-with-symlinks"),
-    "FRONTMATTER_OFFSET": ("Frontmatter is read only when '---' is the first line; otherwise it becomes content.", DOCS + "skills#frontmatter-reference"),
-    "MEMORY_INDEX": ("Only the first 200 lines / 25KB of MEMORY.md load; the rest is dropped.", DOCS + "memory#how-it-works"),
-    "SKILL_MISSING": ("A skill directory must contain SKILL.md.", DOCS + "skills#where-skills-live"),
-    "SKILL_RESERVED": ("'synced' is reserved for claude.ai sync; the skill is skipped.", DOCS + "skills#where-skills-live"),
-    "SKILL_FIELD": ("Unknown frontmatter fields are ignored without error.", DOCS + "skills#frontmatter-reference"),
-    "SKILL_PORTABILITY": ("Outside the Agent Skills spec: claude.ai upload and the Skills API reject it.", DOCS + "skills#using-skill-frontmatter-outside-claude-code"),
-    "SKILL_NAME": ("The command comes from the directory; the spec expects name == directory, lowercase-hyphen, max 64.", DOCS + "skills#how-a-skill-gets-its-command-name"),
-    "SKILL_DESCRIPTION": ("The description decides when the skill triggers; key use case first.", DOCS + "skills#frontmatter-reference"),
-    "SKILL_LONG": ("Keep SKILL.md under 500 lines; move reference material to supporting files.", DOCS + "skills#add-supporting-files"),
-    "SKILL_FORK_FIELD": ("'agent' and 'background' only apply with context: fork.", DOCS + "skills#frontmatter-reference"),
-    "SKILL_SIDE_EFFECT": ("Side-effect workflows should be user-triggered: disable-model-invocation: true.", DOCS + "skills#control-who-invokes-a-skill"),
-    "SKILL_BROAD_TOOLS": ("allowed-tools is not gated by workspace trust; a broad grant runs unprompted.", DOCS + "skills#pre-approve-tools-for-a-skill"),
-    "SKILL_MANIFEST_BUG": ("Before v2.1.280 a manifest.json here moved listed skills to .trash.", DOCS + "skills#personal-skills-disappeared"),
-    "COMMAND_SHADOWED": ("A skill with the same name wins; the command file never runs.", DOCS + "skills#resolve-skills-that-share-a-name"),
-    "AGENT_FRONTMATTER": ("Subagents need name and description to be selectable.", DOCS + "sub-agents"),
-    "AGENT_FIELD": ("Unrecognised subagent field (may be newer than this script).", DOCS + "sub-agents"),
-    "AGENT_TOOLS": ("An unknown tool is dropped; if none match, the subagent is refused.", DOCS + "errors#agent-would-be-spawned-with-zero-tools"),
+    "LOCAL_MD_NOT_IGNORED": (
+        "CLAUDE.local.md holds personal notes; keep it out of commits.",
+        DOCS + "memory#import-additional-files",
+    ),
+    "RULE_UNSCOPED": (
+        "Rules without 'paths' load in every session.",
+        DOCS + "memory#path-specific-rules",
+    ),
+    "RULE_FIELD": (
+        "'paths' is the only field read from a rule; others are ignored.",
+        DOCS + "memory#rules-frontmatter-reference",
+    ),
+    "RULE_PATTERN": (
+        "An unbalanced [ makes the pattern invalid: it matches nothing.",
+        DOCS + "memory#path-specific-rules",
+    ),
+    "RULE_EXTERNAL": (
+        "A rule symlinked outside the project needs external-import approval; "
+        "~/.claude/rules/ doesn't.",
+        DOCS + "memory#share-rules-across-projects-with-symlinks",
+    ),
+    "FRONTMATTER_OFFSET": (
+        "Frontmatter is read only when '---' is the first line; otherwise it becomes content.",
+        DOCS + "skills#frontmatter-reference",
+    ),
+    "MEMORY_INDEX": (
+        "Only the first 200 lines / 25KB of MEMORY.md load; the rest is dropped.",
+        DOCS + "memory#how-it-works",
+    ),
+    "SKILL_MISSING": (
+        "A skill directory must contain SKILL.md.",
+        DOCS + "skills#where-skills-live",
+    ),
+    "SKILL_RESERVED": (
+        "'synced' is reserved for claude.ai sync; the skill is skipped.",
+        DOCS + "skills#where-skills-live",
+    ),
+    "SKILL_FIELD": (
+        "Unknown frontmatter fields are ignored without error.",
+        DOCS + "skills#frontmatter-reference",
+    ),
+    "SKILL_PORTABILITY": (
+        "Outside the Agent Skills spec: claude.ai upload and the Skills API reject it.",
+        DOCS + "skills#using-skill-frontmatter-outside-claude-code",
+    ),
+    "SKILL_NAME": (
+        "The command comes from the directory; the spec expects name == directory, "
+        "lowercase-hyphen, max 64.",
+        DOCS + "skills#how-a-skill-gets-its-command-name",
+    ),
+    "SKILL_DESCRIPTION": (
+        "The description decides when the skill triggers; key use case first.",
+        DOCS + "skills#frontmatter-reference",
+    ),
+    "SKILL_LONG": (
+        "Keep SKILL.md under 500 lines; move reference material to supporting files.",
+        DOCS + "skills#add-supporting-files",
+    ),
+    "SKILL_FORK_FIELD": (
+        "'agent' and 'background' only apply with context: fork.",
+        DOCS + "skills#frontmatter-reference",
+    ),
+    "SKILL_SIDE_EFFECT": (
+        "Side-effect workflows should be user-triggered: disable-model-invocation: true.",
+        DOCS + "skills#control-who-invokes-a-skill",
+    ),
+    "SKILL_BROAD_TOOLS": (
+        "allowed-tools is not gated by workspace trust; a broad grant runs unprompted.",
+        DOCS + "skills#pre-approve-tools-for-a-skill",
+    ),
+    "SKILL_MANIFEST_BUG": (
+        "Before v2.1.280 a manifest.json here moved listed skills to .trash.",
+        DOCS + "skills#personal-skills-disappeared",
+    ),
+    "COMMAND_SHADOWED": (
+        "A skill with the same name wins; the command file never runs.",
+        DOCS + "skills#resolve-skills-that-share-a-name",
+    ),
+    "AGENT_FRONTMATTER": (
+        "Subagents need name and description to be selectable.",
+        DOCS + "sub-agents",
+    ),
+    "AGENT_FIELD": (
+        "Unrecognised subagent field (may be newer than this script).",
+        DOCS + "sub-agents",
+    ),
+    "AGENT_TOOLS": (
+        "An unknown tool is dropped; if none match, the subagent is refused.",
+        DOCS + "errors#agent-would-be-spawned-with-zero-tools",
+    ),
     "COMMAND_FRONTMATTER": ("A description makes the command readable in the / menu.", ""),
-    "SCAFFOLD_SETTINGS": ("Baseline: attribution off, secrets denied, external actions on ask.", ""),
+    "SCAFFOLD_SETTINGS": (
+        "Baseline: attribution off, secrets denied, external actions on ask.",
+        "",
+    ),
     "SCAFFOLD_USER_SETTINGS": ("Baseline user settings: attribution off only.", ""),
-    "SCAFFOLD_INSTRUCTIONS": ("AGENTS.md is the neutral source; CLAUDE.md only imports it.", DOCS + "memory#share-one-file-with-other-coding-tools"),
-    "SCAFFOLD_CLAUDE_IMPORT": ("Import kept for CLIs before v2.1.277 and sessions without native AGENTS.md.", DOCS + "memory#when-agents-md-support-is-unavailable"),
+    "SCAFFOLD_INSTRUCTIONS": (
+        "AGENTS.md is the neutral source; CLAUDE.md only imports it.",
+        DOCS + "memory#share-one-file-with-other-coding-tools",
+    ),
+    "SCAFFOLD_CLAUDE_IMPORT": (
+        "Import kept for CLIs before v2.1.277 and sessions without native AGENTS.md.",
+        DOCS + "memory#when-agents-md-support-is-unavailable",
+    ),
     "SCAFFOLD_RENDER_MISSING": ("doctrine/rules exists: run your renderer.", ""),
     "USER_SCOPE_ABSENT": ("Nothing to check at user scope.", ""),
-    "WRITE_FAILED": ("Permissions, read-only mount, or a symlink to a generated file.", DOCS + "settings#a-change-you-made-in-claude-code-is-lost-in-new-sessions"),
+    "WRITE_FAILED": (
+        "Permissions, read-only mount, or a symlink to a generated file.",
+        DOCS + "settings#a-change-you-made-in-claude-code-is-lost-in-new-sessions",
+    ),
     "CLI_VERSION": ("Detected with 'claude --version'.", DOCS + "changelog"),
 }
 
@@ -449,9 +1119,11 @@ CLI_VERSION: tuple[int, ...] | None = None
 LANG = "fr"  # brief-report language: "fr" or "en" (set from --lang / $LANG)
 
 
-def _L(fr: str, en: str) -> str:
+def _loc(fr: str, en: str) -> str:
     """Pick the brief-report string for the active language."""
     return en if LANG == "en" else fr
+
+
 _COLOR_ERR = sys.stderr.isatty()
 LEVELS = ("error", "warn", "info")
 
@@ -476,7 +1148,12 @@ def progress(done: int, total: int, label: str = "") -> None:
     bar = "█" * filled + "░" * (width - filled)
     end = "\n" if done >= total else ""
     lbl = (label[:40] + "…") if len(label) > 41 else label
-    print(f"\r\033[2m  scan [{bar}] {done}/{total} {lbl}\033[0m\033[K{end}", end=end or "", file=sys.stderr, flush=True)
+    print(
+        f"\r\033[2m  scan [{bar}] {done}/{total} {lbl}\033[0m\033[K{end}",
+        end=end or "",
+        file=sys.stderr,
+        flush=True,
+    )
 
 
 @dataclass
@@ -536,13 +1213,19 @@ class Report:
 def deep_merge(base: dict, override: dict) -> dict:
     out = copy.deepcopy(base)
     for k, v in override.items():
-        out[k] = deep_merge(out[k], v) if isinstance(v, dict) and isinstance(out.get(k), dict) else v
+        out[k] = (
+            deep_merge(out[k], v) if isinstance(v, dict) and isinstance(out.get(k), dict) else v
+        )
     return out
 
 
 def load_policy(path: Path | None, repos: list[Path]) -> dict:
     # Prefer .claude-lint.toml; accept the former .agent-lint.toml name too.
-    candidates = [path] if path else [r / n for r in repos for n in (".claude-lint.toml", ".agent-lint.toml")]
+    candidates = (
+        [path]
+        if path
+        else [r / n for r in repos for n in (".claude-lint.toml", ".agent-lint.toml")]
+    )
     policy, source = copy.deepcopy(DEFAULT_POLICY), "built-in defaults"
     for c in candidates:
         if c and c.is_file():
@@ -559,7 +1242,11 @@ def load_policy(path: Path | None, repos: list[Path]) -> dict:
     KNOWN_TOOLS.update(ref.get("extra_tools", []))
     SKILL_FIELDS.update(ref.get("extra_skill_fields", []))
     AGENT_FIELDS.update(ref.get("extra_agent_fields", []))
-    log(1, f"policy: {source}" + (f" (reference data checked {ref['docs_checked']})" if ref.get("docs_checked") else ""))
+    log(
+        1,
+        f"policy: {source}"
+        + (f" (reference data checked {ref['docs_checked']})" if ref.get("docs_checked") else ""),
+    )
     log(3, "resolved policy: " + json.dumps(policy, ensure_ascii=False))
     return policy
 
@@ -648,15 +1335,19 @@ def frontmatter_block(text: str) -> str:
     return stripped[3:end] if stripped.startswith("---") and end != -1 else ""
 
 
-def set_frontmatter(text: str, updates: dict[str, str], renames: dict[str, str] | None = None) -> str:
+def set_frontmatter(
+    text: str, updates: dict[str, str], renames: dict[str, str] | None = None
+) -> str:
     text = text.lstrip("\ufeff \t\r\n") if text.lstrip("\ufeff \t\r\n").startswith("---") else text
     if text.startswith("---") and (end := text.find("\n---", 3)) != -1:
-        head, body = text[3:end].strip("\n").splitlines(), text[end + 4:]
+        head, body = text[3:end].strip("\n").splitlines(), text[end + 4 :]
         for old, new in (renames or {}).items():
             head = [re.sub(rf"^{re.escape(old)}(\s*:)", rf"{new}\1", l) for l in head]
         for key, val in updates.items():
             line = f"{key}: {yaml_scalar(val)}"
-            idx = next((i for i, l in enumerate(head) if re.match(rf"^{re.escape(key)}\s*:", l)), None)
+            idx = next(
+                (i for i, l in enumerate(head) if re.match(rf"^{re.escape(key)}\s*:", l)), None
+            )
             if idx is None:
                 head.insert(0 if key == "name" else len(head), line)
             else:
@@ -680,11 +1371,14 @@ def derive_description(text: str) -> str | None:
     body = text
     stripped = body.lstrip("\ufeff \t\r\n")
     if stripped.startswith("---") and (end := stripped.find("\n---", 3)) != -1:
-        body = stripped[end + 4:]
+        body = stripped[end + 4 :]
     body = strip_html_comments(strip_code(body))
     for para in re.split(r"\n\s*\n", body):
-        para = " ".join(l.strip() for l in para.splitlines()
-                        if l.strip() and not l.lstrip().startswith(("#", "|", ">", "!")))
+        para = " ".join(
+            l.strip()
+            for l in para.splitlines()
+            if l.strip() and not l.lstrip().startswith(("#", "|", ">", "!"))
+        )
         para = re.sub(r"[*_`]", "", para).strip(" -")
         if len(para) >= 20:
             return re.split(r"(?<=[.!?])\s", para)[0][:300]
@@ -694,8 +1388,9 @@ def derive_description(text: str) -> str | None:
 def git(repo: Path, *args: str) -> str | None:
     log(3, "git -C " + str(repo) + " " + " ".join(args))
     try:
-        res = subprocess.run(["git", "-C", str(repo), *args], capture_output=True,
-                             text=True, timeout=30, check=False)
+        res = subprocess.run(
+            ["git", "-C", str(repo), *args], capture_output=True, text=True, timeout=30, check=False
+        )
     except (OSError, subprocess.TimeoutExpired):
         return None
     return res.stdout if res.returncode == 0 else None
@@ -732,6 +1427,7 @@ def detect_cli_version() -> tuple[int, ...] | None:
         return None
     m = re.search(r"(\d+)\.(\d+)\.(\d+)", out or "")
     return tuple(int(x) for x in m.groups()) if m else None
+
 
 # --------------------------------------------------------------------------- #
 # Permission rules
@@ -835,8 +1531,11 @@ def dedupe(seq: list[str]) -> list[str]:
     return [x for x in seq if not (x in seen or seen.add(x))]
 
 
-def repair_rule(rule: Any, key: str, scope: str, path: Path, rep: Report, policy: dict) -> str | None:
+def repair_rule(
+    rule: Any, key: str, scope: str, path: Path, rep: Report, policy: dict
+) -> str | None:
     """Normalize one rule; report each repair. Returns the new rule or None to drop it."""
+
     def note(level: str, code: str, msg: str, fixable: bool = True) -> None:
         rep.add(level, code, path, f"{key}: {msg}", fixable)
         log(2, f"{key}: {msg}", 2)
@@ -853,7 +1552,9 @@ def repair_rule(rule: Any, key: str, scope: str, path: Path, rep: Report, policy
         return None
     tool, spec_p, closed, spec_colon, spec_space = m.groups()
     if spec_p is not None and closed is None and not spec_p.strip():
-        note("error", "PERM_SYNTAX", f"{r!r} has an unbalanced parenthesis; intent unknown (dropped)")
+        note(
+            "error", "PERM_SYNTAX", f"{r!r} has an unbalanced parenthesis; intent unknown (dropped)"
+        )
         return None
     spec = spec_p if spec_p is not None else (spec_colon or spec_space)
     if not tool.startswith("mcp__") and "*" not in tool:
@@ -877,14 +1578,20 @@ def repair_rule(rule: Any, key: str, scope: str, path: Path, rep: Report, policy
         return None
 
     # 4. parameter rules on a primary field are ignored
-    if spec is not None and (pm := re.match(r"^\s*(\w+)\s*:(.*)$", spec)) and pm.group(1) in PRIMARY_PARAMS:
+    if (
+        spec is not None
+        and (pm := re.match(r"^\s*(\w+)\s*:(.*)$", spec))
+        and pm.group(1) in PRIMARY_PARAMS
+    ):
         value = pm.group(2).strip()
         if tool == "WebFetch":
             host = urlparse(value if "://" in value else "https://" + value).hostname or value
             new = f"WebFetch(domain:{host})"
         else:
             new = f"{tool}({value})" if value else tool
-        note("error", "PERM_PRIMARY_PARAM", f"{r!r} is ignored by Claude Code; rewritten as {new!r}")
+        note(
+            "error", "PERM_PRIMARY_PARAM", f"{r!r} is ignored by Claude Code; rewritten as {new!r}"
+        )
         r, spec = new, (split_rule(new) or (tool, None))[1]
 
     # 5. path rules on tools whose path rules are never consulted
@@ -895,8 +1602,12 @@ def repair_rule(rule: Any, key: str, scope: str, path: Path, rep: Report, policy
         r, tool = new, new_tool
 
     # 6. WebFetch needs domain:
-    if (tool == "WebFetch" and spec and not spec.startswith("domain:")
-            and not re.match(r"^\s*\w+\s*:(?!//)", spec)):
+    if (
+        tool == "WebFetch"
+        and spec
+        and not spec.startswith("domain:")
+        and not re.match(r"^\s*\w+\s*:(?!//)", spec)
+    ):
         host = urlparse(spec if "://" in spec else "https://" + spec).hostname
         if host:
             new = f"WebFetch(domain:{host})"
@@ -904,9 +1615,15 @@ def repair_rule(rule: Any, key: str, scope: str, path: Path, rep: Report, policy
             r, spec = new, f"domain:{host}"
 
     # 7. tools without specifier
-    if (spec is not None and tool in KNOWN_TOOLS and tool not in SPECIFIER_TOOLS
-            and not (key in ("deny", "ask") and re.match(r"^\s*\w+\s*:", spec))):
-        note("warn", "PERM_NO_SPECIFIER", f"{r!r}: {tool} takes no specifier; rewritten as {tool!r}")
+    if (
+        spec is not None
+        and tool in KNOWN_TOOLS
+        and tool not in SPECIFIER_TOOLS
+        and not (key in ("deny", "ask") and re.match(r"^\s*\w+\s*:", spec))
+    ):
+        note(
+            "warn", "PERM_NO_SPECIFIER", f"{r!r}: {tool} takes no specifier; rewritten as {tool!r}"
+        )
         r, spec = tool, None
 
     # 8. ':*' in the middle is a literal colon
@@ -921,10 +1638,19 @@ def repair_rule(rule: Any, key: str, scope: str, path: Path, rep: Report, policy
         first = spec.lstrip("/").split("/", 1)[0]
         if first in ABS_ROOTS:
             new = f"{tool}(/{spec})"
-            note("warn", "PERM_ABS_PATH", f"{r!r} anchors at the settings source; rewritten as {new!r}")
+            note(
+                "warn",
+                "PERM_ABS_PATH",
+                f"{r!r} anchors at the settings source; rewritten as {new!r}",
+            )
             r, spec = new, "/" + spec
         elif scope == "user":
-            note("info", "PERM_USER_ANCHOR", f"{r!r} resolves under ~/.claude/ in user settings", False)
+            note(
+                "info",
+                "PERM_USER_ANCHOR",
+                f"{r!r} resolves under ~/.claude/ in user settings",
+                False,
+            )
 
     # 10. unknown tools / unanchored globs
     if "*" in tool:
@@ -946,13 +1672,19 @@ def repair_rule(rule: Any, key: str, scope: str, path: Path, rep: Report, policy
     return r
 
 
-def optimize_permissions(perms: dict, policy: dict, path: Path, rep: Report, scope: str,
-                         sandbox_on: bool) -> dict:
+def optimize_permissions(
+    perms: dict, policy: dict, path: Path, rep: Report, scope: str, sandbox_on: bool
+) -> dict:
     pol = policy["permissions"]
     out = copy.deepcopy(perms)
     lists = {k: list(out.get(k, []) or []) for k in ("allow", "ask", "deny")}
-    log(1, "permissions: " + ", ".join(f"{len(v)} {k}" for k, v in lists.items())
-        + f", mode={out.get('defaultMode', 'default')}", 1)
+    log(
+        1,
+        "permissions: "
+        + ", ".join(f"{len(v)} {k}" for k, v in lists.items())
+        + f", mode={out.get('defaultMode', 'default')}",
+        1,
+    )
 
     for key in lists:
         repaired = [repair_rule(r, key, scope, path, rep, policy) for r in lists[key]]
@@ -965,15 +1697,28 @@ def optimize_permissions(perms: dict, policy: dict, path: Path, rep: Report, sco
 
     mode = out.get("defaultMode")
     if mode in ("bypassPermissions", "auto") and scope == "project":
-        rep.add("warn", "PERM_MODE_DEAD", path, f"defaultMode={mode} has no effect here (removed)", True)
+        rep.add(
+            "warn", "PERM_MODE_DEAD", path, f"defaultMode={mode} has no effect here (removed)", True
+        )
         out.pop("defaultMode")
     elif mode == "bypassPermissions":
-        rep.add("error", "PERM_BYPASS", path, "defaultMode=bypassPermissions disables every prompt; "
-                "consider \"disableBypassPermissionsMode\": \"disable\"")
+        rep.add(
+            "error",
+            "PERM_BYPASS",
+            path,
+            "defaultMode=bypassPermissions disables every prompt; "
+            'consider "disableBypassPermissionsMode": "disable"',
+        )
 
     for r in list(allow):
         if r in pol["forbidden_allow"]:
-            rep.add("error", "PERM_TOO_BROAD", path, f"allow: {r!r} grants unrestricted execution (dropped)", True)
+            rep.add(
+                "error",
+                "PERM_TOO_BROAD",
+                path,
+                f"allow: {r!r} grants unrestricted execution (dropped)",
+                True,
+            )
             log(2, f"allow: drop {r}", 2)
             allow.remove(r)
     for r in allow:
@@ -987,16 +1732,31 @@ def optimize_permissions(perms: dict, policy: dict, path: Path, rep: Report, sco
             runners += ["proxy", "test", "err", "summary"]  # rtk wrappers that run any command
         runner = next((x for x in runners if cmd == x), None)
         if runner and kind:
-            rep.add("warn", "PERM_EXEC_RUNNER", path,
-                    f"allow: {r!r} allows any command run through {runner!r}; list exact inner commands")
+            rep.add(
+                "warn",
+                "PERM_EXEC_RUNNER",
+                path,
+                f"allow: {r!r} allows any command run through {runner!r}; list exact inner "
+                f"commands",
+            )
         tokens = cmd.split()
         if tokens and (tokens[0].startswith("*") or (len(tokens) >= 2 and "*" in tokens[1])):
-            rep.add("warn", "PERM_WILDCARD_EARLY", path, f"allow: {r!r} has a wildcard before the subcommand")
+            rep.add(
+                "warn",
+                "PERM_WILDCARD_EARLY",
+                path,
+                f"allow: {r!r} has a wildcard before the subcommand",
+            )
     for r in list(allow):
         hit = matches_prefix(r, pol["external_action_prefixes"])
         if hit:
-            rep.add("warn", "PERM_EXTERNAL_ACTION", path,
-                    f"allow: {r!r} is an external action ({hit}); moved to 'ask'", True)
+            rep.add(
+                "warn",
+                "PERM_EXTERNAL_ACTION",
+                path,
+                f"allow: {r!r} is an external action ({hit}); moved to 'ask'",
+                True,
+            )
             log(2, f"allow -> ask: {r}", 2)
             allow.remove(r)
             if r not in ask:
@@ -1008,47 +1768,94 @@ def optimize_permissions(perms: dict, policy: dict, path: Path, rep: Report, sco
             spec = (split_rule(r) or ("", None))[1] or ""
             if split_rule(r)[0] == "Bash" and spec.startswith("rtk "):
                 inner = trailing_wildcard(spec[4:])[0]
-                if (inner.split() and inner.split()[0] not in pol["rtk_exempt"] and rtk_authoritative()
-                        and inner.split()[0] not in RTK_NATIVE
-                        and not rtk_rewrites(inner)):
+                if (
+                    inner.split()
+                    and inner.split()[0] not in pol["rtk_exempt"]
+                    and rtk_authoritative()
+                    and inner.split()[0] not in RTK_NATIVE
+                    and not rtk_rewrites(inner)
+                ):
                     plain = f"Bash({spec[4:]})"
-                    rep.add("warn", "RTK_DEAD_RULE", path, f"allow: {r!r} never matches (rtk does not rewrite "
-                            f"{inner.split()[0]!r}); rewritten as {plain!r}", True)
+                    rep.add(
+                        "warn",
+                        "RTK_DEAD_RULE",
+                        path,
+                        f"allow: {r!r} never matches (rtk does not rewrite "
+                        f"{inner.split()[0]!r}); rewritten as {plain!r}",
+                        True,
+                    )
                     unwrapped.append(plain)
                     continue
             unwrapped.append(r)
         allow[:] = dedupe(unwrapped)
-        wrapped = [rtk_wrap(r, pol["rtk_exempt"]) if (c := command_of(r)) is None or rtk_rewrites(c) else r
-                   for r in allow]
+        wrapped = [
+            rtk_wrap(r, pol["rtk_exempt"]) if (c := command_of(r)) is None or rtk_rewrites(c) else r
+            for r in allow
+        ]
         changed = [(a, b) for a, b in zip(allow, wrapped) if a != b]
         for a, b in changed:
             log(2, f"rtk: {a} -> {b}", 2)
         if changed:
-            rep.add("warn", "PERM_RTK", path, f"allow: {len(changed)} Bash rule(s) not routed through rtk", True)
+            rep.add(
+                "warn",
+                "PERM_RTK",
+                path,
+                f"allow: {len(changed)} Bash rule(s) not routed through rtk",
+                True,
+            )
         allow[:] = dedupe(wrapped)
     else:
-        redundant = [r for r in allow if (c := command_of(r)) and c.split()[0] in READONLY_BUILTINS
-                     and not (split_rule(r)[1] or "").startswith("rtk ")]
+        redundant = [
+            r
+            for r in allow
+            if (c := command_of(r))
+            and c.split()[0] in READONLY_BUILTINS
+            and not (split_rule(r)[1] or "").startswith("rtk ")
+        ]
         if redundant:
-            rep.add("info", "PERM_READONLY", path, "allow: built-in read-only commands need no rule: "
-                    + ", ".join(redundant[:5]), True)
+            rep.add(
+                "info",
+                "PERM_READONLY",
+                path,
+                "allow: built-in read-only commands need no rule: " + ", ".join(redundant[:5]),
+                True,
+            )
             allow[:] = [r for r in allow if r not in redundant]
 
     for r in list(allow):
         by = next((d for d in deny if d == r or covers(d, r)), None)
         if by:
-            rep.add("warn", "PERM_DEAD_ALLOW", path, f"allow: {r!r} can never apply (denied by {by!r}; removed)", True)
+            rep.add(
+                "warn",
+                "PERM_DEAD_ALLOW",
+                path,
+                f"allow: {r!r} can never apply (denied by {by!r}; removed)",
+                True,
+            )
             allow.remove(r)
             continue
         by = next((a for a in ask if covers(a, r)), None)
         if by:
-            rep.add("info", "PERM_ASK_SHADOW", path, f"allow: {r!r} still prompts because of ask {by!r}")
+            rep.add(
+                "info", "PERM_ASK_SHADOW", path, f"allow: {r!r} still prompts because of ask {by!r}"
+            )
 
     for key, rules in (("allow", allow), ("ask", ask), ("deny", deny)):
-        shadowed = [b for b in rules if not b.split("(", 1)[-1].startswith("!") and any(covers(a, b) for a in rules)]
+        shadowed = [
+            b
+            for b in rules
+            if not b.split("(", 1)[-1].startswith("!") and any(covers(a, b) for a in rules)
+        ]
         if shadowed:
-            rep.add("info", "PERM_SHADOWED", path, f"{key}: {len(shadowed)} rule(s) covered by broader ones: "
-                    + ", ".join(shadowed[:5]) + (" ..." if len(shadowed) > 5 else ""), True)
+            rep.add(
+                "info",
+                "PERM_SHADOWED",
+                path,
+                f"{key}: {len(shadowed)} rule(s) covered by broader ones: "
+                + ", ".join(shadowed[:5])
+                + (" ..." if len(shadowed) > 5 else ""),
+                True,
+            )
             for b in shadowed:
                 log(2, f"{key}: drop {b} (covered by {next(a for a in rules if covers(a, b))})", 2)
             rules[:] = [r for r in rules if r not in shadowed]
@@ -1056,7 +1863,13 @@ def optimize_permissions(perms: dict, policy: dict, path: Path, rep: Report, sco
     if scope == "project" and path.name == "settings.json":
         missing = [d for d in pol["required_deny"] if d not in deny]
         if missing:
-            rep.add("warn", "PERM_MISSING_DENY", path, "deny: sensitive paths not protected: " + ", ".join(missing), True)
+            rep.add(
+                "warn",
+                "PERM_MISSING_DENY",
+                path,
+                "deny: sensitive paths not protected: " + ", ".join(missing),
+                True,
+            )
             positive = [d for d in missing if "(!" not in d]
             negative = [d for d in missing if "(!" in d]
             first_neg = next((i for i, d in enumerate(deny) if "(!" in d), len(deny))
@@ -1067,13 +1880,25 @@ def optimize_permissions(perms: dict, policy: dict, path: Path, rep: Report, sco
         for key, rules in (("deny", deny), ("ask", ask)):
             twins = [t for r in rules if (t := rtk_twin(r, pol["rtk_exempt"])) and t not in rules]
             if twins:
-                rep.add("warn", "PERM_RTK_TWIN", path, f"{key}: add rtk/non-rtk twins: " + ", ".join(twins[:4])
-                        + (" ..." if len(twins) > 4 else ""), True)
+                rep.add(
+                    "warn",
+                    "PERM_RTK_TWIN",
+                    path,
+                    f"{key}: add rtk/non-rtk twins: "
+                    + ", ".join(twins[:4])
+                    + (" ..." if len(twins) > 4 else ""),
+                    True,
+                )
                 rules.extend(dedupe(twins))
 
     if not sandbox_on and any(command_of(d) in ("curl", "wget") for d in deny):
-        rep.add("info", "PERM_NET_DENY", path, "deny rules on curl/wget are not a network boundary; "
-                "enable sandbox.network.allowedDomains")
+        rep.add(
+            "info",
+            "PERM_NET_DENY",
+            path,
+            "deny rules on curl/wget are not a network boundary; "
+            "enable sandbox.network.allowedDomains",
+        )
 
     for key, rules in (("allow", allow), ("ask", ask), ("deny", deny)):
         if rules:
@@ -1081,6 +1906,7 @@ def optimize_permissions(perms: dict, policy: dict, path: Path, rep: Report, sco
         else:
             out.pop(key, None)
     return out
+
 
 # --------------------------------------------------------------------------- #
 # Hooks
@@ -1104,8 +1930,11 @@ def resolve_script(first: str, base: Path) -> Path | None:
 def to_exec_form(command: str, scope: str) -> tuple[str, list[str]] | None:
     """Split a simple shell-form command into exec form, anchoring relative paths."""
     body = PLACEHOLDER_RE.sub(lambda m: "${CLAUDE_" + m.group(1) + "}", command.strip())
-    if SHELL_META.search(body.replace("${CLAUDE_PROJECT_DIR}", "").replace("${CLAUDE_PLUGIN_ROOT}", "")
-                         .replace("${CLAUDE_PLUGIN_DATA}", "")) or "$" in re.sub(r"\$\{CLAUDE_\w+\}", "", body):
+    if SHELL_META.search(
+        body.replace("${CLAUDE_PROJECT_DIR}", "")
+        .replace("${CLAUDE_PLUGIN_ROOT}", "")
+        .replace("${CLAUDE_PLUGIN_DATA}", "")
+    ) or "$" in re.sub(r"\$\{CLAUDE_\w+\}", "", body):
         return None
     try:
         tokens = shlex.split(body)
@@ -1123,7 +1952,13 @@ def check_matcher(event: str, matcher: Any, path: Path, rep: Report) -> Any:
     if matcher in (None, "", "*"):
         return matcher
     if event in NO_MATCHER_EVENTS:
-        rep.add("info", "HOOK_MATCHER_IGNORED", path, f"{event}: matcher {matcher!r} is ignored (removed)", True)
+        rep.add(
+            "info",
+            "HOOK_MATCHER_IGNORED",
+            path,
+            f"{event}: matcher {matcher!r} is ignored (removed)",
+            True,
+        )
         return None
     if not isinstance(matcher, str) or event not in TOOL_EVENTS:
         return matcher
@@ -1133,42 +1968,77 @@ def check_matcher(event: str, matcher: Any, path: Path, rep: Report) -> Any:
         for t in tokens:
             if t.startswith("mcp__"):
                 if t.count("__") == 1:
-                    rep.add("warn", "HOOK_MATCHER_MCP", path, f"{event}: {t!r} matches no tool; use {t}__.*", True)
+                    rep.add(
+                        "warn",
+                        "HOOK_MATCHER_MCP",
+                        path,
+                        f"{event}: {t!r} matches no tool; use {t}__.*",
+                        True,
+                    )
                     fixed.append(t + "__.*")
                     continue
             elif t in LEGACY_TOOLS:
-                rep.add("warn", "PERM_LEGACY_TOOL", path, f"{event}: matcher {t!r} renamed to {LEGACY_TOOLS[t]!r}", True)
+                rep.add(
+                    "warn",
+                    "PERM_LEGACY_TOOL",
+                    path,
+                    f"{event}: matcher {t!r} renamed to {LEGACY_TOOLS[t]!r}",
+                    True,
+                )
                 t = LEGACY_TOOLS[t]
             elif t not in KNOWN_TOOLS:
-                rep.add("warn", "HOOK_MATCHER_TOOL", path, f"{event}: matcher {t!r} is not a tool name")
+                rep.add(
+                    "warn", "HOOK_MATCHER_TOOL", path, f"{event}: matcher {t!r} is not a tool name"
+                )
             fixed.append(t)
         new = "|".join(dedupe(fixed))
         return new if new != "|".join(tokens) else matcher
     head = re.match(r"^([A-Z][A-Za-z]+)\.\*", matcher)
     if head and head.group(1) in KNOWN_TOOLS:
-        rep.add("info", "HOOK_MATCHER_REGEX", path, f"{event}: {matcher!r} is unanchored and also matches other tools")
+        rep.add(
+            "info",
+            "HOOK_MATCHER_REGEX",
+            path,
+            f"{event}: {matcher!r} is unanchored and also matches other tools",
+        )
     return matcher
 
 
-def check_handler(event: str, h: dict, base: Path, path: Path, rep: Report, scope: str) -> dict | None:
+def check_handler(
+    event: str, h: dict, base: Path, path: Path, rep: Report, scope: str
+) -> dict | None:
     rep.stats["hook handlers"] = rep.stats.get("hook handlers", 0) + 1
     h = dict(h)
     htype = h.get("type")
     if htype is None and h.get("command"):
-        rep.add("warn", "HOOK_NO_TYPE", path, f"{event}: handler without 'type' (set to command)", True)
+        rep.add(
+            "warn", "HOOK_NO_TYPE", path, f"{event}: handler without 'type' (set to command)", True
+        )
         h = {"type": "command", **h}
         htype = "command"
     if htype not in HOOK_TYPES:
-        rep.add("error", "HOOK_TYPE", path, f"{event}: unknown handler type {htype!r} (dropped)", True)
+        rep.add(
+            "error", "HOOK_TYPE", path, f"{event}: unknown handler type {htype!r} (dropped)", True
+        )
         return None
     missing = [f for f in HOOK_TYPES[htype] if not h.get(f)]
     if missing:
-        rep.add("error", "HOOK_SHAPE", path, f"{event}: {htype} handler missing {', '.join(missing)} (dropped)", True)
+        rep.add(
+            "error",
+            "HOOK_SHAPE",
+            path,
+            f"{event}: {htype} handler missing {', '.join(missing)} (dropped)",
+            True,
+        )
         return None
     if "if" in h and event not in TOOL_EVENTS:
-        rep.add("error", "HOOK_IF_DEAD", path, f"{event}: handler with 'if' never runs on this event")
+        rep.add(
+            "error", "HOOK_IF_DEAD", path, f"{event}: handler with 'if' never runs on this event"
+        )
     if "once" in h:
-        rep.add("warn", "HOOK_ONCE", path, f"{event}: 'once' is ignored in settings (removed)", True)
+        rep.add(
+            "warn", "HOOK_ONCE", path, f"{event}: 'once' is ignored in settings (removed)", True
+        )
         h.pop("once")
     if "timeout" in h and not isinstance(h["timeout"], (int, float)):
         rep.add("error", "HOOK_SHAPE", path, f"{event}: timeout must be a number of seconds")
@@ -1176,9 +2046,18 @@ def check_handler(event: str, h: dict, base: Path, path: Path, rep: Report, scop
     if htype == "command":
         cmd = str(h["command"]).strip()
         if event == "PreToolUse" and h.get("async"):
-            rep.add("warn", "HOOK_ASYNC_GATE", path, f"{event}: async hook cannot block ({cmd[:40]})")
-        if event == "SessionStart" and re.search(r"\b(cat|type|Get-Content)\b.*\b(AGENTS|CLAUDE)\.md", cmd):
-            rep.add("warn", "HOOK_DUP_CONTEXT", path, f"{event}: prints instruction files already loaded natively")
+            rep.add(
+                "warn", "HOOK_ASYNC_GATE", path, f"{event}: async hook cannot block ({cmd[:40]})"
+            )
+        if event == "SessionStart" and re.search(
+            r"\b(cat|type|Get-Content)\b.*\b(AGENTS|CLAUDE)\.md", cmd
+        ):
+            rep.add(
+                "warn",
+                "HOOK_DUP_CONTEXT",
+                path,
+                f"{event}: prints instruction files already loaded natively",
+            )
         if "args" not in h:
             first = cmd.split()[0] if cmd.split() else ""
             relative = "/" in first and not first.strip("\"'").startswith(("/", "~", "$"))
@@ -1187,36 +2066,78 @@ def check_handler(event: str, h: dict, base: Path, path: Path, rep: Report, scop
                 conv = to_exec_form(cmd, scope)
                 if conv and scope == "project":
                     code = "HOOK_RELATIVE_PATH" if relative else "HOOK_EXEC_FORM"
-                    rep.add("warn", code, path, f"{event}: {cmd[:60]!r} -> exec form {conv[0]!r}", True)
+                    rep.add(
+                        "warn", code, path, f"{event}: {cmd[:60]!r} -> exec form {conv[0]!r}", True
+                    )
                     h["command"], h["args"] = conv
                 elif relative:
-                    rep.add("warn", "HOOK_RELATIVE_PATH", path, f"{event}: {cmd[:60]!r} depends on the current directory")
-        script = resolve_script(str(h["command"]).split()[0] if "args" not in h else h["command"], base)
+                    rep.add(
+                        "warn",
+                        "HOOK_RELATIVE_PATH",
+                        path,
+                        f"{event}: {cmd[:60]!r} depends on the current directory",
+                    )
+        script = resolve_script(
+            str(h["command"]).split()[0] if "args" not in h else h["command"], base
+        )
         if script is not None:
             if not script.exists():
-                rep.add("error", "HOOK_MISSING_SCRIPT", path, f"{event}: script not found: {script}")
+                rep.add(
+                    "error", "HOOK_MISSING_SCRIPT", path, f"{event}: script not found: {script}"
+                )
             else:
                 if not os.access(script, os.X_OK) and script not in rep.chmods:
-                    rep.add("warn", "HOOK_NOT_EXECUTABLE", path, f"{event}: {script} is not executable", True)
+                    rep.add(
+                        "warn",
+                        "HOOK_NOT_EXECUTABLE",
+                        path,
+                        f"{event}: {script} is not executable",
+                        True,
+                    )
                     rep.chmods.append(script)
                 body = read_text(script) or ""
-                if (event == "PreToolUse" and re.search(r"\bexit\s+1\b", body)
-                        and not re.search(r"\bexit\s+2\b|permissionDecision|\"decision\"", body)):
-                    rep.add("warn", "HOOK_EXIT1", path, f"{event}: {script.name} uses exit 1, which does not block")
-        if (event in ("PreToolUse", "UserPromptSubmit") and not h.get("timeout") and not h.get("async")
-                and not re.match(r"^rtk\b", cmd)):
-            rep.add("info", "HOOK_TIMEOUT", path, f"{event}: no timeout (default 600s) on a gating hook ({cmd[:40]})")
+                if (
+                    event == "PreToolUse"
+                    and re.search(r"\bexit\s+1\b", body)
+                    and not re.search(r"\bexit\s+2\b|permissionDecision|\"decision\"", body)
+                ):
+                    rep.add(
+                        "warn",
+                        "HOOK_EXIT1",
+                        path,
+                        f"{event}: {script.name} uses exit 1, which does not block",
+                    )
+        if (
+            event in ("PreToolUse", "UserPromptSubmit")
+            and not h.get("timeout")
+            and not h.get("async")
+            and not re.match(r"^rtk\b", cmd)
+        ):
+            rep.add(
+                "info",
+                "HOOK_TIMEOUT",
+                path,
+                f"{event}: no timeout (default 600s) on a gating hook ({cmd[:40]})",
+            )
     elif htype == "http":
         allowed = list(h.get("allowedEnvVars") or [])
         for k, v in (h.get("headers") or {}).items():
             missing_vars = sorted(set(re.findall(r"\$\{?(\w+)\}?", str(v))) - set(allowed))
             if missing_vars:
-                rep.add("error", "HOOK_HTTP_ENV", path, f"{event}: header {k} uses {', '.join(missing_vars)} "
-                        "without allowedEnvVars (added)", True)
+                rep.add(
+                    "error",
+                    "HOOK_HTTP_ENV",
+                    path,
+                    f"{event}: header {k} uses {', '.join(missing_vars)} "
+                    "without allowedEnvVars (added)",
+                    True,
+                )
                 allowed += missing_vars
         if allowed:
             h["allowedEnvVars"] = dedupe(allowed)
-        h["headers"] = check_env_secrets(h.get("headers") or {}, path, rep, f"hooks.{event}.headers") or h.get("headers")
+        h["headers"] = check_env_secrets(
+            h.get("headers") or {}, path, rep, f"hooks.{event}.headers"
+        ) or h.get("headers")
         if not h["headers"]:
             h.pop("headers")
     elif htype == "mcp_tool" and event in ("SessionStart", "Setup"):
@@ -1266,7 +2187,14 @@ def check_hooks(hooks: Any, base: Path, path: Path, rep: Report, scope: str) -> 
     if not isinstance(hooks, dict):
         rep.add("error", "HOOK_SHAPE", path, "hooks must be an object keyed by event name")
         return hooks
-    log(1, "hooks: " + ", ".join(f"{e}({len(v) if isinstance(v, (list, dict)) else 1})" for e, v in hooks.items()), 1)
+    log(
+        1,
+        "hooks: "
+        + ", ".join(
+            f"{e}({len(v) if isinstance(v, (list, dict)) else 1})" for e, v in hooks.items()
+        ),
+        1,
+    )
     fixed: dict[str, Any] = {}
     for event, raw in hooks.items():
         if event not in KNOWN_HOOK_EVENTS:
@@ -1284,8 +2212,11 @@ def check_hooks(hooks: Any, base: Path, path: Path, rep: Report, scope: str) -> 
                     g.pop("matcher")
                 else:
                     g["matcher"] = m
-            handlers = [h2 for h in g["hooks"] if isinstance(h, dict)
-                        and (h2 := check_handler(event, h, base, path, rep, scope))]
+            handlers = [
+                h2
+                for h in g["hooks"]
+                if isinstance(h, dict) and (h2 := check_handler(event, h, base, path, rep, scope))
+            ]
             if handlers:
                 out_groups.append({**g, "hooks": handlers})
         if out_groups:
@@ -1307,12 +2238,18 @@ def check_env_secrets(env: dict, path: Path, rep: Report, ctx: str, mode: str = 
         bare = re.sub(r"^(bearer|token|basic)\s+", "", v, flags=re.I)
         if bare.startswith("$"):
             continue
-        if any(p.search(bare) for p in SECRET_VALUE_PATTERNS) or (SECRET_KEY_RE.search(k) and len(bare) >= 12):
+        if any(p.search(bare) for p in SECRET_VALUE_PATTERNS) or (
+            SECRET_KEY_RE.search(k) and len(bare) >= 12
+        ):
             var = re.sub(r"[^A-Z0-9]+", "_", k.upper()).strip("_")
             if k.lower() == "authorization" and "." in ctx:
                 var = re.sub(r"[^A-Z0-9]+", "_", ctx.split(".")[1].upper()) + "_TOKEN"
             if mode == "reference":
-                prefix = v.split(" ")[0] + " " if v.lower().startswith(("bearer ", "token ", "basic ")) else ""
+                prefix = (
+                    v.split(" ")[0] + " "
+                    if v.lower().startswith(("bearer ", "token ", "basic "))
+                    else ""
+                )
                 out[k] = f"{prefix}${{{var}}}"
                 action = f"replaced by {out[k]}; export {var} (or inject it from the vault)"
             elif mode == "remove":
@@ -1320,8 +2257,13 @@ def check_env_secrets(env: dict, path: Path, rep: Report, ctx: str, mode: str = 
                 action = f"removed; export {var} in your shell profile or inject it from the vault"
             else:
                 action = "reference an env var or the vault instead"
-            rep.add("error" if mode != "report" or ".claude.json" not in str(path) else "warn",
-                    "SECRET_INLINE", path, f"{ctx}: {k} holds a literal secret; {action}", mode != "report")
+            rep.add(
+                "error" if mode != "report" or ".claude.json" not in str(path) else "warn",
+                "SECRET_INLINE",
+                path,
+                f"{ctx}: {k} holds a literal secret; {action}",
+                mode != "report",
+            )
     return out
 
 
@@ -1338,7 +2280,9 @@ def check_settings(path: Path, base: Path, scope: str, policy: dict, rep: Report
         rep.add("error", "JSON_INVALID", path, f"invalid JSON, not auto-repairable: {e}")
         return None
     if repaired:
-        rep.add("error", "JSON_REPAIRED", path, "comments, trailing commas or BOM in strict JSON", True)
+        rep.add(
+            "error", "JSON_REPAIRED", path, "comments, trailing commas or BOM in strict JSON", True
+        )
     if not isinstance(data, dict):
         rep.add("error", "JSON_INVALID", path, "top level must be an object")
         return None
@@ -1348,12 +2292,26 @@ def check_settings(path: Path, base: Path, scope: str, policy: dict, rep: Report
 
     for k in data:
         if k not in KNOWN_SETTINGS_KEYS and k != "mcpServers":
-            rep.add("info", "SETTINGS_UNKNOWN_KEY", path, f"unrecognised key {k!r} (schema may be newer)")
+            rep.add(
+                "info",
+                "SETTINGS_UNKNOWN_KEY",
+                path,
+                f"unrecognised key {k!r} (schema may be newer)",
+            )
         if scope == "project" and k in PROJECT_DEAD_KEYS:
             rep.add("warn", "SETTINGS_DEAD_KEY", path, f"{k}: {PROJECT_DEAD_KEYS[k]}")
-    plugin_cfg = (data.get("pluginConfigs") or {}).get("agents-md@builtin") if isinstance(data.get("pluginConfigs"), dict) else None
+    plugin_cfg = (
+        (data.get("pluginConfigs") or {}).get("agents-md@builtin")
+        if isinstance(data.get("pluginConfigs"), dict)
+        else None
+    )
     if scope == "project" and plugin_cfg:
-        rep.add("warn", "SETTINGS_DEAD_KEY", path, "pluginConfigs.agents-md@builtin is ignored in project/local settings")
+        rep.add(
+            "warn",
+            "SETTINGS_DEAD_KEY",
+            path,
+            "pluginConfigs.agents-md@builtin is ignored in project/local settings",
+        )
 
     if not local and "$schema" not in new:
         rep.add("info", "SETTINGS_SCHEMA", path, "no $schema (added)", True)
@@ -1361,38 +2319,79 @@ def check_settings(path: Path, base: Path, scope: str, policy: dict, rep: Report
 
     attr = new.get("attribution")
     if "includeCoAuthoredBy" in new:
-        rep.add("warn", "ATTR_DEPRECATED", path, "includeCoAuthoredBy is deprecated (migrated to attribution)", True)
+        rep.add(
+            "warn",
+            "ATTR_DEPRECATED",
+            path,
+            "includeCoAuthoredBy is deprecated (migrated to attribution)",
+            True,
+        )
         new.pop("includeCoAuthoredBy")
         attr = attr if isinstance(attr, dict) else {}
     if not local:
         wanted = {"commit": "", "pr": ""}
-        if (not isinstance(attr, dict) or any(attr.get(k) not in ("", None) for k in wanted)
-                or not all(k in attr for k in wanted)) and (scope == "user" or attr is not None):
-            rep.add("warn", "ATTR_ENABLED", path, "attribution not fully disabled (commit/pr)", True)
+        if (
+            not isinstance(attr, dict)
+            or any(attr.get(k) not in ("", None) for k in wanted)
+            or not all(k in attr for k in wanted)
+        ) and (scope == "user" or attr is not None):
+            rep.add(
+                "warn", "ATTR_ENABLED", path, "attribution not fully disabled (commit/pr)", True
+            )
             new["attribution"] = {**(attr if isinstance(attr, dict) else {}), **wanted}
 
     if scope == "project" and new.get("disableAllHooks") is True:
-        rep.add("warn", "SETTINGS_DISABLE_HOOKS", path, "disableAllHooks=true silences every hook, guards included")
+        rep.add(
+            "warn",
+            "SETTINGS_DISABLE_HOOKS",
+            path,
+            "disableAllHooks=true silences every hook, guards included",
+        )
     if scope == "project" and not local and new.get("enableAllProjectMcpServers") is True:
-        rep.add("warn", "SETTINGS_MCP_AUTO", path, "enableAllProjectMcpServers=true in a committed file")
+        rep.add(
+            "warn", "SETTINGS_MCP_AUTO", path, "enableAllProjectMcpServers=true in a committed file"
+        )
 
     sandbox_on = isinstance(new.get("sandbox"), dict) and bool(new["sandbox"].get("enabled"))
     if isinstance(new.get("permissions"), dict):
         rep.stats["permission rules"] = rep.stats.get("permission rules", 0) + sum(
-            len(new["permissions"].get(k) or []) for k in ("allow", "ask", "deny"))
-        new["permissions"] = optimize_permissions(new["permissions"], policy, path, rep,
-                                                  scope, sandbox_on)
+            len(new["permissions"].get(k) or []) for k in ("allow", "ask", "deny")
+        )
+        new["permissions"] = optimize_permissions(
+            new["permissions"], policy, path, rep, scope, sandbox_on
+        )
         if not new["permissions"]:
             new.pop("permissions")
 
     if "hooks" in new:
         new["hooks"] = check_hooks(new["hooks"], base, path, rep, scope)
-        if scope == "user" and policy["user_scope"]["context_only"] and isinstance(new["hooks"], dict):
-            blocking = [e for e, groups in new["hooks"].items() if e in ("PreToolUse", "UserPromptSubmit", "Stop")
-                        and not all(re.search(r"\brtk\b", " ".join([str(h.get("command", "")), *map(str, h.get("args") or [])]))
-                                    for g in groups if isinstance(g, dict) for h in g.get("hooks", []) if isinstance(h, dict))]
+        if (
+            scope == "user"
+            and policy["user_scope"]["context_only"]
+            and isinstance(new["hooks"], dict)
+        ):
+            blocking = [
+                e
+                for e, groups in new["hooks"].items()
+                if e in ("PreToolUse", "UserPromptSubmit", "Stop")
+                and not all(
+                    re.search(
+                        r"\brtk\b",
+                        " ".join([str(h.get("command", "")), *map(str, h.get("args") or [])]),
+                    )
+                    for g in groups
+                    if isinstance(g, dict)
+                    for h in g.get("hooks", [])
+                    if isinstance(h, dict)
+                )
+            ]
             if blocking:
-                rep.add("warn", "USER_SCOPE_HOOKS", path, f"blocking hooks at user scope: {', '.join(blocking)}")
+                rep.add(
+                    "warn",
+                    "USER_SCOPE_HOOKS",
+                    path,
+                    f"blocking hooks at user scope: {', '.join(blocking)}",
+                )
         if not new["hooks"]:
             new.pop("hooks")
 
@@ -1409,8 +2408,13 @@ def check_settings(path: Path, base: Path, scope: str, policy: dict, rep: Report
         rel = str(path.relative_to(base))
         tracked = is_tracked(base, rel)
         if tracked:
-            rep.add("warn", "LOCAL_NOT_IGNORED", path,
-                    f"{rel} is committed: run git rm --cached {rel} (its allow rules then wait for trust)")
+            rep.add(
+                "warn",
+                "LOCAL_NOT_IGNORED",
+                path,
+                f"{rel} is committed: run git rm --cached {rel} (its allow rules then wait "
+                f"for trust)",
+            )
         elif not is_ignored(base, rel):
             rep.add("warn", "LOCAL_NOT_IGNORED", path, f"{rel} is not gitignored", True)
             add_gitignore(base, ".claude/settings.local.json", rep)
@@ -1438,19 +2442,36 @@ def check_servers(servers: dict, path: Path, rep: Report, ctx: str, writable: bo
             continue
         cfg = dict(cfg)
         kind = cfg.get("type") or ("http" if cfg.get("url") else "stdio")
-        log(2, f"{name}: {kind} {cfg.get('url') or cfg.get('command')}, {len(cfg.get('env') or {})} env var(s)", 2)
+        log(
+            2,
+            f"{name}: {kind} {cfg.get('url') or cfg.get('command')}, "
+            f"{len(cfg.get('env') or {})} env var(s)",
+            2,
+        )
         if cfg.get("url") and "type" not in cfg:
-            rep.add("warn", "MCP_TYPE", path, f"{ctx}.{name}: url without type (set to http)", writable)
+            rep.add(
+                "warn", "MCP_TYPE", path, f"{ctx}.{name}: url without type (set to http)", writable
+            )
             if writable:
                 cfg = {"type": "http", **cfg}
         elif cfg.get("type") == "sse":
             rep.add("info", "MCP_SSE", path, f"{ctx}.{name}: SSE transport is deprecated")
         elif cfg.get("type") not in (None, "stdio", "http", "sse", "ws"):
             rep.add("error", "MCP_TYPE", path, f"{ctx}.{name}: unknown type {cfg.get('type')!r}")
-        if cfg.get("command") and " " in str(cfg["command"]).strip() and not cfg.get("args") \
-                and not os.path.exists(str(cfg["command"])):
+        if (
+            cfg.get("command")
+            and " " in str(cfg["command"]).strip()
+            and not cfg.get("args")
+            and not os.path.exists(str(cfg["command"]))
+        ):
             parts = shlex.split(str(cfg["command"]))
-            rep.add("warn", "MCP_COMMAND_ARGS", path, f"{ctx}.{name}: command contains arguments (split into args)", writable)
+            rep.add(
+                "warn",
+                "MCP_COMMAND_ARGS",
+                path,
+                f"{ctx}.{name}: command contains arguments (split into args)",
+                writable,
+            )
             if writable:
                 cfg["command"], cfg["args"] = parts[0], parts[1:]
         mode = "reference" if writable else "report"
@@ -1459,7 +2480,12 @@ def check_servers(servers: dict, path: Path, rep: Report, ctx: str, writable: bo
                 cfg[sect] = check_env_secrets(cfg[sect], path, rep, f"{ctx}.{name}.{sect}", mode)
         for a in cfg.get("args", []) or []:
             if isinstance(a, str) and any(p.search(a) for p in SECRET_VALUE_PATTERNS):
-                rep.add("error", "SECRET_INLINE", path, f"{ctx}.{name}: literal secret in args (move it to env)")
+                rep.add(
+                    "error",
+                    "SECRET_INLINE",
+                    path,
+                    f"{ctx}.{name}: literal secret in args (move it to env)",
+                )
         out[name] = cfg
     return out
 
@@ -1476,14 +2502,25 @@ def check_mcp(path: Path, rep: Report, policy: dict) -> None:
         rep.add("error", "JSON_INVALID", path, f"invalid JSON, not auto-repairable: {e}")
         return
     if repaired:
-        rep.add("error", "JSON_REPAIRED", path, "comments, trailing commas or BOM in strict JSON", True)
+        rep.add(
+            "error", "JSON_REPAIRED", path, "comments, trailing commas or BOM in strict JSON", True
+        )
     if not isinstance(data, dict):
         rep.add("error", "MCP_SHAPE", path, "top level must be an object")
         return
     new = copy.deepcopy(data)
-    if "mcpServers" not in data and data and all(isinstance(v, dict) and (v.get("command") or v.get("url"))
-                                                 for v in data.values()):
-        rep.add("warn", "MCP_MISPLACED", path, "servers declared at top level (moved under mcpServers)", True)
+    if (
+        "mcpServers" not in data
+        and data
+        and all(isinstance(v, dict) and (v.get("command") or v.get("url")) for v in data.values())
+    ):
+        rep.add(
+            "warn",
+            "MCP_MISPLACED",
+            path,
+            "servers declared at top level (moved under mcpServers)",
+            True,
+        )
         new = {"mcpServers": copy.deepcopy(data)}
     servers = new.get("mcpServers")
     if not isinstance(servers, dict):
@@ -1508,7 +2545,9 @@ def check_claude_json(rep: Report, repos: list[Path]) -> None:
     try:
         data = json.loads(raw)
     except json.JSONDecodeError as e:
-        rep.add("error", "JSON_INVALID", path, f"invalid JSON ({e}); restore from ~/.claude/backups/")
+        rep.add(
+            "error", "JSON_INVALID", path, f"invalid JSON ({e}); restore from ~/.claude/backups/"
+        )
         return
     log(1, f"{path} (read-only)", 1)
     if isinstance(data.get("mcpServers"), dict):
@@ -1517,6 +2556,7 @@ def check_claude_json(rep: Report, repos: list[Path]) -> None:
         if isinstance(cfg, dict) and isinstance(cfg.get("mcpServers"), dict) and cfg["mcpServers"]:
             if not repos or any(str(r) == proj for r in repos):
                 check_servers(cfg["mcpServers"], path, rep, f"projects[{proj}].mcpServers", False)
+
 
 # --------------------------------------------------------------------------- #
 # Instruction files, rules, auto memory
@@ -1538,8 +2578,15 @@ def import_targets(path: Path, text: str) -> list[tuple[str, Path]]:
     return refs
 
 
-def check_imports(path: Path, text: str, rep: Report, policy: dict, root: Path | None,
-                  depth: int = 1, seen: set | None = None) -> None:
+def check_imports(
+    path: Path,
+    text: str,
+    rep: Report,
+    policy: dict,
+    root: Path | None,
+    depth: int = 1,
+    seen: set | None = None,
+) -> None:
     seen = seen if seen is not None else {path.resolve()}
     for ref, target in import_targets(path, text):
         log(2, f"import @{ref} (depth {depth})", 2)
@@ -1547,13 +2594,20 @@ def check_imports(path: Path, text: str, rep: Report, policy: dict, root: Path |
             rep.add("error", "IMPORT_MISSING", path, f"@{ref} does not resolve")
             continue
         if depth > policy["instructions"]["max_import_depth"]:
-            rep.add("error", "IMPORT_DEPTH", path, f"@{ref} is {depth} hops deep (max 4): not loaded")
+            rep.add(
+                "error", "IMPORT_DEPTH", path, f"@{ref} is {depth} hops deep (max 4): not loaded"
+            )
             continue
         if root is not None:
             try:
                 target.resolve().relative_to(root.resolve())
             except ValueError:
-                rep.add("info", "IMPORT_EXTERNAL", path, f"@{ref} is outside the project (approval prompt)")
+                rep.add(
+                    "info",
+                    "IMPORT_EXTERNAL",
+                    path,
+                    f"@{ref} is outside the project (approval prompt)",
+                )
         resolved = target.resolve()
         if resolved in seen or target.is_dir():
             continue
@@ -1563,7 +2617,9 @@ def check_imports(path: Path, text: str, rep: Report, policy: dict, root: Path |
             check_imports(target, sub, rep, policy, root, depth + 1, seen)
 
 
-def check_instruction_file(path: Path, scope: str, policy: dict, rep: Report, root: Path | None) -> str | None:
+def check_instruction_file(
+    path: Path, scope: str, policy: dict, rep: Report, root: Path | None
+) -> str | None:
     try:
         size = path.stat().st_size
     except OSError:
@@ -1581,7 +2637,12 @@ def check_instruction_file(path: Path, scope: str, policy: dict, rep: Report, ro
     lines, tokens = effective.count("\n") + 1, len(effective.encode()) // 4
     log(1, f"{path}: {lines} lines, ~{tokens} tokens (HTML comments excluded)", 1)
     if scope == "user" and lines > pol["user_max_lines"]:
-        rep.add("warn", "INSTR_USER_TOO_LONG", path, f"{lines} lines (~{tokens} tokens) in every session")
+        rep.add(
+            "warn",
+            "INSTR_USER_TOO_LONG",
+            path,
+            f"{lines} lines (~{tokens} tokens) in every session",
+        )
     elif lines > pol["project_warn_lines"] or tokens > pol["warn_tokens"]:
         rep.add("warn", "INSTR_LONG", path, f"{lines} lines (~{tokens} tokens)")
     check_imports(path, text, rep, policy, root)
@@ -1596,20 +2657,37 @@ def check_agents_md(repo: Path, policy: dict, rep: Report) -> None:
     marker = policy["instructions"]["generated_marker"]
     if local.exists() and (repo / ".git").exists():
         if is_tracked(repo, "CLAUDE.local.md"):
-            rep.add("warn", "LOCAL_MD_NOT_IGNORED", local, "CLAUDE.local.md is committed: git rm --cached CLAUDE.local.md")
+            rep.add(
+                "warn",
+                "LOCAL_MD_NOT_IGNORED",
+                local,
+                "CLAUDE.local.md is committed: git rm --cached CLAUDE.local.md",
+            )
         elif not is_ignored(repo, "CLAUDE.local.md"):
-            rep.add("warn", "LOCAL_MD_NOT_IGNORED", local, "CLAUDE.local.md is not gitignored", True)
+            rep.add(
+                "warn", "LOCAL_MD_NOT_IGNORED", local, "CLAUDE.local.md is not gitignored", True
+            )
             add_gitignore(repo, "CLAUDE.local.md", rep)
     if not agents:
         return
     if claude is None:
         if local.exists():
-            rep.add("warn", "AGENTS_SHADOWED_LOCAL", repo, "CLAUDE.local.md stops AGENTS.md from loading "
-                    "(CLAUDE.md importing it created)", SCAFFOLD)
+            rep.add(
+                "warn",
+                "AGENTS_SHADOWED_LOCAL",
+                repo,
+                "CLAUDE.local.md stops AGENTS.md from loading (CLAUDE.md importing it created)",
+                SCAFFOLD,
+            )
             if SCAFFOLD:
                 rep.new_files[repo / "CLAUDE.md"] = ("@AGENTS.md\n", 0o644)
         elif CLI_VERSION and CLI_VERSION < (2, 1, 277):
-            rep.add("warn", "AGENTS_OLD_CLI", repo, f"claude {'.'.join(map(str, CLI_VERSION))} does not read AGENTS.md")
+            rep.add(
+                "warn",
+                "AGENTS_OLD_CLI",
+                repo,
+                f"claude {'.'.join(map(str, CLI_VERSION))} does not read AGENTS.md",
+            )
         return
     if claude.is_symlink():
         rep.add("info", "AGENTS_SYMLINK", claude, "CLAUDE.md is a symlink")
@@ -1634,7 +2712,12 @@ def check_rendered(repo: Path, policy: dict, rep: Report) -> None:
         f = repo / rel
         head = "\n".join((read_text(f) or "").splitlines()[:5])
         if f.exists() and pol["generated_marker"] not in head and head.strip() != "@AGENTS.md":
-            rep.add("warn", "RENDER_HAND_EDITED", f, f"no '{pol['generated_marker']}' header: hand-edited render")
+            rep.add(
+                "warn",
+                "RENDER_HAND_EDITED",
+                f,
+                f"no '{pol['generated_marker']}' header: hand-edited render",
+            )
 
 
 def check_rules(root: Path, rep: Report, project_root: Path | None) -> None:
@@ -1657,7 +2740,13 @@ def check_rules(root: Path, rep: Report, project_root: Path | None) -> None:
             continue
         new = text
         if offset:
-            rep.add("warn", "FRONTMATTER_OFFSET", f, "frontmatter not on line 1 (leading lines removed)", True)
+            rep.add(
+                "warn",
+                "FRONTMATTER_OFFSET",
+                f,
+                "frontmatter not on line 1 (leading lines removed)",
+                True,
+            )
             new = text.lstrip("\ufeff \t\r\n")
         renames = {k: RULE_TYPOS[k] for k in meta if k in RULE_TYPOS and "paths" not in meta}
         if renames:
@@ -1669,7 +2758,12 @@ def check_rules(root: Path, rep: Report, project_root: Path | None) -> None:
         block = frontmatter_block(new)
         for pat in re.findall(r"[\"']([^\"']+)[\"']", block):
             if pat.count("[") != pat.count("]") and "\\[" not in pat:
-                rep.add("error", "RULE_PATTERN", f, f"pattern {pat!r} has an unbalanced '[': matches nothing")
+                rep.add(
+                    "error",
+                    "RULE_PATTERN",
+                    f,
+                    f"pattern {pat!r} has an unbalanced '[': matches nothing",
+                )
         if "paths" not in meta and not renames:
             rep.add("info", "RULE_UNSCOPED", f, "no 'paths': loads in every session")
         if new != text:
@@ -1688,7 +2782,12 @@ def check_auto_memory(cfg: Path, policy: dict, rep: Report) -> None:
             continue
         lines = (read_text(idx) or "").count("\n") + 1
         if lines > pol["max_lines"] or size > pol["max_bytes"]:
-            rep.add("warn", "MEMORY_INDEX", idx, f"{lines} lines / {size} bytes: content past the limit is not loaded")
+            rep.add(
+                "warn",
+                "MEMORY_INDEX",
+                idx,
+                f"{lines} lines / {size} bytes: content past the limit is not loaded",
+            )
 
 
 # --------------------------------------------------------------------------- #
@@ -1709,7 +2808,7 @@ def frontmatter_values(text: str, key: str) -> list[str]:
         if val:
             return [val.strip("'\"")]
         items = []
-        for nxt in block[i + 1:]:
+        for nxt in block[i + 1 :]:
             if re.match(r"^\s*-\s+", nxt):
                 items.append(re.sub(r"^\s*-\s+", "", nxt).strip().strip("'\""))
             elif nxt.startswith((" ", "\t")):
@@ -1726,10 +2825,14 @@ def move_to_metadata(text: str, keys: list[str]) -> str:
     end = stripped.find("\n---", 3)
     if not stripped.startswith("---") or end == -1:
         return text
-    lines, body = stripped[3:end].strip("\n").splitlines(), stripped[end + 4:]
+    lines, body = stripped[3:end].strip("\n").splitlines(), stripped[end + 4 :]
     entries: list[list[str]] = []
     for line in lines:
-        if entries and (line.startswith((" ", "\t")) or line.lstrip().startswith("- ") and not re.match(r"^[\w-]+\s*:", line)):
+        if entries and (
+            line.startswith((" ", "\t"))
+            or line.lstrip().startswith("- ")
+            and not re.match(r"^[\w-]+\s*:", line)
+        ):
             entries[-1].append(line)
         else:
             entries.append([line])
@@ -1748,7 +2851,11 @@ def move_to_metadata(text: str, keys: list[str]) -> str:
     if meta_idx is None:
         keep.append(["metadata:"] + block)
     else:
-        keep[meta_idx] = [re.sub(r"^metadata\s*:.*$", "metadata:", keep[meta_idx][0])] + keep[meta_idx][1:] + block
+        keep[meta_idx] = (
+            [re.sub(r"^metadata\s*:.*$", "metadata:", keep[meta_idx][0])]
+            + keep[meta_idx][1:]
+            + block
+        )
     return "---\n" + "\n".join(l for e in keep for l in e) + "\n---" + body
 
 
@@ -1775,20 +2882,39 @@ def check_skill(d: Path, policy: dict, rep: Report) -> str | None:
     meta, offset = split_frontmatter(text)
     new = text
     if offset:
-        rep.add("warn", "FRONTMATTER_OFFSET", sk, "frontmatter not on line 1 (leading lines removed)", True)
+        rep.add(
+            "warn",
+            "FRONTMATTER_OFFSET",
+            sk,
+            "frontmatter not on line 1 (leading lines removed)",
+            True,
+        )
         new = text.lstrip("\ufeff \t\r\n")
     if meta is None:
         meta = {}
     renames = {k: SKILL_TYPOS[k] for k in meta if k in SKILL_TYPOS and SKILL_TYPOS[k] not in meta}
     if renames:
-        rep.add("warn", "SKILL_FIELD", sk, "renamed: " + ", ".join(f"{a} -> {b}" for a, b in renames.items()), True)
+        rep.add(
+            "warn",
+            "SKILL_FIELD",
+            sk,
+            "renamed: " + ", ".join(f"{a} -> {b}" for a, b in renames.items()),
+            True,
+        )
         meta = {renames.get(k, k): v for k, v in meta.items()}
     trig_key = next((k for k in ("triggers", "trigger") if k in meta), None)
     if trig_key and not meta.get("when_to_use"):
         phrases = frontmatter_values(new, trig_key)
         if phrases:
             updates_trig = "Use when the user says: " + "; ".join(phrases)
-            rep.add("info", "SKILL_FIELD", sk, f"{trig_key} is ignored by Claude Code (copied into when_to_use, original kept under metadata)", True)
+            rep.add(
+                "info",
+                "SKILL_FIELD",
+                sk,
+                f"{trig_key} is ignored by Claude Code (copied into when_to_use, original "
+                f"kept under metadata)",
+                True,
+            )
             meta = {**meta, "when_to_use": updates_trig}
             pending_when = updates_trig
         else:
@@ -1802,42 +2928,86 @@ def check_skill(d: Path, policy: dict, rep: Report) -> str | None:
     if unknown:
         movable = [k for k in unknown if k not in ("trigger", "triggers") or pending_when]
         can_move = bool(movable) and ("metadata" not in meta or meta.get("metadata", "") == "")
-        rep.add("info", "SKILL_FIELD", sk, f"custom field(s) ignored by Claude Code: {', '.join(unknown)}"
-                + (" (moved under metadata:)" if can_move else "")
-                + ("; put trigger phrases in description or when_to_use" if len(movable) < len(unknown) else ""), can_move)
+        rep.add(
+            "info",
+            "SKILL_FIELD",
+            sk,
+            f"custom field(s) ignored by Claude Code: {', '.join(unknown)}"
+            + (" (moved under metadata:)" if can_move else "")
+            + (
+                "; put trigger phrases in description or when_to_use"
+                if len(movable) < len(unknown)
+                else ""
+            ),
+            can_move,
+        )
         if can_move:
             move_meta = movable
     if pol["portable"]:
         extra = [k for k in meta if k in SKILL_FIELDS and k not in SKILL_SPEC_FIELDS]
         if extra:
-            rep.add("info", "SKILL_PORTABILITY", sk, f"Claude Code-only field(s): {', '.join(extra)}")
+            rep.add(
+                "info", "SKILL_PORTABILITY", sk, f"Claude Code-only field(s): {', '.join(extra)}"
+            )
     updates: dict[str, str] = {}
     if pending_when:
         updates["when_to_use"] = pending_when
     name, desc = meta.get("name", ""), meta.get("description", "")
     dir_ok = bool(name_re.match(d.name))
     if name and name != d.name:
-        rep.add("info" if not pol["portable"] else "warn", "SKILL_NAME", sk,
-                f"name {name!r} differs from directory {d.name!r} (the command is /{d.name})"
-                + (" (aligned)" if dir_ok else ""), dir_ok)
+        rep.add(
+            "info" if not pol["portable"] else "warn",
+            "SKILL_NAME",
+            sk,
+            f"name {name!r} differs from directory {d.name!r} (the command is /{d.name})"
+            + (" (aligned)" if dir_ok else ""),
+            dir_ok,
+        )
         if dir_ok:
             updates["name"] = d.name
     elif not name and pol["portable"] and dir_ok:
-        rep.add("info", "SKILL_NAME", sk, "no name (the spec requires one; set to the directory name)", True)
+        rep.add(
+            "info",
+            "SKILL_NAME",
+            sk,
+            "no name (the spec requires one; set to the directory name)",
+            True,
+        )
         updates["name"] = d.name
     if not dir_ok:
-        rep.add("warn", "SKILL_NAME", d, f"directory {d.name!r} is not a valid skill name; rename to {slugify(d.name)!r}")
+        rep.add(
+            "warn",
+            "SKILL_NAME",
+            d,
+            f"directory {d.name!r} is not a valid skill name; rename to {slugify(d.name)!r}",
+        )
     if not desc:
         derived = derive_description(new)
-        rep.add("warn", "SKILL_DESCRIPTION", sk, "no description" + (" (derived from body)" if derived else ""),
-                bool(derived))
+        rep.add(
+            "warn",
+            "SKILL_DESCRIPTION",
+            sk,
+            "no description" + (" (derived from body)" if derived else ""),
+            bool(derived),
+        )
         if derived:
             updates["description"] = desc = derived
     listing = len(desc) + len(meta.get("when_to_use", ""))
     if listing > pol["max_listing_chars"]:
-        rep.add("warn", "SKILL_DESCRIPTION", sk, f"description + when_to_use = {listing} chars (truncated at {pol['max_listing_chars']})")
+        rep.add(
+            "warn",
+            "SKILL_DESCRIPTION",
+            sk,
+            f"description + when_to_use = {listing} chars (truncated at "
+            f"{pol['max_listing_chars']})",
+        )
     elif pol["portable"] and len(desc) > pol["portable_description_chars"]:
-        rep.add("info", "SKILL_PORTABILITY", sk, f"description {len(desc)} chars (> {pol['portable_description_chars']})")
+        rep.add(
+            "info",
+            "SKILL_PORTABILITY",
+            sk,
+            f"description {len(desc)} chars (> {pol['portable_description_chars']})",
+        )
     body_lines = new.count("\n") + 1
     if body_lines > pol["max_lines"]:
         ro = "" if _writable(sk) else " (read-only: synced/symlinked store — edit it upstream)"
@@ -1845,18 +3015,31 @@ def check_skill(d: Path, policy: dict, rep: Report) -> str | None:
     if meta.get("context") != "fork":
         stray = [k for k in ("agent", "background") if k in meta]
         if stray:
-            rep.add("warn", "SKILL_FORK_FIELD", sk, f"{', '.join(stray)} ignored without context: fork")
+            rep.add(
+                "warn", "SKILL_FORK_FIELD", sk, f"{', '.join(stray)} ignored without context: fork"
+            )
     words = "|".join(map(re.escape, pol["side_effect_words"]))
     dmi = meta.get("disable-model-invocation", "").lower() in ("true", "yes", "on", "1")
-    if re.search(rf"\b({words})\b", f"{d.name} {name}".replace("_", " ").replace("-", " "), re.I) and not dmi:
+    if (
+        re.search(rf"\b({words})\b", f"{d.name} {name}".replace("_", " ").replace("-", " "), re.I)
+        and not dmi
+    ):
         gate = pol.get("gate_side_effects", True)
-        rep.add("warn", "SKILL_SIDE_EFFECT", sk, "side-effect workflow can be auto-invoked by the model"
-                + (" (disable-model-invocation: true added)" if gate else ""), gate)
+        rep.add(
+            "warn",
+            "SKILL_SIDE_EFFECT",
+            sk,
+            "side-effect workflow can be auto-invoked by the model"
+            + (" (disable-model-invocation: true added)" if gate else ""),
+            gate,
+        )
         if gate:
             updates["disable-model-invocation"] = "true"
     tools = meta.get("allowed-tools", "")
     if re.search(r"(^|[\s,\[])(Bash|PowerShell)(\(\*\)|(?=[\s,\]]|$))|Bash\(\*", tools):
-        rep.add("warn", "SKILL_BROAD_TOOLS", sk, f"allowed-tools grants unrestricted shell: {tools}")
+        rep.add(
+            "warn", "SKILL_BROAD_TOOLS", sk, f"allowed-tools grants unrestricted shell: {tools}"
+        )
     if renames or updates or new != text or move_meta:
         out = set_frontmatter(new, updates, renames) if (renames or updates) else new
         if move_meta:
@@ -1869,12 +3052,19 @@ def check_skill(d: Path, policy: dict, rep: Report) -> str | None:
     return d.name
 
 
-def check_agent_assets(root: Path, policy: dict, rep: Report, scope: str, project_root: Path | None) -> None:
+def check_agent_assets(
+    root: Path, policy: dict, rep: Report, scope: str, project_root: Path | None
+) -> None:
     skills = root / "skills"
     names: set[str] = set()
     if skills.is_dir():
         if scope == "user" and (skills / "manifest.json").exists():
-            rep.add("warn", "SKILL_MANIFEST_BUG", skills / "manifest.json", "may move skills to .trash on CLIs < 2.1.280")
+            rep.add(
+                "warn",
+                "SKILL_MANIFEST_BUG",
+                skills / "manifest.json",
+                "may move skills to .trash on CLIs < 2.1.280",
+            )
         dirs = sorted(p for p in skills.iterdir() if p.is_dir() and not p.name.startswith("."))
         log(1, f"{skills}: {len(dirs)} skill dir(s)", 1)
         for d in dirs:
@@ -1894,7 +3084,12 @@ def check_agent_assets(root: Path, policy: dict, rep: Report, scope: str, projec
             check_subagent(f, rep)
         for field_name, paths in sorted(rep.agent_unknown.items()):
             if len(paths) >= 10:
-                log(1, f"pack convention field {field_name!r} in {len(paths)} subagents (ignored by Claude Code, harmless)", 1)
+                log(
+                    1,
+                    f"pack convention field {field_name!r} in {len(paths)} subagents "
+                    f"(ignored by Claude Code, harmless)",
+                    1,
+                )
             else:
                 for p in paths:
                     rep.add("info", "AGENT_FIELD", p, f"unrecognised field: {field_name}")
@@ -1906,7 +3101,9 @@ def check_agent_assets(root: Path, policy: dict, rep: Report, scope: str, projec
             rep.stats["commands"] = rep.stats.get("commands", 0) + 1
             cmd_name = ":".join(f.relative_to(commands).with_suffix("").parts)
             if cmd_name in names:
-                rep.add("warn", "COMMAND_SHADOWED", f, f"skill '{cmd_name}' has the same name and wins")
+                rep.add(
+                    "warn", "COMMAND_SHADOWED", f, f"skill '{cmd_name}' has the same name and wins"
+                )
             meta, _ = split_frontmatter(read_text(f) or "")
             if not (meta or {}).get("description"):
                 rep.add("info", "COMMAND_FRONTMATTER", f, "no description (first line is used)")
@@ -1920,10 +3117,22 @@ def check_subagent(f: Path, rep: Report) -> None:
     meta = meta or {}
     new = text.lstrip("\ufeff \t\r\n") if offset else text
     if offset:
-        rep.add("warn", "FRONTMATTER_OFFSET", f, "frontmatter not on line 1 (leading lines removed)", True)
+        rep.add(
+            "warn",
+            "FRONTMATTER_OFFSET",
+            f,
+            "frontmatter not on line 1 (leading lines removed)",
+            True,
+        )
     renames = {k: AGENT_TYPOS[k] for k in meta if k in AGENT_TYPOS and AGENT_TYPOS[k] not in meta}
     if renames:
-        rep.add("warn", "AGENT_FIELD", f, "renamed: " + ", ".join(f"{a} -> {b}" for a, b in renames.items()), True)
+        rep.add(
+            "warn",
+            "AGENT_FIELD",
+            f,
+            "renamed: " + ", ".join(f"{a} -> {b}" for a, b in renames.items()),
+            True,
+        )
         meta = {renames.get(k, k): v for k, v in meta.items()}
     for k in meta:
         if k not in AGENT_FIELDS:
@@ -1936,20 +3145,40 @@ def check_subagent(f: Path, rep: Report) -> None:
     missing = [k for k in ("name", "description") if not meta.get(k)]
     if missing:
         still = [k for k in missing if k not in updates]
-        rep.add("error", "AGENT_FRONTMATTER", f, "missing: " + ", ".join(missing)
-                + (f" (filled: {', '.join(updates)})" if updates else "")
-                + (f" (cannot derive: {', '.join(still)}; if this file is not a subagent, move it out of agents/)" if still else ""), bool(updates))
+        rep.add(
+            "error",
+            "AGENT_FRONTMATTER",
+            f,
+            "missing: "
+            + ", ".join(missing)
+            + (f" (filled: {', '.join(updates)})" if updates else "")
+            + (
+                f" (cannot derive: {', '.join(still)}; if this file is not a subagent, move "
+                f"it out of agents/)"
+                if still
+                else ""
+            ),
+            bool(updates),
+        )
     tools = meta.get("tools", "")
     tool_renames = {}
     if tools:
-        names = [re.sub(r"\(.*", "", t).strip() for t in re.split(r"[,\s\[\]]+", tools) if t.strip()]
+        names = [
+            re.sub(r"\(.*", "", t).strip() for t in re.split(r"[,\s\[\]]+", tools) if t.strip()
+        ]
         bad = [t for t in names if t and not t.startswith("mcp__") and t not in KNOWN_TOOLS]
         for t in bad:
             if t in LEGACY_TOOLS:
                 tool_renames[t] = LEGACY_TOOLS[t]
         still_bad = [t for t in bad if t not in tool_renames]
         if tool_renames:
-            rep.add("warn", "PERM_LEGACY_TOOL", f, "tools: " + ", ".join(f"{a} -> {b}" for a, b in tool_renames.items()), True)
+            rep.add(
+                "warn",
+                "PERM_LEGACY_TOOL",
+                f,
+                "tools: " + ", ".join(f"{a} -> {b}" for a, b in tool_renames.items()),
+                True,
+            )
         if still_bad:
             level = "error" if len(still_bad) == len(names) else "warn"
             rep.add(level, "AGENT_TOOLS", f, f"unknown tool(s): {', '.join(still_bad)}")
@@ -1957,49 +3186,121 @@ def check_subagent(f: Path, rep: Report) -> None:
         out = set_frontmatter(new, updates, renames) if (renames or updates) else new
         if tool_renames:
             key = "tools"
+
             def fix_line(m: re.Match) -> str:
                 line = m.group(0)
                 for a, b in tool_renames.items():
                     line = re.sub(rf"\b{a}\b", b, line)
                 return line
+
             out = re.sub(rf"(?m)^{key}\s*:.*$", fix_line, out, count=1)
         rep.edit(f, text, out)
+
 
 # --------------------------------------------------------------------------- #
 # Beyond agent settings: plugins, marketplaces, output styles, helpers,
 # Desktop, CI workflows, misplaced files, credentials
 # --------------------------------------------------------------------------- #
 
-PLUGIN_COMPONENT_KEYS = ("commands", "agents", "skills", "hooks", "mcpServers", "outputStyles",
-                         "lspServers", "monitors", "channels")
-PLUGIN_KNOWN_KEYS = {"name", "displayName", "version", "description", "author", "homepage",
-                     "repository", "license", "keywords", "userConfig", "dependencies",
-                     *PLUGIN_COMPONENT_KEYS}
+PLUGIN_COMPONENT_KEYS = (
+    "commands",
+    "agents",
+    "skills",
+    "hooks",
+    "mcpServers",
+    "outputStyles",
+    "lspServers",
+    "monitors",
+    "channels",
+)
+PLUGIN_KNOWN_KEYS = {
+    "name",
+    "displayName",
+    "version",
+    "description",
+    "author",
+    "homepage",
+    "repository",
+    "license",
+    "keywords",
+    "userConfig",
+    "dependencies",
+    *PLUGIN_COMPONENT_KEYS,
+}
 SEMVER_RE = re.compile(r"^\d+\.\d+\.\d+(?:-[\w.]+)?(?:\+[\w.]+)?$")
 KEBAB_RE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 ANTHROPIC_KEY_RE = re.compile(r"sk-ant-(?:api|admin|oat)\d{2}-[A-Za-z0-9_-]{20,}")
 HELPER_STRING_KEYS = ("apiKeyHelper", "awsAuthRefresh", "awsCredentialExport", "otelHeadersHelper")
 HELPER_OBJECT_KEYS = ("statusLine", "subagentStatusLine", "fileSuggestion")
 
-HINTS.update({
-    "PLUGIN_MANIFEST": ("Only 'name' is required (kebab-case); version should be semver; unknown top-level fields are stripped.", DOCS + "plugins/manifest-reference"),
-    "PLUGIN_PATH": ("Component paths are relative with a ./ prefix and must stay inside the plugin root.", DOCS + "plugins/manifest-reference"),
-    "PLUGIN_LAYOUT": ("Only plugin.json goes in .claude-plugin/; skills/, commands/, hooks/ live at the plugin root.", DOCS + "plugins/manifest-reference"),
-    "PLUGIN_CLI": ("Result of 'claude plugin validate', the authoritative validator.", DOCS + "plugins/cli-reference"),
-    "MARKETPLACE": ("marketplace.json needs a name and a plugins list whose entries have name and source.", DOCS + "plugins/marketplace-reference"),
-    "ENABLED_PLUGINS": ("enabledPlugins keys are 'plugin@marketplace' with boolean values.", DOCS + "settings-reference"),
-    "OUTPUT_STYLE": ("Output styles are Markdown with name/description frontmatter.", DOCS + "output-styles"),
-    "HELPER_SCRIPT": ("Helpers (statusLine, apiKeyHelper, ...) run a command; a missing or non-executable script fails silently.", DOCS + "settings-reference"),
-    "HELPER_REPO": ("A repository-supplied helper runs code on your machine (before trust in -p runs).", DOCS + "permissions#what-runs-before-you-trust-a-folder"),
-    "MISPLACED": ("This file or key is not read at this location.", DOCS + "claude-directory"),
-    "CLAUDEIGNORE": ("There is no .claudeignore; use permissions.deny Read(...) rules and the sandbox.", DOCS + "permissions#read-and-edit"),
-    "SETTINGS_MCP_SERVERS": ("MCP servers are declared in .mcp.json (project) or ~/.claude.json (user), not in settings.json.", DOCS + "mcp"),
-    "DESKTOP_CONFIG": ("Claude Desktop MCP configuration.", "https://modelcontextprotocol.io/quickstart/user"),
-    "CI_ACTION": ("claude-code-action workflow hardening.", DOCS + "github-actions"),
-    "API_KEY_LEAK": ("An Anthropic API key in a file is readable by anyone with access: revoke and rotate it.", "https://console.anthropic.com/settings/keys"),
-    "MANAGED_SETTINGS": ("Managed settings: read-only here, reported for information.", DOCS + "managed-settings"),
-    "KEYBINDINGS": ("keybindings.json must be strict JSON.", DOCS + "keybindings"),
-})
+HINTS.update(
+    {
+        "PLUGIN_MANIFEST": (
+            "Only 'name' is required (kebab-case); version should be semver; unknown "
+            "top-level fields are stripped.",
+            DOCS + "plugins/manifest-reference",
+        ),
+        "PLUGIN_PATH": (
+            "Component paths are relative with a ./ prefix and must stay inside the plugin root.",
+            DOCS + "plugins/manifest-reference",
+        ),
+        "PLUGIN_LAYOUT": (
+            "Only plugin.json goes in .claude-plugin/; skills/, commands/, hooks/ live at "
+            "the plugin root.",
+            DOCS + "plugins/manifest-reference",
+        ),
+        "PLUGIN_CLI": (
+            "Result of 'claude plugin validate', the authoritative validator.",
+            DOCS + "plugins/cli-reference",
+        ),
+        "MARKETPLACE": (
+            "marketplace.json needs a name and a plugins list whose entries have name and source.",
+            DOCS + "plugins/marketplace-reference",
+        ),
+        "ENABLED_PLUGINS": (
+            "enabledPlugins keys are 'plugin@marketplace' with boolean values.",
+            DOCS + "settings-reference",
+        ),
+        "OUTPUT_STYLE": (
+            "Output styles are Markdown with name/description frontmatter.",
+            DOCS + "output-styles",
+        ),
+        "HELPER_SCRIPT": (
+            "Helpers (statusLine, apiKeyHelper, ...) run a command; a missing or "
+            "non-executable script fails silently.",
+            DOCS + "settings-reference",
+        ),
+        "HELPER_REPO": (
+            "A repository-supplied helper runs code on your machine (before trust in -p runs).",
+            DOCS + "permissions#what-runs-before-you-trust-a-folder",
+        ),
+        "MISPLACED": ("This file or key is not read at this location.", DOCS + "claude-directory"),
+        "CLAUDEIGNORE": (
+            "There is no .claudeignore; use permissions.deny Read(...) rules and the sandbox.",
+            DOCS + "permissions#read-and-edit",
+        ),
+        "SETTINGS_MCP_SERVERS": (
+            "MCP servers are declared in .mcp.json (project) or ~/.claude.json (user), not "
+            "in settings.json.",
+            DOCS + "mcp",
+        ),
+        "DESKTOP_CONFIG": (
+            "Claude Desktop MCP configuration.",
+            "https://modelcontextprotocol.io/quickstart/user",
+        ),
+        "CI_ACTION": ("claude-code-action workflow hardening.", DOCS + "github-actions"),
+        "API_KEY_LEAK": (
+            "An Anthropic API key in a file is readable by anyone with access: revoke and "
+            "rotate it.",
+            "https://console.anthropic.com/settings/keys",
+        ),
+        "MANAGED_SETTINGS": (
+            "Managed settings: read-only here, reported for information.",
+            DOCS + "managed-settings",
+        ),
+        "KEYBINDINGS": ("keybindings.json must be strict JSON.", DOCS + "keybindings"),
+    }
+)
 
 
 def check_helpers(settings: dict, base: Path, path: Path, rep: Report, scope: str) -> None:
@@ -2007,14 +3308,25 @@ def check_helpers(settings: dict, base: Path, path: Path, rep: Report, scope: st
         val = settings.get(key)
         if val is None:
             continue
-        cmd = val if isinstance(val, str) else (val.get("command") if isinstance(val, dict) else None)
-        if key in HELPER_OBJECT_KEYS and isinstance(val, dict) and val.get("type") not in (None, "command"):
+        cmd = (
+            val if isinstance(val, str) else (val.get("command") if isinstance(val, dict) else None)
+        )
+        if (
+            key in HELPER_OBJECT_KEYS
+            and isinstance(val, dict)
+            and val.get("type") not in (None, "command")
+        ):
             rep.add("error", "HELPER_SCRIPT", path, f"{key}.type must be 'command'")
         if not cmd:
             rep.add("error", "HELPER_SCRIPT", path, f"{key}: no command")
             continue
         if scope == "project" and path.name == "settings.json" and key in HELPER_STRING_KEYS:
-            rep.add("warn", "HELPER_REPO", path, f"{key} is supplied by the repository and executes code")
+            rep.add(
+                "warn",
+                "HELPER_REPO",
+                path,
+                f"{key} is supplied by the repository and executes code",
+            )
         script = resolve_script(str(cmd).split()[0], base)
         if script is None:
             continue
@@ -2030,16 +3342,33 @@ def check_plugin_settings(settings: dict, path: Path, rep: Report, scope: str) -
     if isinstance(ep, dict):
         for k, v in ep.items():
             if "@" not in k:
-                rep.add("warn", "ENABLED_PLUGINS", path, f"enabledPlugins key {k!r} lacks '@marketplace'")
+                rep.add(
+                    "warn",
+                    "ENABLED_PLUGINS",
+                    path,
+                    f"enabledPlugins key {k!r} lacks '@marketplace'",
+                )
             if not isinstance(v, bool):
-                rep.add("error", "ENABLED_PLUGINS", path, f"enabledPlugins[{k!r}] must be true or false")
+                rep.add(
+                    "error", "ENABLED_PLUGINS", path, f"enabledPlugins[{k!r}] must be true or false"
+                )
     elif ep is not None:
         rep.add("error", "ENABLED_PLUGINS", path, "enabledPlugins must be an object")
     mk = settings.get("extraKnownMarketplaces")
     if isinstance(mk, dict):
         for name, cfg in mk.items():
-            if not isinstance(cfg, dict) or not isinstance(cfg.get("source"), dict) or not cfg["source"].get("source"):
-                rep.add("error", "MARKETPLACE", path, f"extraKnownMarketplaces.{name}: needs source.source (github, git, directory, url)")
+            if (
+                not isinstance(cfg, dict)
+                or not isinstance(cfg.get("source"), dict)
+                or not cfg["source"].get("source")
+            ):
+                rep.add(
+                    "error",
+                    "MARKETPLACE",
+                    path,
+                    f"extraKnownMarketplaces.{name}: needs source.source (github, git, "
+                    f"directory, url)",
+                )
 
 
 def move_settings_mcp(settings: dict, base: Path, path: Path, rep: Report, scope: str) -> dict:
@@ -2047,25 +3376,53 @@ def move_settings_mcp(settings: dict, base: Path, path: Path, rep: Report, scope
     if not isinstance(servers, dict) or not servers:
         return settings
     if scope != "project":
-        rep.add("warn", "SETTINGS_MCP_SERVERS", path, "mcpServers in settings.json is not read; use 'claude mcp add --scope user'")
+        rep.add(
+            "warn",
+            "SETTINGS_MCP_SERVERS",
+            path,
+            "mcpServers in settings.json is not read; use 'claude mcp add --scope user'",
+        )
         return settings
     target = base / ".mcp.json"
     if any(d == target for _, d in rep.moves):
-        rep.add("warn", "SETTINGS_MCP_SERVERS", path, "mcpServers in settings.json is not read (moved on the next --fix pass)", True)
+        rep.add(
+            "warn",
+            "SETTINGS_MCP_SERVERS",
+            path,
+            "mcpServers in settings.json is not read (moved on the next --fix pass)",
+            True,
+        )
         return settings
     raw = rep.current(target)
     try:
         data = json.loads(raw) if raw else {}
     except json.JSONDecodeError:
-        rep.add("warn", "SETTINGS_MCP_SERVERS", path, "mcpServers in settings.json is not read (.mcp.json unparsable: move by hand)")
+        rep.add(
+            "warn",
+            "SETTINGS_MCP_SERVERS",
+            path,
+            "mcpServers in settings.json is not read (.mcp.json unparsable: move by hand)",
+        )
         return settings
     existing = data.setdefault("mcpServers", {})
     clash = [n for n in servers if n in existing]
     if clash:
-        rep.add("warn", "SETTINGS_MCP_SERVERS", path, f"mcpServers in settings.json is not read; names clash with .mcp.json: {', '.join(clash)}")
+        rep.add(
+            "warn",
+            "SETTINGS_MCP_SERVERS",
+            path,
+            f"mcpServers in settings.json is not read; names clash with .mcp.json: "
+            f"{', '.join(clash)}",
+        )
         return settings
     existing.update(servers)
-    rep.add("warn", "SETTINGS_MCP_SERVERS", path, f"{len(servers)} MCP server(s) moved to .mcp.json", True)
+    rep.add(
+        "warn",
+        "SETTINGS_MCP_SERVERS",
+        path,
+        f"{len(servers)} MCP server(s) moved to .mcp.json",
+        True,
+    )
     if raw is None:
         rep.new_files[target] = (dump_json(data), 0o644)
     else:
@@ -2094,12 +3451,19 @@ def check_plugin_dir(root: Path, rep: Report, policy: dict) -> None:
         return
     new = copy.deepcopy(data)
     if repaired:
-        rep.add("error", "JSON_REPAIRED", mf, "comments, trailing commas or BOM in strict JSON", True)
+        rep.add(
+            "error", "JSON_REPAIRED", mf, "comments, trailing commas or BOM in strict JSON", True
+        )
     name = data.get("name")
     if not name:
         rep.add("error", "PLUGIN_MANIFEST", mf, "missing 'name'")
     elif not KEBAB_RE.match(str(name)):
-        rep.add("warn", "PLUGIN_MANIFEST", mf, f"name {name!r} is not kebab-case (use {slugify(str(name))!r})")
+        rep.add(
+            "warn",
+            "PLUGIN_MANIFEST",
+            mf,
+            f"name {name!r} is not kebab-case (use {slugify(str(name))!r})",
+        )
     if "version" in data and not SEMVER_RE.match(str(data["version"])):
         rep.add("warn", "PLUGIN_MANIFEST", mf, f"version {data['version']!r} is not semver")
     for k in ("version", "description", "author"):
@@ -2107,10 +3471,21 @@ def check_plugin_dir(root: Path, rep: Report, policy: dict) -> None:
             rep.add("info", "PLUGIN_MANIFEST", mf, f"no {k}")
     unknown = [k for k in data if k not in PLUGIN_KNOWN_KEYS]
     if unknown:
-        rep.add("warn", "PLUGIN_MANIFEST", mf, f"unknown field(s) stripped at load: {', '.join(unknown)}")
+        rep.add(
+            "warn",
+            "PLUGIN_MANIFEST",
+            mf,
+            f"unknown field(s) stripped at load: {', '.join(unknown)}",
+        )
     for key in PLUGIN_COMPONENT_KEYS:
         val = data.get(key)
-        paths = [val] if isinstance(val, str) else [p for p in val if isinstance(p, str)] if isinstance(val, list) else []
+        paths = (
+            [val]
+            if isinstance(val, str)
+            else [p for p in val if isinstance(p, str)]
+            if isinstance(val, list)
+            else []
+        )
         fixed = []
         for p in paths:
             q = p
@@ -2131,14 +3506,25 @@ def check_plugin_dir(root: Path, rep: Report, policy: dict) -> None:
             new[key] = fixed[0] if isinstance(val, str) else fixed
     for sub in ("skills", "commands", "agents", "hooks", "output-styles"):
         if (root / ".claude-plugin" / sub).exists():
-            rep.add("error", "PLUGIN_LAYOUT", root / ".claude-plugin" / sub, f"{sub}/ must be at the plugin root, not in .claude-plugin/")
+            rep.add(
+                "error",
+                "PLUGIN_LAYOUT",
+                root / ".claude-plugin" / sub,
+                f"{sub}/ must be at the plugin root, not in .claude-plugin/",
+            )
     hooks_file = root / "hooks" / "hooks.json"
     hraw = read_text(hooks_file)
     if hraw is not None:
         try:
             hdata, hrep = lenient_json(hraw)
             if hrep:
-                rep.add("error", "JSON_REPAIRED", hooks_file, "comments, trailing commas or BOM in strict JSON", True)
+                rep.add(
+                    "error",
+                    "JSON_REPAIRED",
+                    hooks_file,
+                    "comments, trailing commas or BOM in strict JSON",
+                    True,
+                )
             fixed_hooks = check_hooks(hdata.get("hooks", {}), root, hooks_file, rep, "plugin")
             if fixed_hooks != hdata.get("hooks") or hrep:
                 rep.edit(hooks_file, hraw, dump_json({**hdata, "hooks": fixed_hooks}))
@@ -2153,10 +3539,20 @@ def check_plugin_dir(root: Path, rep: Report, policy: dict) -> None:
         rep.edit(mf, raw, dump_json(new))
     if CLI_VERSION and shutil.which("claude"):
         try:
-            res = subprocess.run(["claude", "plugin", "validate", str(root)], capture_output=True, text=True, timeout=60)
+            res = subprocess.run(
+                ["claude", "plugin", "validate", str(root)],
+                capture_output=True,
+                text=True,
+                timeout=60,
+            )
             if res.returncode != 0:
                 msg = (res.stdout + res.stderr).strip().splitlines()
-                rep.add("error", "PLUGIN_CLI", root, "claude plugin validate: " + (msg[-1] if msg else f"exit {res.returncode}"))
+                rep.add(
+                    "error",
+                    "PLUGIN_CLI",
+                    root,
+                    "claude plugin validate: " + (msg[-1] if msg else f"exit {res.returncode}"),
+                )
             else:
                 log(1, f"claude plugin validate {root}: ok", 1)
         except (OSError, subprocess.TimeoutExpired):
@@ -2174,7 +3570,9 @@ def check_marketplace(root: Path, rep: Report, policy: dict) -> None:
         rep.add("error", "JSON_INVALID", mf, f"invalid JSON: {e}")
         return
     if repaired:
-        rep.add("error", "JSON_REPAIRED", mf, "comments, trailing commas or BOM in strict JSON", True)
+        rep.add(
+            "error", "JSON_REPAIRED", mf, "comments, trailing commas or BOM in strict JSON", True
+        )
         rep.edit(mf, raw, dump_json(data))
     if not data.get("name"):
         rep.add("error", "MARKETPLACE", mf, "missing 'name'")
@@ -2194,7 +3592,12 @@ def check_marketplace(root: Path, rep: Report, policy: dict) -> None:
         if isinstance(src, str) and src.startswith("./"):
             target = (root / src).resolve()
             if not target.exists():
-                rep.add("error", "MARKETPLACE", mf, f"plugins[{p['name']}]: source {src!r} does not exist")
+                rep.add(
+                    "error",
+                    "MARKETPLACE",
+                    mf,
+                    f"plugins[{p['name']}]: source {src!r} does not exist",
+                )
             else:
                 check_plugin_dir(target, rep, policy)
 
@@ -2206,12 +3609,20 @@ def check_output_styles(root: Path, rep: Report) -> None:
     for f in sorted(d.glob("*.md")):
         meta, offset = split_frontmatter(read_text(f) or "")
         if offset:
-            rep.add("warn", "FRONTMATTER_OFFSET", f, "frontmatter not on line 1 (leading lines removed)", True)
+            rep.add(
+                "warn",
+                "FRONTMATTER_OFFSET",
+                f,
+                "frontmatter not on line 1 (leading lines removed)",
+                True,
+            )
             t = read_text(f) or ""
             rep.edit(f, t, t.lstrip("\ufeff \t\r\n"))
         if not meta or not meta.get("description"):
             rep.add("info", "OUTPUT_STYLE", f, "no description in frontmatter")
-        unknown = [k for k in (meta or {}) if k not in ("name", "description", "keep-coding-instructions")]
+        unknown = [
+            k for k in (meta or {}) if k not in ("name", "description", "keep-coding-instructions")
+        ]
         if unknown:
             rep.add("info", "OUTPUT_STYLE", f, f"unrecognised field(s): {', '.join(unknown)}")
 
@@ -2219,7 +3630,9 @@ def check_output_styles(root: Path, rep: Report) -> None:
 def check_misplaced(repo: Path, rep: Report) -> None:
     def rename(src: Path, dst: Path, code: str, why: str) -> None:
         if dst.exists() or any(d == dst for _, d in rep.moves):
-            rep.add("warn", code, src, f"{why}; {dst.relative_to(repo)} already exists: merge by hand")
+            rep.add(
+                "warn", code, src, f"{why}; {dst.relative_to(repo)} already exists: merge by hand"
+            )
             return
         rep.add("warn", code, src, f"{why} (moved to {dst.relative_to(repo)})", True)
         rep.moves.append((src, dst))
@@ -2227,27 +3640,62 @@ def check_misplaced(repo: Path, rep: Report) -> None:
     names = {p.name: p for p in repo.iterdir()} if repo.is_dir() else {}
     for n, p in names.items():
         if n.lower() == "claude.md" and n != "CLAUDE.md" and p.is_file():
-            rename(p, repo / "CLAUDE.md", "MISPLACED", f"{n}: file names are case-sensitive on Linux; not loaded")
+            rename(
+                p,
+                repo / "CLAUDE.md",
+                "MISPLACED",
+                f"{n}: file names are case-sensitive on Linux; not loaded",
+            )
         if n.lower() == "agents.md" and n != "AGENTS.md" and p.is_file():
             rename(p, repo / "AGENTS.md", "MISPLACED", f"{n}: not loaded (expected AGENTS.md)")
         if n == "mcp.json":
-            rename(p, repo / ".mcp.json", "MISPLACED", "mcp.json is not read (project servers live in .mcp.json)")
+            rename(
+                p,
+                repo / ".mcp.json",
+                "MISPLACED",
+                "mcp.json is not read (project servers live in .mcp.json)",
+            )
     if (repo / ".claudeignore").exists():
-        rep.add("warn", "CLAUDEIGNORE", repo / ".claudeignore", ".claudeignore is not a Claude Code feature: nothing reads it")
+        rep.add(
+            "warn",
+            "CLAUDEIGNORE",
+            repo / ".claudeignore",
+            ".claudeignore is not a Claude Code feature: nothing reads it",
+        )
     dot = repo / ".claude"
     for n in (".mcp.json", "mcp.json"):
         if (dot / n).is_file():
-            rename(dot / n, repo / ".mcp.json", "MISPLACED", f".claude/{n} is not read (use .mcp.json at the project root)")
+            rename(
+                dot / n,
+                repo / ".mcp.json",
+                "MISPLACED",
+                f".claude/{n} is not read (use .mcp.json at the project root)",
+            )
     for n in ("settings.yaml", "settings.yml", "settings.toml", "config.json", "claude.json"):
         if (dot / n).exists():
-            rep.add("warn", "MISPLACED", dot / n, f".claude/{n} is not read (settings live in .claude/settings.json)")
+            rep.add(
+                "warn",
+                "MISPLACED",
+                dot / n,
+                f".claude/{n} is not read (settings live in .claude/settings.json)",
+            )
     if (repo / ".claude.json").exists() and repo != Path.home():
-        rep.add("warn", "MISPLACED", repo / ".claude.json", ".claude.json in a repository is not read (it belongs in your home directory)")
+        rep.add(
+            "warn",
+            "MISPLACED",
+            repo / ".claude.json",
+            ".claude.json in a repository is not read (it belongs in your home directory)",
+        )
     skills = dot / "skills"
     if skills.is_dir():
         for f in skills.glob("*.md"):
             dst = skills / f.stem / "SKILL.md"
-            rename(f, dst, "MISPLACED", f"flat skill file {f.name} is not loaded (needs {f.stem}/SKILL.md)")
+            rename(
+                f,
+                dst,
+                "MISPLACED",
+                f"flat skill file {f.name} is not loaded (needs {f.stem}/SKILL.md)",
+            )
 
 
 def check_workflows(repo: Path, rep: Report) -> None:
@@ -2262,28 +3710,63 @@ def check_workflows(repo: Path, rep: Report) -> None:
         for m in re.finditer(r"uses:\s*anthropics/claude-code(?:-base)?-action@([\w.\-/]+)", text):
             ref = m.group(1)
             if ref in ("main", "master", "beta", "latest"):
-                rep.add("warn", "CI_ACTION", wf, f"action pinned to moving ref @{ref}: pin a release tag or commit SHA")
+                rep.add(
+                    "warn",
+                    "CI_ACTION",
+                    wf,
+                    f"action pinned to moving ref @{ref}: pin a release tag or commit SHA",
+                )
             elif not re.fullmatch(r"[0-9a-f]{40}", ref):
-                rep.add("info", "CI_ACTION", wf, f"action pinned to tag @{ref}; a commit SHA is immutable")
-        if re.search(r"(anthropic_api_key|claude_code_oauth_token)\s*:\s*['\"]?(?!\$\{\{)\S{12,}", text):
-            rep.add("error", "CI_ACTION", wf, "credential written literally: use ${{ secrets.NAME }}")
+                rep.add(
+                    "info",
+                    "CI_ACTION",
+                    wf,
+                    f"action pinned to tag @{ref}; a commit SHA is immutable",
+                )
+        if re.search(
+            r"(anthropic_api_key|claude_code_oauth_token)\s*:\s*['\"]?(?!\$\{\{)\S{12,}", text
+        ):
+            rep.add(
+                "error", "CI_ACTION", wf, "credential written literally: use ${{ secrets.NAME }}"
+            )
         if re.search(r"dangerously-skip-permissions|permission-mode\W+bypassPermissions", text):
-            rep.add("warn", "CI_ACTION", wf, "permissions bypassed in CI: list allowed tools instead")
+            rep.add(
+                "warn", "CI_ACTION", wf, "permissions bypassed in CI: list allowed tools instead"
+            )
         if re.search(r"(allowed_tools|allowedTools)\W+[^\n]*\bBash(\(\*\))?(?=[\s,\"']|$)", text):
             rep.add("warn", "CI_ACTION", wf, "unrestricted Bash allowed in CI")
         if re.search(r"(?m)^\s*pull_request_target\s*:", text):
-            rep.add("warn", "CI_ACTION", wf, "pull_request_target exposes secrets to fork PR content (prompt injection)")
+            rep.add(
+                "warn",
+                "CI_ACTION",
+                wf,
+                "pull_request_target exposes secrets to fork PR content (prompt injection)",
+            )
         if not re.search(r"(?m)^\s*permissions\s*:", text):
-            rep.add("warn", "CI_ACTION", wf, "no 'permissions:' block: the token gets the repository default scopes")
+            rep.add(
+                "warn",
+                "CI_ACTION",
+                wf,
+                "no 'permissions:' block: the token gets the repository default scopes",
+            )
         if re.search(r"(?m)^\s*issue_comment\s*:", text) and "author_association" not in text:
-            rep.add("info", "CI_ACTION", wf, "issue_comment trigger without author_association filter: anyone who can comment can trigger it")
+            rep.add(
+                "info",
+                "CI_ACTION",
+                wf,
+                "issue_comment trigger without author_association filter: anyone who can "
+                "comment can trigger it",
+            )
 
 
 def check_repo_secrets(repo: Path, rep: Report) -> None:
     skip = {".git", "node_modules", ".venv", "venv", "dist", "build", "__pycache__", ".cache"}
     for dirpath, dirnames, filenames in os.walk(repo):
-        dirnames[:] = [d for d in dirnames if d not in skip
-                       and not (d == "worktrees" and Path(dirpath).name == ".claude")]
+        dirnames[:] = [
+            d
+            for d in dirnames
+            if d not in skip and not (d == "worktrees" and Path(dirpath).name == ".claude")
+        ]
         for fn in filenames:
             p = Path(dirpath) / fn
             try:
@@ -2297,28 +3780,50 @@ def check_repo_secrets(repo: Path, rep: Report) -> None:
                 tracked = (repo / ".git").exists() and is_tracked(repo, rel)
                 ignored = (repo / ".git").exists() and is_ignored(repo, rel)
                 level = "error" if tracked or not ignored else "warn"
-                rep.add(level, "API_KEY_LEAK", p, "Anthropic API key in file" + (" (committed: rotate it)" if tracked else ""))
+                rep.add(
+                    level,
+                    "API_KEY_LEAK",
+                    p,
+                    "Anthropic API key in file" + (" (committed: rotate it)" if tracked else ""),
+                )
 
 
 def check_user_extras(rep: Report) -> None:
     home = Path.home()
-    for rc in (".bashrc", ".zshrc", ".profile", ".bash_profile", ".zprofile", ".config/fish/config.fish"):
+    for rc in (
+        ".bashrc",
+        ".zshrc",
+        ".profile",
+        ".bash_profile",
+        ".zprofile",
+        ".config/fish/config.fish",
+    ):
         text = read_text(home / rc)
         if text and ANTHROPIC_KEY_RE.search(text):
-            rep.add("warn", "API_KEY_LEAK", home / rc, "Anthropic API key in plaintext shell startup file (prefer a secret manager / vault)")
+            rep.add(
+                "warn",
+                "API_KEY_LEAK",
+                home / rc,
+                "Anthropic API key in plaintext shell startup file (prefer a secret manager "
+                "/ vault)",
+            )
     kb = config_dir() / "keybindings.json"
     raw = read_text(kb)
     if raw is not None:
         try:
             data, repaired = lenient_json(raw)
             if repaired:
-                rep.add("error", "KEYBINDINGS", kb, "comments or trailing commas in strict JSON", True)
+                rep.add(
+                    "error", "KEYBINDINGS", kb, "comments or trailing commas in strict JSON", True
+                )
                 rep.edit(kb, raw, dump_json(data))
         except json.JSONDecodeError as e:
             rep.add("error", "KEYBINDINGS", kb, f"invalid JSON: {e}")
     check_output_styles(config_dir(), rep)
-    candidates = [home / ".config/Claude/claude_desktop_config.json",
-                  home / "Library/Application Support/Claude/claude_desktop_config.json"]
+    candidates = [
+        home / ".config/Claude/claude_desktop_config.json",
+        home / "Library/Application Support/Claude/claude_desktop_config.json",
+    ]
     if os.environ.get("APPDATA"):
         candidates.append(Path(os.environ["APPDATA"]) / "Claude/claude_desktop_config.json")
     for dc in candidates:
@@ -2332,12 +3837,16 @@ def check_user_extras(rep: Report) -> None:
             rep.add("error", "JSON_INVALID", dc, f"invalid JSON: {e}")
             continue
         if repaired:
-            rep.add("error", "JSON_REPAIRED", dc, "comments or trailing commas in strict JSON", True)
+            rep.add(
+                "error", "JSON_REPAIRED", dc, "comments or trailing commas in strict JSON", True
+            )
             rep.edit(dc, raw, dump_json(data))
         if isinstance(data.get("mcpServers"), dict):
             check_servers(data["mcpServers"], dc, rep, "mcpServers", False)
-    for managed in (Path("/etc/claude-code/managed-settings.json"),
-                    Path("/Library/Application Support/ClaudeCode/managed-settings.json")):
+    for managed in (
+        Path("/etc/claude-code/managed-settings.json"),
+        Path("/Library/Application Support/ClaudeCode/managed-settings.json"),
+    ):
         raw = read_text(managed)
         if raw is None:
             continue
@@ -2345,7 +3854,12 @@ def check_user_extras(rep: Report) -> None:
             json.loads(raw)
             log(1, f"managed settings: {managed} (valid JSON)", 1)
         except json.JSONDecodeError as e:
-            rep.add("error", "MANAGED_SETTINGS", managed, f"invalid JSON: {e} (Claude Code keeps the stricter fallback)")
+            rep.add(
+                "error",
+                "MANAGED_SETTINGS",
+                managed,
+                f"invalid JSON: {e} (Claude Code keeps the stricter fallback)",
+            )
 
 
 def find_plugin_roots(repo: Path, max_depth: int = 4) -> list[Path]:
@@ -2362,24 +3876,98 @@ def find_plugin_roots(repo: Path, max_depth: int = 4) -> list[Path]:
         dirnames[:] = [d for d in dirnames if d not in skip] if depth < max_depth else []
     return sorted(set(roots))
 
+
 # --------------------------------------------------------------------------- #
 # rtk (Rust Token Killer) integration
 # --------------------------------------------------------------------------- #
 
 # Commands rtk rewrites (README, 2026-09). Used when `rtk rewrite` is unavailable.
 RTK_SUPPORTED = {
-    "ls", "tree", "cat", "read", "grep", "rg", "find", "diff", "ast-grep", "git", "gh", "jest",
-    "vitest", "playwright", "pytest", "go", "cargo", "rake", "rspec", "npm", "npx", "eslint",
-    "tsc", "next", "prettier", "ruff", "golangci-lint", "rubocop", "mvn", "mvnd", "sbt", "pnpm",
-    "uv", "pip", "bundle", "prisma", "bun", "bunx", "deno", "aws", "docker", "kubectl", "oc",
-    "pulumi", "curl", "wget", "sqlfluff", "head", "tail", "log", "env",
+    "ls",
+    "tree",
+    "cat",
+    "read",
+    "grep",
+    "rg",
+    "find",
+    "diff",
+    "ast-grep",
+    "git",
+    "gh",
+    "jest",
+    "vitest",
+    "playwright",
+    "pytest",
+    "go",
+    "cargo",
+    "rake",
+    "rspec",
+    "npm",
+    "npx",
+    "eslint",
+    "tsc",
+    "next",
+    "prettier",
+    "ruff",
+    "golangci-lint",
+    "rubocop",
+    "mvn",
+    "mvnd",
+    "sbt",
+    "pnpm",
+    "uv",
+    "pip",
+    "bundle",
+    "prisma",
+    "bun",
+    "bunx",
+    "deno",
+    "aws",
+    "docker",
+    "kubectl",
+    "oc",
+    "pulumi",
+    "curl",
+    "wget",
+    "sqlfluff",
+    "head",
+    "tail",
+    "log",
+    "env",
 }
 RTK_NATIVE_HOOK = (0, 37, 2)
-RTK: dict[str, Any] = {"path": None, "version": None, "genuine": None, "config": None,
-                       "config_path": None, "exclude": set(), "rewrite_cache": {}, "rewrite_cli": None,
-                       "help_commands": set()}
-RTK_NATIVE = {"read", "smart", "summary", "proxy", "err", "test", "json", "deps", "env", "log",
-              "gain", "discover", "session", "init", "hook", "rewrite", "recall", "telemetry", "lint"}
+RTK: dict[str, Any] = {
+    "path": None,
+    "version": None,
+    "genuine": None,
+    "config": None,
+    "config_path": None,
+    "exclude": set(),
+    "rewrite_cache": {},
+    "rewrite_cli": None,
+    "help_commands": set(),
+}
+RTK_NATIVE = {
+    "read",
+    "smart",
+    "summary",
+    "proxy",
+    "err",
+    "test",
+    "json",
+    "deps",
+    "env",
+    "log",
+    "gain",
+    "discover",
+    "session",
+    "init",
+    "hook",
+    "rewrite",
+    "recall",
+    "telemetry",
+    "lint",
+}
 
 # llmtrim: a companion CLI that owns "route" subagents (llmtrim-codex-*, llmtrim-grok-*...).
 # They carry an HTML marker and delegate to the llmtrim binary; without it on PATH those
@@ -2387,21 +3975,71 @@ RTK_NATIVE = {"read", "smart", "summary", "proxy", "err", "test", "json", "deps"
 LLMTRIM: dict[str, Any] = {"path": None, "version": None, "checked_cli": False}
 LLMTRIM_ROUTE_MARKER = re.compile(r"llmtrim-(owned-route-agent|route-v\d+)", re.I)
 
-HINTS.update({
-    "LLMTRIM_MISSING": ("These subagents are managed by the llmtrim CLI and delegate to it; without llmtrim on PATH they load into every session but their routes are dead. Install llmtrim, or remove the route agents (-i offers to park them).", "https://github.com/llmtrim/llmtrim#install"),
-    "RTK_MISSING": ("rtk-prefixed allow rules only match once the rtk hook rewrites commands; without rtk they never match.", "https://github.com/rtk-ai/rtk#installation"),
-    "RTK_WRONG_PACKAGE": ("'rtk' on PATH is another project (Rust Type Kit): 'rtk gain' does not exist.", "https://github.com/rtk-ai/rtk#verify-installation"),
-    "RTK_OLD": ("Since v0.37.2 the hook is a native binary (rtk hook claude): no bash or jq needed.", "https://github.com/rtk-ai/rtk#windows"),
-    "RTK_NO_HOOK": ("Without the PreToolUse hook nothing is rewritten: no savings, and rtk-prefixed rules never match.", "https://github.com/rtk-ai/rtk#auto-rewrite-hook"),
-    "RTK_LEGACY_HOOK": ("The legacy rtk-rewrite.sh hook needs a Unix shell and jq; the native hook replaces it.", "https://github.com/rtk-ai/rtk#windows"),
-    "RTK_HOOK_MATCHER": ("The rtk hook must match the Bash tool.", "https://github.com/rtk-ai/rtk#auto-rewrite-hook"),
-    "RTK_DEAD_RULE": ("rtk does not rewrite this command (unsupported or excluded): the rtk-prefixed rule never matches and the plain command keeps prompting.", "https://github.com/rtk-ai/rtk#configuration"),
-    "RTK_CONFIG": ("~/.config/rtk/config.toml (macOS: ~/Library/Application Support/rtk/config.toml).", "https://github.com/rtk-ai/rtk#configuration"),
-    "RTK_AWARENESS": ("awareness 'full' is for agents without hook support; with the hook it only adds context.", "https://github.com/rtk-ai/rtk#setup"),
-    "RTK_RETRIEVER": ("With the retriever disabled, full output of failed commands can't be recalled (rtk recall): the agent re-runs them.", "https://github.com/rtk-ai/rtk#configuration"),
-    "RTK_TELEMETRY": ("Telemetry is opt-in; disable it with 'rtk telemetry disable' or RTK_TELEMETRY_DISABLED=1.", "https://github.com/rtk-ai/rtk#privacy--telemetry"),
-    "RTK_READ_TOOLS": ("The hook only sees Bash: Read/Grep/Glob output is never compressed.", "https://github.com/rtk-ai/rtk#quick-start"),
-})
+HINTS.update(
+    {
+        "LLMTRIM_MISSING": (
+            "These subagents are managed by the llmtrim CLI and delegate to it; without "
+            "llmtrim on PATH they load into every session but their routes are dead. Install "
+            "llmtrim, or remove the route agents (-i offers to park them).",
+            "https://github.com/llmtrim/llmtrim#install",
+        ),
+        "RTK_MISSING": (
+            "rtk-prefixed allow rules only match once the rtk hook rewrites commands; "
+            "without rtk they never match.",
+            "https://github.com/rtk-ai/rtk#installation",
+        ),
+        "RTK_WRONG_PACKAGE": (
+            "'rtk' on PATH is another project (Rust Type Kit): 'rtk gain' does not exist.",
+            "https://github.com/rtk-ai/rtk#verify-installation",
+        ),
+        "RTK_OLD": (
+            "Since v0.37.2 the hook is a native binary (rtk hook claude): no bash or jq needed.",
+            "https://github.com/rtk-ai/rtk#windows",
+        ),
+        "RTK_NO_HOOK": (
+            "Without the PreToolUse hook nothing is rewritten: no savings, and rtk-prefixed "
+            "rules never match.",
+            "https://github.com/rtk-ai/rtk#auto-rewrite-hook",
+        ),
+        "RTK_LEGACY_HOOK": (
+            "The legacy rtk-rewrite.sh hook needs a Unix shell and jq; the native hook "
+            "replaces it.",
+            "https://github.com/rtk-ai/rtk#windows",
+        ),
+        "RTK_HOOK_MATCHER": (
+            "The rtk hook must match the Bash tool.",
+            "https://github.com/rtk-ai/rtk#auto-rewrite-hook",
+        ),
+        "RTK_DEAD_RULE": (
+            "rtk does not rewrite this command (unsupported or excluded): the rtk-prefixed "
+            "rule never matches and the plain command keeps prompting.",
+            "https://github.com/rtk-ai/rtk#configuration",
+        ),
+        "RTK_CONFIG": (
+            "~/.config/rtk/config.toml (macOS: ~/Library/Application Support/rtk/config.toml).",
+            "https://github.com/rtk-ai/rtk#configuration",
+        ),
+        "RTK_AWARENESS": (
+            "awareness 'full' is for agents without hook support; with the hook it only "
+            "adds context.",
+            "https://github.com/rtk-ai/rtk#setup",
+        ),
+        "RTK_RETRIEVER": (
+            "With the retriever disabled, full output of failed commands can't be recalled "
+            "(rtk recall): the agent re-runs them.",
+            "https://github.com/rtk-ai/rtk#configuration",
+        ),
+        "RTK_TELEMETRY": (
+            "Telemetry is opt-in; disable it with 'rtk telemetry disable' or "
+            "RTK_TELEMETRY_DISABLED=1.",
+            "https://github.com/rtk-ai/rtk#privacy--telemetry",
+        ),
+        "RTK_READ_TOOLS": (
+            "The hook only sees Bash: Read/Grep/Glob output is never compressed.",
+            "https://github.com/rtk-ai/rtk#quick-start",
+        ),
+    }
+)
 
 
 def _run(args: list[str], timeout: int = 10) -> subprocess.CompletedProcess | None:
@@ -2442,22 +4080,31 @@ def detect_rtk(use_cli: bool) -> None:
     gain = _run(["rtk", "gain", "--help"])
     RTK["genuine"] = bool(gain and gain.returncode == 0)
     helptext = _run(["rtk", "--help"])
-    cmds = set(re.findall(r"(?m)^\s{2,}([a-z][\w-]*)[\s,]", (helptext.stdout if helptext else "") or ""))
+    cmds = set(
+        re.findall(r"(?m)^\s{2,}([a-z][\w-]*)[\s,]", (helptext.stdout if helptext else "") or "")
+    )
     RTK["help_commands"] = cmds if len(cmds) >= 10 else set()
     # `rtk rewrite` prints the rewritten command on stdout when it supports it and
     # nothing when it doesn't. Its exit code is unreliable (rtk 0.42.1 exits 3 on a
     # successful rewrite), so detection keys on stdout, not the return code.
     probe = _run(["rtk", "rewrite", "git status"])
     RTK["rewrite_cli"] = bool(probe and (probe.stdout or "").strip().startswith("rtk"))
-    log(1, f"rtk: {RTK['path']} {'.'.join(map(str, RTK['version'] or ())) or '?'} "
-           f"(genuine={RTK['genuine']}, rewrite probe={RTK['rewrite_cli']}, "
-           f"commands from --help={len(RTK['help_commands'])}, excluded={sorted(RTK['exclude'])})")
+    log(
+        1,
+        f"rtk: {RTK['path']} {'.'.join(map(str, RTK['version'] or ())) or '?'} "
+        f"(genuine={RTK['genuine']}, rewrite probe={RTK['rewrite_cli']}, "
+        f"commands from --help={len(RTK['help_commands'])}, excluded={sorted(RTK['exclude'])})",
+    )
 
 
 def rtk_rewrites(cmd: str) -> bool:
     """Would the rtk hook rewrite this command prefix?"""
     first = cmd.split()[0] if cmd.split() else ""
-    if not first or first in RTK["exclude"] or any(cmd == e or cmd.startswith(e + " ") for e in RTK["exclude"]):
+    if (
+        not first
+        or first in RTK["exclude"]
+        or any(cmd == e or cmd.startswith(e + " ") for e in RTK["exclude"])
+    ):
         return False
     if RTK["rewrite_cli"]:
         cache = RTK["rewrite_cache"]
@@ -2489,9 +4136,15 @@ def rtk_settings_hooks(policy: dict, repos: list[Path]) -> list[tuple[Path, str,
             data = lenient_json(raw)[0]
         except json.JSONDecodeError:
             continue
-        for g in ((data.get("hooks") or {}).get("PreToolUse") or []) if isinstance(data, dict) else []:
+        for g in (
+            ((data.get("hooks") or {}).get("PreToolUse") or []) if isinstance(data, dict) else []
+        ):
             for h in (g or {}).get("hooks", []) if isinstance(g, dict) else []:
-                cmd = " ".join([str(h.get("command", "")), *map(str, h.get("args") or [])]) if isinstance(h, dict) else ""
+                cmd = (
+                    " ".join([str(h.get("command", "")), *map(str, h.get("args") or [])])
+                    if isinstance(h, dict)
+                    else ""
+                )
                 if re.search(r"\brtk\b|rtk-rewrite", cmd):
                     found.append((f, str(g.get("matcher", "")), cmd))
     return found
@@ -2502,25 +4155,47 @@ def check_rtk(policy: dict, rep: Report, repos: list[Path], user_scope: bool) ->
     if not pol["require_rtk"]:
         return
     if RTK["config"] and "__error__" in RTK["config"]:
-        rep.add("error", "RTK_CONFIG", RTK["config_path"], f"invalid TOML: {RTK['config']['__error__']}")
+        rep.add(
+            "error", "RTK_CONFIG", RTK["config_path"], f"invalid TOML: {RTK['config']['__error__']}"
+        )
     if RTK["path"] is None and RTK["genuine"] is None:
         if shutil.which("rtk") is None and RTK.get("checked_cli"):
-            rep.add("warn", "RTK_MISSING", "rtk", "require_rtk is on but rtk is not installed: "
-                    "install it (see hint) or set permissions.require_rtk = false to skip rtk routing")
+            rep.add(
+                "warn",
+                "RTK_MISSING",
+                "rtk",
+                "require_rtk is on but rtk is not installed: "
+                "install it (see hint) or set permissions.require_rtk = false to skip rtk routing",
+            )
         return
     if RTK["genuine"] is False:
         rep.add("error", "RTK_WRONG_PACKAGE", RTK["path"], "this 'rtk' is not Rust Token Killer")
         return
     version = RTK["version"]
     if version and version < RTK_NATIVE_HOOK:
-        rep.add("info", "RTK_OLD", RTK["path"], f"rtk {'.'.join(map(str, version))}: upgrade, then rerun 'rtk init -g'")
+        rep.add(
+            "info",
+            "RTK_OLD",
+            RTK["path"],
+            f"rtk {'.'.join(map(str, version))}: upgrade, then rerun 'rtk init -g'",
+        )
     hooks = rtk_settings_hooks(policy, repos)
     user_settings = config_dir() / "settings.json"
     native_ok = version is None or version >= RTK_NATIVE_HOOK
     if not hooks:
         fixable = user_scope and native_ok
-        rep.add("error", "RTK_NO_HOOK", user_settings, "no rtk PreToolUse hook" +
-                (" (native hook added to user settings)" if fixable else ": run 'rtk init -g --hook-only'"), fixable)
+        rep.add(
+            "error",
+            "RTK_NO_HOOK",
+            user_settings,
+            "no rtk PreToolUse hook"
+            + (
+                " (native hook added to user settings)"
+                if fixable
+                else ": run 'rtk init -g --hook-only'"
+            ),
+            fixable,
+        )
         if fixable:
             raw = rep.current(user_settings) or "{}"
             try:
@@ -2529,33 +4204,73 @@ def check_rtk(policy: dict, rep: Report, repos: list[Path], user_scope: bool) ->
                 data = None
             if isinstance(data, dict):
                 pre = data.setdefault("hooks", {}).setdefault("PreToolUse", [])
-                pre.append({"matcher": "Bash", "hooks": [{"type": "command", "command": "rtk", "args": ["hook", "claude"], "timeout": 10}]})
+                pre.append(
+                    {
+                        "matcher": "Bash",
+                        "hooks": [
+                            {
+                                "type": "command",
+                                "command": "rtk",
+                                "args": ["hook", "claude"],
+                                "timeout": 10,
+                            }
+                        ],
+                    }
+                )
                 if user_settings.exists() or user_settings in rep.edits:
                     rep.edit(user_settings, read_text(user_settings) or "", dump_json(data))
                 else:
-                    rep.new_files[user_settings] = (dump_json({"$schema": policy["scaffold"]["schema_url"], **data}), 0o644)
+                    rep.new_files[user_settings] = (
+                        dump_json({"$schema": policy["scaffold"]["schema_url"], **data}),
+                        0o644,
+                    )
     for f, matcher, cmd in hooks:
         if "rtk-rewrite" in cmd:
-            rep.add("warn", "RTK_LEGACY_HOOK", f, f"legacy shell hook ({cmd[:50]}): rerun 'rtk init -g' to migrate")
+            rep.add(
+                "warn",
+                "RTK_LEGACY_HOOK",
+                f,
+                f"legacy shell hook ({cmd[:50]}): rerun 'rtk init -g' to migrate",
+            )
         if matcher not in ("", "*") and not re.search(r"(^|[|,\s])Bash($|[|,\s])|\.\*", matcher):
-            rep.add("warn", "RTK_HOOK_MATCHER", f, f"rtk hook matcher {matcher!r} does not match Bash")
+            rep.add(
+                "warn", "RTK_HOOK_MATCHER", f, f"rtk hook matcher {matcher!r} does not match Bash"
+            )
     cfg = RTK["config"] or {}
     level = str((cfg.get("awareness") or {}).get("level", "")).lower()
     if hooks and level == "full":
-        rep.add("warn", "RTK_AWARENESS", RTK["config_path"], "awareness level 'full' duplicates what the hook already does")
-    if str((cfg.get("retriever") or {}).get("mode", "")).lower() == "disabled" or \
-            (cfg.get("tee") or {}).get("enabled") is False:
+        rep.add(
+            "warn",
+            "RTK_AWARENESS",
+            RTK["config_path"],
+            "awareness level 'full' duplicates what the hook already does",
+        )
+    if (
+        str((cfg.get("retriever") or {}).get("mode", "")).lower() == "disabled"
+        or (cfg.get("tee") or {}).get("enabled") is False
+    ):
         rep.add("info", "RTK_RETRIEVER", RTK["config_path"], "failure output recovery disabled")
     user_env = {}
     try:
-        user_env = (lenient_json(rep.current(config_dir() / "settings.json") or "{}")[0].get("env") or {})
+        user_env = (
+            lenient_json(rep.current(config_dir() / "settings.json") or "{}")[0].get("env") or {}
+        )
     except (json.JSONDecodeError, AttributeError):
         pass
-    if RTK["path"] and not os.environ.get("RTK_TELEMETRY_DISABLED") and not user_env.get("RTK_TELEMETRY_DISABLED"):
+    if (
+        RTK["path"]
+        and not os.environ.get("RTK_TELEMETRY_DISABLED")
+        and not user_env.get("RTK_TELEMETRY_DISABLED")
+    ):
         res = _run(["rtk", "telemetry", "status"], timeout=5)
         out = ((res.stdout or "") + (res.stderr or "")).lower() if res else ""
         if re.search(r"\b(enabled|granted|consent: yes|opted in)\b", out) and "disabled" not in out:
-            rep.add("info", "RTK_TELEMETRY", "rtk", "telemetry enabled: 'rtk telemetry disable' (or RTK_TELEMETRY_DISABLED=1)")
+            rep.add(
+                "info",
+                "RTK_TELEMETRY",
+                "rtk",
+                "telemetry enabled: 'rtk telemetry disable' (or RTK_TELEMETRY_DISABLED=1)",
+            )
 
 
 def detect_llmtrim(use_cli: bool) -> None:
@@ -2582,9 +4297,13 @@ def check_llmtrim(rep: Report, repos: list[Path], user_scope: bool) -> None:
             if LLMTRIM_ROUTE_MARKER.search(read_text(ag) or ""):
                 routes.append(ag)
     if routes:
-        rep.add("warn", "LLMTRIM_MISSING", routes[0].parent,
-                f"{len(routes)} llmtrim route subagent(s) but llmtrim is not installed: "
-                f"install it or remove them (they load every session, their routes are dead)")
+        rep.add(
+            "warn",
+            "LLMTRIM_MISSING",
+            routes[0].parent,
+            f"{len(routes)} llmtrim route subagent(s) but llmtrim is not installed: "
+            f"install it or remove them (they load every session, their routes are dead)",
+        )
 
 
 def rtk_report() -> str:
@@ -2597,38 +4316,88 @@ def rtk_report() -> str:
             parts.append(f"$ {' '.join(args)}\n{res.stdout.rstrip()}")
     return "\n\n".join(parts)
 
+
 # --------------------------------------------------------------------------- #
 # Generation: rtk config, Claude settings, hooks, skills, subagents, MCP servers
 # --------------------------------------------------------------------------- #
 
 GENERATE_POLICY = {
-    "project_settings": True, "user_settings": True, "rtk_config": True, "format_hook": True,
-    "skills": ["check", "review-changes"], "agents": ["code-reviewer", "test-runner", "security-auditor", "infra-reviewer"],
-    "mcp": ["github", "sentry", "supabase", "playwright"],   # generated only when the stack uses them
-    "user_mcp": ["notion"],                                     # printed as 'claude mcp add --scope user' commands
-    "extra_allow": [], "extra_ask": [], "extra_deny": [],
+    "project_settings": True,
+    "user_settings": True,
+    "rtk_config": True,
+    "format_hook": True,
+    "skills": ["check", "review-changes"],
+    "agents": ["code-reviewer", "test-runner", "security-auditor", "infra-reviewer"],
+    "mcp": [
+        "github",
+        "sentry",
+        "supabase",
+        "playwright",
+    ],  # generated only when the stack uses them
+    "user_mcp": ["notion"],  # printed as 'claude mcp add --scope user' commands
+    "extra_allow": [],
+    "extra_ask": [],
+    "extra_deny": [],
     "rtk_exclude_commands": [],
-    "safe_make_targets": ["test", "lint", "fmt", "format", "check", "build", "typecheck", "up", "down",
-                          "logs", "ps", "dev", "run", "help", "doctor", "validate"],
+    "safe_make_targets": [
+        "test",
+        "lint",
+        "fmt",
+        "format",
+        "check",
+        "build",
+        "typecheck",
+        "up",
+        "down",
+        "logs",
+        "ps",
+        "dev",
+        "run",
+        "help",
+        "doctor",
+        "validate",
+    ],
     "gated_make_targets": ["deploy", "release", "publish", "push", "promote", "rollback"],
 }
 DEFAULT_POLICY["generate"] = GENERATE_POLICY
 MCP_CATALOG = {
-    "github": {"type": "http", "url": "https://api.githubcopilot.com/mcp/",
-               "headers": {"Authorization": "Bearer ${GITHUB_PERSONAL_ACCESS_TOKEN}"}},
+    "github": {
+        "type": "http",
+        "url": "https://api.githubcopilot.com/mcp/",
+        "headers": {"Authorization": "Bearer ${GITHUB_PERSONAL_ACCESS_TOKEN}"},
+    },
     "sentry": {"type": "http", "url": "https://mcp.sentry.dev/mcp"},
     "supabase": {"type": "http", "url": "https://mcp.supabase.com/mcp"},
     "notion": {"type": "http", "url": "https://mcp.notion.com/mcp"},
     "playwright": {"type": "stdio", "command": "npx", "args": ["-y", "@playwright/mcp@latest"]},
 }
-GENERATED_DENY_READS = ["Read(**/node_modules/**)", "Read(**/.venv/**)", "Read(**/__pycache__/**)",
-                        "Read(**/.mypy_cache/**)", "Read(**/.ruff_cache/**)", "Read(**/.terraform/**)"]
-UNITY_DENY = ["Read(Library/**)", "Read(Temp/**)", "Read(Logs/**)", "Read(obj/**)",
-              "Edit(Library/**)", "Edit(Temp/**)", "Edit(Logs/**)", "Edit(obj/**)"]
-HINTS.update({
-    "GENERATE": ("Generated from the detected stack; review the diff before --fix.", ""),
-    "GENERATE_USER_MCP": ("User-scope MCP servers live in ~/.claude.json, written by the CLI only.", DOCS + "mcp"),
-})
+GENERATED_DENY_READS = [
+    "Read(**/node_modules/**)",
+    "Read(**/.venv/**)",
+    "Read(**/__pycache__/**)",
+    "Read(**/.mypy_cache/**)",
+    "Read(**/.ruff_cache/**)",
+    "Read(**/.terraform/**)",
+]
+UNITY_DENY = [
+    "Read(Library/**)",
+    "Read(Temp/**)",
+    "Read(Logs/**)",
+    "Read(obj/**)",
+    "Edit(Library/**)",
+    "Edit(Temp/**)",
+    "Edit(Logs/**)",
+    "Edit(obj/**)",
+]
+HINTS.update(
+    {
+        "GENERATE": ("Generated from the detected stack; review the diff before --fix.", ""),
+        "GENERATE_USER_MCP": (
+            "User-scope MCP servers live in ~/.claude.json, written by the CLI only.",
+            DOCS + "mcp",
+        ),
+    }
+)
 
 FORMAT_HOOK = r'''#!/usr/bin/env python3
 """PostToolUse formatter: formats the edited file with the project's own tools. Never blocks."""
@@ -2679,17 +4448,32 @@ def detect_stack(repo: Path) -> dict:
             pj = {}
         s["scripts"] = pj.get("scripts") or {}
         deps = {**(pj.get("dependencies") or {}), **(pj.get("devDependencies") or {})}
-        s["pm"] = ("pnpm" if exists("pnpm-lock.yaml") else "yarn" if exists("yarn.lock")
-                   else "bun" if exists("bun.lockb", "bun.lock") else "npm")
-        s["web_ui"] = any(d in deps for d in ("react", "next", "vue", "svelte", "vite", "@angular/core"))
+        s["pm"] = (
+            "pnpm"
+            if exists("pnpm-lock.yaml")
+            else "yarn"
+            if exists("yarn.lock")
+            else "bun"
+            if exists("bun.lockb", "bun.lock")
+            else "npm"
+        )
+        s["web_ui"] = any(
+            d in deps for d in ("react", "next", "vue", "svelte", "vite", "@angular/core")
+        )
         s["sentry"] = any(d.startswith("@sentry/") for d in deps)
         s["supabase"] = "@supabase/supabase-js" in deps
-    py_blob = " ".join(filter(None, (read_text(repo / f) for f in ("pyproject.toml", "requirements.txt")))).lower()
+    py_blob = " ".join(
+        filter(None, (read_text(repo / f) for f in ("pyproject.toml", "requirements.txt")))
+    ).lower()
     s["sentry"] = s.get("sentry") or "sentry-sdk" in py_blob or "sentry_sdk" in py_blob
     s["supabase"] = s.get("supabase") or "supabase" in py_blob or (repo / "supabase").is_dir()
     s["unity"] = (repo / "ProjectSettings" / "ProjectVersion.txt").exists()
-    s["docker"] = exists("Dockerfile", "docker-compose.yml", "docker-compose.yaml", "compose.yml", "compose.yaml")
-    s["compose"] = exists("docker-compose.yml", "docker-compose.yaml", "compose.yml", "compose.yaml")
+    s["docker"] = exists(
+        "Dockerfile", "docker-compose.yml", "docker-compose.yaml", "compose.yml", "compose.yaml"
+    )
+    s["compose"] = exists(
+        "docker-compose.yml", "docker-compose.yaml", "compose.yml", "compose.yaml"
+    )
     s["k8s"] = exists("k8s", "kubernetes", "manifests", "kustomization.yaml", "deploy/k8s")
     s["helm"] = exists("Chart.yaml", "charts", "helm")
     s["terraform"] = any(repo.glob("*.tf")) or any(repo.glob("*/*.tf"))
@@ -2704,8 +4488,15 @@ def detect_stack(repo: Path) -> dict:
 
 def generated_permissions(stack: dict, policy: dict) -> dict:
     g, perms = policy["generate"], policy["permissions"]
-    allow = ["Bash(git status *)", "Bash(git diff *)", "Bash(git log *)", "Bash(git show *)",
-             "Bash(git branch *)", "Bash(git add *)", "Bash(git commit *)"]
+    allow = [
+        "Bash(git status *)",
+        "Bash(git diff *)",
+        "Bash(git log *)",
+        "Bash(git show *)",
+        "Bash(git branch *)",
+        "Bash(git add *)",
+        "Bash(git commit *)",
+    ]
     ask: list[str] = []
     for t in stack["make"]:
         if t in g["safe_make_targets"]:
@@ -2713,36 +4504,78 @@ def generated_permissions(stack: dict, policy: dict) -> dict:
         elif t in g["gated_make_targets"]:
             ask.append(f"Bash(make {t} *)")
     if stack["python"]:
-        allow += ["Bash(pytest *)", "Bash(python -m pytest *)", "Bash(ruff check *)", "Bash(ruff format *)", "Bash(mypy *)"]
+        allow += [
+            "Bash(pytest *)",
+            "Bash(python -m pytest *)",
+            "Bash(ruff check *)",
+            "Bash(ruff format *)",
+            "Bash(mypy *)",
+        ]
         if stack["uv"]:
-            allow += ["Bash(uv run pytest *)", "Bash(uv run ruff *)", "Bash(uv run mypy *)", "Bash(uv sync *)"]
+            allow += [
+                "Bash(uv run pytest *)",
+                "Bash(uv run ruff *)",
+                "Bash(uv run mypy *)",
+                "Bash(uv sync *)",
+            ]
     if stack["pm"]:
         pm = stack["pm"]
         for name in ("test", "lint", "build", "typecheck", "check", "format"):
             if name in stack["scripts"]:
-                allow.append(f"Bash({pm} test *)" if name == "test" and pm == "npm" else f"Bash({pm} run {name} *)")
+                allow.append(
+                    f"Bash({pm} test *)"
+                    if name == "test" and pm == "npm"
+                    else f"Bash({pm} run {name} *)"
+                )
         allow += ["Bash(npx tsc --noEmit *)", "Bash(npx prettier --check *)"]
     if stack["docker"]:
         allow += ["Bash(docker ps *)", "Bash(docker images *)"]
     if stack["compose"]:
-        allow += ["Bash(docker compose ps *)", "Bash(docker compose logs *)", "Bash(docker compose config *)",
-                  "Bash(docker compose up *)", "Bash(docker compose down *)"]
+        allow += [
+            "Bash(docker compose ps *)",
+            "Bash(docker compose logs *)",
+            "Bash(docker compose config *)",
+            "Bash(docker compose up *)",
+            "Bash(docker compose down *)",
+        ]
     if stack["k8s"] or stack["helm"]:
-        allow += ["Bash(kubectl get *)", "Bash(kubectl describe *)", "Bash(kubectl logs *)", "Bash(kubectl diff *)",
-                  "Bash(kubectl kustomize *)", "Bash(kustomize build *)"]
+        allow += [
+            "Bash(kubectl get *)",
+            "Bash(kubectl describe *)",
+            "Bash(kubectl logs *)",
+            "Bash(kubectl diff *)",
+            "Bash(kubectl kustomize *)",
+            "Bash(kustomize build *)",
+        ]
     if stack["helm"]:
         allow += ["Bash(helm template *)", "Bash(helm lint *)", "Bash(helm dependency build *)"]
     if stack["terraform"]:
         tf = "tofu" if stack["tofu"] else "terraform"
         allow += [f"Bash({tf} fmt *)", f"Bash({tf} validate *)", f"Bash({tf} plan *)"]
     if stack["gh"]:
-        allow += ["Bash(gh pr view *)", "Bash(gh pr list *)", "Bash(gh pr diff *)", "Bash(gh pr checks *)",
-                  "Bash(gh issue view *)", "Bash(gh issue list *)", "Bash(gh run list *)", "Bash(gh run view *)"]
+        allow += [
+            "Bash(gh pr view *)",
+            "Bash(gh pr list *)",
+            "Bash(gh pr diff *)",
+            "Bash(gh pr checks *)",
+            "Bash(gh issue view *)",
+            "Bash(gh issue list *)",
+            "Bash(gh run list *)",
+            "Bash(gh run view *)",
+        ]
     allow += g["extra_allow"]
     ask += [f"Bash({p} *)" for p in perms["external_action_prefixes"]] + g["extra_ask"]
-    deny = list(perms["required_deny"]) + GENERATED_DENY_READS + (UNITY_DENY if stack["unity"] else []) + g["extra_deny"]
+    deny = (
+        list(perms["required_deny"])
+        + GENERATED_DENY_READS
+        + (UNITY_DENY if stack["unity"] else [])
+        + g["extra_deny"]
+    )
     if perms["require_rtk"]:
-        allow = [rtk_wrap(r, perms["rtk_exempt"]) if (c := command_of(r)) and rtk_rewrites(c) else r for r in allow]
+        allow = [
+            rtk_wrap(r, perms["rtk_exempt"]) if (c := command_of(r)) and rtk_rewrites(c) else r
+            for r in allow
+        ]
         if perms.get("rtk_twin_deny", True):
             ask += [t for r in ask if (t := rtk_twin(r, perms["rtk_exempt"]))]
             deny += [t for r in deny if (t := rtk_twin(r, perms["rtk_exempt"]))]
@@ -2762,7 +4595,12 @@ def write_json_merged(path: Path, wanted: dict, rep: Report, what: str) -> None:
     try:
         data = lenient_json(raw)[0] if raw else {}
     except json.JSONDecodeError:
-        rep.add("error", "GENERATE", path, f"{what}: existing file is not valid JSON; run a lint --fix first")
+        rep.add(
+            "error",
+            "GENERATE",
+            path,
+            f"{what}: existing file is not valid JSON; run a lint --fix first",
+        )
         return
     new = copy.deepcopy(data) if isinstance(data, dict) else {}
     for k, v in wanted.items():
@@ -2795,7 +4633,9 @@ def write_json_merged(path: Path, wanted: dict, rep: Report, what: str) -> None:
         return
     added = []
     for lst in ("allow", "ask", "deny"):
-        n = len((new.get("permissions") or {}).get(lst) or []) - len(((data or {}).get("permissions") or {}).get(lst) or [])
+        n = len((new.get("permissions") or {}).get(lst) or []) - len(
+            ((data or {}).get("permissions") or {}).get(lst) or []
+        )
         if n:
             added.append(f"{n} {lst}")
     detail = f" ({', '.join(added)})" if added else ""
@@ -2832,7 +4672,9 @@ def gen_skills(repo: Path, stack: dict, policy: dict, rep: Report) -> None:
     if "check" in wanted and cmds:
         tools = " ".join(f"Bash({c} *)" if " " in c else f"Bash({c})" for c in cmds)
         body = "\n".join(f"{i}. `{c}`" for i, c in enumerate(cmds, 1))
-        gen_new_file(root / "check" / "SKILL.md", f"""---
+        gen_new_file(
+            root / "check" / "SKILL.md",
+            f"""---
 name: check
 description: Run this project's lint and test commands and report only what fails, with file and line. Use before committing or when asked whether the change is done.
 allowed-tools: {tools}
@@ -2844,9 +4686,14 @@ Run, in order, stopping at the first failing step:
 
 Report failures only: command, file:line, one-line cause. Do not fix anything unless asked.
 If everything passes, say so in one line.
-""", rep, "skill /check")
+""",
+            rep,
+            "skill /check",
+        )
     if "review-changes" in wanted:
-        gen_new_file(root / "review-changes" / "SKILL.md", """---
+        gen_new_file(
+            root / "review-changes" / "SKILL.md",
+            """---
 name: review-changes
 description: Review the uncommitted diff for bugs, missing tests, security issues and violations of this repository's AGENTS.md conventions. Use when asked to review changes before a commit or PR.
 allowed-tools: Bash(git diff *) Bash(git status *) Read Grep Glob
@@ -2863,26 +4710,46 @@ allowed-tools: Bash(git diff *) Bash(git status *) Read Grep Glob
    the change, secrets or credentials, injection, performance traps.
 3. Output a list ordered by severity: `file:line - problem - suggested fix`.
    No praise, no restating the diff. If nothing is wrong, say so in one line.
-""", rep, "skill /review-changes")
+""",
+            rep,
+            "skill /review-changes",
+        )
 
 
 AGENT_TEMPLATES = {
-    "code-reviewer": ("Read, Grep, Glob",
-                      "Reviews code changes for correctness, readability and adherence to AGENTS.md conventions. Use proactively after significant edits.",
-                      "Review the requested code. Report issues ordered by severity as `file:line - problem - fix`. "
-                      "Never edit files. Never repeat code that is fine."),
-    "test-runner": ("Read, Grep, Glob, Bash",
-                    "Runs the project's test and lint commands and summarizes failures. Use when tests need to be run or diagnosed.",
-                    "Run the project's checks (see AGENTS.md > Commands). Return only failing tests or lint errors with "
-                    "file:line and the probable cause. Do not modify source files."),
-    "security-auditor": ("Read, Grep, Glob",
-                         "Audits code and configuration for secrets, injection, unsafe deserialization, weak auth and risky dependencies. Use before releases or on security-sensitive changes.",
-                         "Audit the requested scope. Report findings as `severity - file:line - issue - remediation`. "
-                         "Never print secret values; name the variable or file instead."),
-    "infra-reviewer": ("Read, Grep, Glob",
-                       "Reviews Kubernetes manifests, Helm charts, Dockerfiles and Terraform for security, resource limits, probes and drift from conventions. Use on infrastructure changes.",
-                       "Review the infrastructure files in scope: pinned images, non-root users, resource requests and limits, "
-                       "probes, secrets from the vault (never inline), least-privilege RBAC. Report `file:line - issue - fix`. Never apply anything."),
+    "code-reviewer": (
+        "Read, Grep, Glob",
+        "Reviews code changes for correctness, readability and adherence to AGENTS.md "
+        "conventions. Use proactively after significant edits.",
+        "Review the requested code. Report issues ordered by severity as `file:line - "
+        "problem - fix`. "
+        "Never edit files. Never repeat code that is fine.",
+    ),
+    "test-runner": (
+        "Read, Grep, Glob, Bash",
+        "Runs the project's test and lint commands and summarizes failures. Use when tests "
+        "need to be run or diagnosed.",
+        "Run the project's checks (see AGENTS.md > Commands). Return only failing tests or "
+        "lint errors with "
+        "file:line and the probable cause. Do not modify source files.",
+    ),
+    "security-auditor": (
+        "Read, Grep, Glob",
+        "Audits code and configuration for secrets, injection, unsafe deserialization, weak "
+        "auth and risky dependencies. Use before releases or on security-sensitive changes.",
+        "Audit the requested scope. Report findings as `severity - file:line - issue - "
+        "remediation`. "
+        "Never print secret values; name the variable or file instead.",
+    ),
+    "infra-reviewer": (
+        "Read, Grep, Glob",
+        "Reviews Kubernetes manifests, Helm charts, Dockerfiles and Terraform for security, "
+        "resource limits, probes and drift from conventions. Use on infrastructure changes.",
+        "Review the infrastructure files in scope: pinned images, non-root users, resource "
+        "requests and limits, "
+        "probes, secrets from the vault (never inline), least-privilege RBAC. Report "
+        "`file:line - issue - fix`. Never apply anything.",
+    ),
 }
 
 
@@ -2890,14 +4757,20 @@ def gen_agents(repo: Path, stack: dict, policy: dict, rep: Report) -> None:
     for name in policy["generate"]["agents"]:
         if name not in AGENT_TEMPLATES:
             continue
-        if name == "infra-reviewer" and not (stack["k8s"] or stack["helm"] or stack["terraform"] or stack["docker"]):
+        if name == "infra-reviewer" and not (
+            stack["k8s"] or stack["helm"] or stack["terraform"] or stack["docker"]
+        ):
             continue
         if name == "test-runner" and not check_commands_for(stack):
             continue
         tools, desc, body, *model = AGENT_TEMPLATES[name]
         model_line = f"model: {model[0]}\n" if model else ""
-        gen_new_file(repo / ".claude" / "agents" / f"{name}.md",
-                     f"---\nname: {name}\ndescription: {desc}\ntools: {tools}\n{model_line}---\n\n{body}\n", rep, f"subagent {name}")
+        gen_new_file(
+            repo / ".claude" / "agents" / f"{name}.md",
+            f"---\nname: {name}\ndescription: {desc}\ntools: {tools}\n{model_line}---\n\n{body}\n",
+            rep,
+            f"subagent {name}",
+        )
 
 
 def gen_mcp(repo: Path, stack: dict, policy: dict, rep: Report) -> None:
@@ -2912,25 +4785,48 @@ def gen_mcp(repo: Path, stack: dict, policy: dict, rep: Report) -> None:
         servers["supabase"] = MCP_CATALOG["supabase"]
     if "playwright" in want and stack.get("web_ui"):
         servers["playwright"] = MCP_CATALOG["playwright"]
-    servers = dict(list(servers.items())[:policy["mcp"]["max_servers"]])
+    servers = dict(list(servers.items())[: policy["mcp"]["max_servers"]])
     if servers:
-        write_json_merged(repo / ".mcp.json", {"mcpServers": servers}, rep, "MCP servers " + ", ".join(servers))
+        write_json_merged(
+            repo / ".mcp.json", {"mcpServers": servers}, rep, "MCP servers " + ", ".join(servers)
+        )
 
 
 def generate_project(repo: Path, policy: dict, rep: Report) -> None:
     g = policy["generate"]
     stack = detect_stack(repo)
-    log(1, "stack: " + ", ".join(k for k, v in stack.items() if v is True)
-        + (f"; make: {' '.join(stack['make'])}" if stack["make"] else ""), 1)
+    log(
+        1,
+        "stack: "
+        + ", ".join(k for k, v in stack.items() if v is True)
+        + (f"; make: {' '.join(stack['make'])}" if stack["make"] else ""),
+        1,
+    )
     if g["project_settings"]:
-        wanted: dict[str, Any] = {"$schema": policy["scaffold"]["schema_url"],
-                                  "attribution": {"commit": "", "pr": ""},
-                                  "permissions": generated_permissions(stack, policy)}
+        wanted: dict[str, Any] = {
+            "$schema": policy["scaffold"]["schema_url"],
+            "attribution": {"commit": "", "pr": ""},
+            "permissions": generated_permissions(stack, policy),
+        }
         if g["format_hook"] and (stack["python"] or stack["pm"] or stack["terraform"]):
-            gen_new_file(repo / ".claude" / "hooks" / "format.py", FORMAT_HOOK, rep, "formatter hook", 0o755)
-            wanted["hooks"] = {"PostToolUse": [{"matcher": "Edit|Write", "hooks": [
-                {"type": "command", "command": "python3", "args": ["${CLAUDE_PROJECT_DIR}/.claude/hooks/format.py"],
-                 "timeout": 30}]}]}
+            gen_new_file(
+                repo / ".claude" / "hooks" / "format.py", FORMAT_HOOK, rep, "formatter hook", 0o755
+            )
+            wanted["hooks"] = {
+                "PostToolUse": [
+                    {
+                        "matcher": "Edit|Write",
+                        "hooks": [
+                            {
+                                "type": "command",
+                                "command": "python3",
+                                "args": ["${CLAUDE_PROJECT_DIR}/.claude/hooks/format.py"],
+                                "timeout": 30,
+                            }
+                        ],
+                    }
+                ]
+            }
         write_json_merged(repo / ".claude" / "settings.json", wanted, rep, "project settings")
     gen_skills(repo, stack, policy, rep)
     gen_agents(repo, stack, policy, rep)
@@ -2946,22 +4842,49 @@ def generate_user(policy: dict, rep: Report) -> None:
         wanted: dict[str, Any] = {
             "$schema": policy["scaffold"]["schema_url"],
             "attribution": {"commit": "", "pr": ""},
-            "permissions": {"deny": ["Read(~/.ssh/**)", "Read(~/.aws/**)", "Read(~/.kube/**)", "Read(~/.gnupg/**)",
-                                     "Read(~/.vault-token)", "Read(~/.config/gh/hosts.yml)"],
-                            "disableBypassPermissionsMode": "disable"},
+            "permissions": {
+                "deny": [
+                    "Read(~/.ssh/**)",
+                    "Read(~/.aws/**)",
+                    "Read(~/.kube/**)",
+                    "Read(~/.gnupg/**)",
+                    "Read(~/.vault-token)",
+                    "Read(~/.config/gh/hosts.yml)",
+                ],
+                "disableBypassPermissionsMode": "disable",
+            },
         }
         if policy.get("tokens", {}).get("hold_cross_session", True):
             wanted["crossSessionInbound"] = "hold"
-        if perms["require_rtk"] and RTK["genuine"] and (RTK["version"] is None or RTK["version"] >= RTK_NATIVE_HOOK):
-            wanted["hooks"] = {"PreToolUse": [{"matcher": "Bash", "hooks": [
-                {"type": "command", "command": "rtk", "args": ["hook", "claude"], "timeout": 10}]}]}
+        if (
+            perms["require_rtk"]
+            and RTK["genuine"]
+            and (RTK["version"] is None or RTK["version"] >= RTK_NATIVE_HOOK)
+        ):
+            wanted["hooks"] = {
+                "PreToolUse": [
+                    {
+                        "matcher": "Bash",
+                        "hooks": [
+                            {
+                                "type": "command",
+                                "command": "rtk",
+                                "args": ["hook", "claude"],
+                                "timeout": 10,
+                            }
+                        ],
+                    }
+                ]
+            }
             wanted["env"] = {"RTK_TELEMETRY_DISABLED": "1"}
         write_json_merged(config_dir() / "settings.json", wanted, rep, "user settings")
     if g["rtk_config"] and perms["require_rtk"]:
         cfg = RTK["config_path"] or rtk_config_path()
         if not cfg.exists() and cfg not in rep.new_files:
             excl = ", ".join(json.dumps(c) for c in g["rtk_exclude_commands"])
-            gen_new_file(cfg, f"""# rtk configuration (generated). Reference: https://github.com/rtk-ai/rtk#configuration
+            gen_new_file(
+                cfg,
+                f"""# rtk configuration (generated). Reference: https://github.com/rtk-ai/rtk#configuration
 
 [hooks]
 # Commands whose full output matters more than the tokens saved.
@@ -2970,7 +4893,10 @@ exclude_commands = [{excl}]
 [retriever]
 # Keep the full output of failed or truncated commands for 'rtk recall'.
 mode = "sqlite"
-""", rep, "rtk config")
+""",
+                rep,
+                "rtk config",
+            )
     have = set()
     raw = read_text(Path.home() / ".claude.json")
     if raw:
@@ -2981,24 +4907,37 @@ mode = "sqlite"
     for name in g["user_mcp"]:
         spec = MCP_CATALOG.get(name)
         if spec and name not in have and spec.get("type") == "http":
-            rep.add("info", "GENERATE_USER_MCP", "~/.claude.json",
-                    f"user MCP server {name}: claude mcp add --scope user --transport http {name} {spec['url']}")
+            rep.add(
+                "info",
+                "GENERATE_USER_MCP",
+                "~/.claude.json",
+                f"user MCP server {name}: claude mcp add --scope user --transport http "
+                f"{name} {spec['url']}",
+            )
+
 
 # --------------------------------------------------------------------------- #
 # Token budget: what is loaded into every session, and levers to shrink it
 # --------------------------------------------------------------------------- #
 
 DEFAULT_POLICY["tokens"] = {
-    "max_always_loaded": 10000,     # warn above this estimate (tokens, bytes/4)
-    "skill_description_chars": 400, # listing cost per skill, every turn
-    "prefer_cli_over_mcp": True,    # docs: gh / sentry-cli beat an MCP server's tool listing
-    "hold_cross_session": True,     # generated user settings: crossSessionInbound = hold
-    "compact_instructions": True,   # generated CLAUDE.md gets a compaction section
-    "mcp_server_estimate": 150,     # deferred tool listing: names + server instructions, per server
-    "agent_pack_tokens": 1000,      # warn when one agents/ subdirectory lists more than this
+    "max_always_loaded": 10000,  # warn above this estimate (tokens, bytes/4)
+    "skill_description_chars": 400,  # listing cost per skill, every turn
+    "prefer_cli_over_mcp": True,  # docs: gh / sentry-cli beat an MCP server's tool listing
+    "hold_cross_session": True,  # generated user settings: crossSessionInbound = hold
+    "compact_instructions": True,  # generated CLAUDE.md gets a compaction section
+    "mcp_server_estimate": 150,  # deferred tool listing: names + server instructions, per server
+    "agent_pack_tokens": 1000,  # warn when one agents/ subdirectory lists more than this
 }
-GENERATED_DENY_READS.extend(["Read(**/coverage/**)", "Read(**/.next/**)", "Read(**/dist/**)",
-                             "Read(**/*.min.js)", "Read(**/*.map)"])
+GENERATED_DENY_READS.extend(
+    [
+        "Read(**/coverage/**)",
+        "Read(**/.next/**)",
+        "Read(**/dist/**)",
+        "Read(**/*.min.js)",
+        "Read(**/*.map)",
+    ]
+)
 AGENT_TEMPLATES["test-runner"] = AGENT_TEMPLATES["test-runner"] + ("haiku",)
 COMPACT_SECTION = """
 ## Compact instructions
@@ -3006,16 +4945,46 @@ COMPACT_SECTION = """
 When compacting, keep: the task goal, decisions taken, files changed, failing test names
 and error lines. Drop: full command output, file listings, passing test logs.
 """
-HINTS.update({
-    "TOKEN_AGENT_PACK": ("Every subagent's name and description is listed to the main agent in every request. Move rarely used packs into a plugin you enable per project (/plugin), or out of the agents directory.", DOCS + "plugins/overview"),
-    "TOKEN_BUDGET": ("Everything here is re-sent with every request: trim CLAUDE.md, scope rules with paths:, move procedures to skills.", DOCS + "costs#reduce-token-usage"),
-    "TOKEN_SKILL_DESC": ("Skill descriptions are listed every turn; keep the key use case in a sentence or two.", DOCS + "skills#skill-descriptions-are-cut-short"),
-    "MCP_PREFER_CLI": ("A CLI adds no per-tool listing: prefer it to the MCP server when installed.", DOCS + "costs#reduce-mcp-server-overhead"),
-    "TOKEN_MODEL": ("Sonnet handles most coding tasks; reserve Opus for complex reasoning.", DOCS + "costs#choose-the-right-model"),
-    "TOKEN_LSP": ("Code intelligence plugins replace grep + multiple file reads with one symbol lookup.", DOCS + "costs#install-code-intelligence-plugins-for-typed-languages"),
-    "TOKEN_IMPORTS": ("Imported files load at launch too: splitting into @imports organizes, it does not save tokens.", DOCS + "memory#my-claude-md-is-too-large"),
-    "TOKEN_SUBAGENT_MODEL": ("Verbose, mechanical subagents (test runs, log triage) can run on a smaller model.", DOCS + "costs#delegate-verbose-operations-to-subagents"),
-})
+HINTS.update(
+    {
+        "TOKEN_AGENT_PACK": (
+            "Every subagent's name and description is listed to the main agent in every "
+            "request. Move rarely used packs into a plugin you enable per project (/plugin), "
+            "or out of the agents directory.",
+            DOCS + "plugins/overview",
+        ),
+        "TOKEN_BUDGET": (
+            "Everything here is re-sent with every request: trim CLAUDE.md, scope rules "
+            "with paths:, move procedures to skills.",
+            DOCS + "costs#reduce-token-usage",
+        ),
+        "TOKEN_SKILL_DESC": (
+            "Skill descriptions are listed every turn; keep the key use case in a sentence or two.",
+            DOCS + "skills#skill-descriptions-are-cut-short",
+        ),
+        "MCP_PREFER_CLI": (
+            "A CLI adds no per-tool listing: prefer it to the MCP server when installed.",
+            DOCS + "costs#reduce-mcp-server-overhead",
+        ),
+        "TOKEN_MODEL": (
+            "Sonnet handles most coding tasks; reserve Opus for complex reasoning.",
+            DOCS + "costs#choose-the-right-model",
+        ),
+        "TOKEN_LSP": (
+            "Code intelligence plugins replace grep + multiple file reads with one symbol lookup.",
+            DOCS + "costs#install-code-intelligence-plugins-for-typed-languages",
+        ),
+        "TOKEN_IMPORTS": (
+            "Imported files load at launch too: splitting into @imports organizes, it does "
+            "not save tokens.",
+            DOCS + "memory#my-claude-md-is-too-large",
+        ),
+        "TOKEN_SUBAGENT_MODEL": (
+            "Verbose, mechanical subagents (test runs, log triage) can run on a smaller model.",
+            DOCS + "costs#delegate-verbose-operations-to-subagents",
+        ),
+    }
+)
 
 
 def est(text: str) -> int:
@@ -3056,11 +5025,26 @@ def _skill_listing(roots: list[Path], rep: Report, policy: dict) -> list[tuple[P
                 continue
             desc = meta.get("description", "") + meta.get("when_to_use", "")
             if len(desc) > limit:
-                rep.add("info", "TOKEN_SKILL_DESC", sk, f"description {len(desc)} chars, listed every turn (target <= {limit})")
+                rep.add(
+                    "info",
+                    "TOKEN_SKILL_DESC",
+                    sk,
+                    f"description {len(desc)} chars, listed every turn (target <= {limit})",
+                )
             out.append((sk, (len(sk.parent.name) + min(len(desc), 1536) + 20) // 4))
         for ag in sorted(root.glob("agents/**/*.md")):
             meta, _ = split_frontmatter(read_text(ag) or "")
-            out.append((ag, (len((meta or {}).get("name", "")) + len((meta or {}).get("description", "")) + 20) // 4))
+            out.append(
+                (
+                    ag,
+                    (
+                        len((meta or {}).get("name", ""))
+                        + len((meta or {}).get("description", ""))
+                        + 20
+                    )
+                    // 4,
+                )
+            )
     return out
 
 
@@ -3069,26 +5053,38 @@ def listing_group(p: Path) -> str:
     if "agents" in parts:
         i = len(parts) - 1 - parts[::-1].index("agents")
         sub = parts[i + 1] if len(parts) > i + 2 else ""
-        base = short_path(str(Path(*parts[:i + 1])))
+        base = short_path(str(Path(*parts[: i + 1])))
         return f"{base}/{sub}" if sub else base
     if "skills" in parts:
         i = len(parts) - 1 - parts[::-1].index("skills")
-        return short_path(str(Path(*parts[:i + 1])))
+        return short_path(str(Path(*parts[: i + 1])))
     return short_path(str(p))
 
 
 def token_budget(repo: Path | None, user: bool, policy: dict, rep: Report) -> dict:
     seen: set = set()
-    parts: dict[str, list[tuple[Path, int]]] = {"instructions": [], "rules": [], "listing": [], "memory": [], "mcp": []}
+    parts: dict[str, list[tuple[Path, int]]] = {
+        "instructions": [],
+        "rules": [],
+        "listing": [],
+        "memory": [],
+        "mcp": [],
+    }
     cfg = config_dir()
     parts["instructions"] += _with_imports(cfg / "CLAUDE.md", seen)
     parts["rules"] += _unscoped_rules(cfg, seen)
     roots = [cfg]
     if repo is not None:
-        claude_files = [repo / "CLAUDE.md", repo / ".claude" / "CLAUDE.md", repo / "CLAUDE.local.md"]
+        claude_files = [
+            repo / "CLAUDE.md",
+            repo / ".claude" / "CLAUDE.md",
+            repo / "CLAUDE.local.md",
+        ]
         present = [f for f in claude_files if f.exists()]
         if not present:
-            present = [f for f in (repo / "AGENTS.md", repo / ".claude" / "AGENTS.md") if f.exists()]
+            present = [
+                f for f in (repo / "AGENTS.md", repo / ".claude" / "AGENTS.md") if f.exists()
+            ]
         for f in present:
             parts["instructions"] += _with_imports(f, seen)
         parts["rules"] += _unscoped_rules(repo / ".claude", seen)
@@ -3102,13 +5098,17 @@ def token_budget(repo: Path | None, user: bool, policy: dict, rep: Report) -> di
             parts["memory"].append((mem, est(clipped)))
         servers = {}
         try:
-            servers.update((json.loads(read_text(repo / ".mcp.json") or "{}").get("mcpServers") or {}))
+            servers.update(
+                (json.loads(read_text(repo / ".mcp.json") or "{}").get("mcpServers") or {})
+            )
         except json.JSONDecodeError:
             pass
         try:
             cj = json.loads(read_text(Path.home() / ".claude.json") or "{}")
             servers.update(cj.get("mcpServers") or {})
-            servers.update(((cj.get("projects") or {}).get(str(repo.resolve())) or {}).get("mcpServers") or {})
+            servers.update(
+                ((cj.get("projects") or {}).get(str(repo.resolve())) or {}).get("mcpServers") or {}
+            )
         except json.JSONDecodeError:
             pass
         per = policy["tokens"]["mcp_server_estimate"]
@@ -3126,41 +5126,89 @@ def token_budget(repo: Path | None, user: bool, policy: dict, rep: Report) -> di
     pack_limit = policy["tokens"].get("agent_pack_tokens", 1000)
     for g, n, t in grouped:
         if "/agents" in g and n >= 5 and t >= pack_limit:
-            rep.add("warn", "TOKEN_AGENT_PACK", g, f"{n} subagents ~{t} tokens listed in every request")
-    imported = [(p, t) for p, t in parts["instructions"] if p.name not in ("CLAUDE.md", "AGENTS.md", "CLAUDE.local.md")]
+            rep.add(
+                "warn", "TOKEN_AGENT_PACK", g, f"{n} subagents ~{t} tokens listed in every request"
+            )
+    imported = [
+        (p, t)
+        for p, t in parts["instructions"]
+        if p.name not in ("CLAUDE.md", "AGENTS.md", "CLAUDE.local.md")
+    ]
     if imported and sum(t for _, t in imported) > 1500:
-        rep.add("info", "TOKEN_IMPORTS", imported[0][0], f"{len(imported)} imported file(s), ~{sum(t for _, t in imported)} tokens loaded at launch")
+        rep.add(
+            "info",
+            "TOKEN_IMPORTS",
+            imported[0][0],
+            f"{len(imported)} imported file(s), ~{sum(t for _, t in imported)} tokens loaded "
+            f"at launch",
+        )
     if total > policy["tokens"]["max_always_loaded"]:
-        rep.add("warn", "TOKEN_BUDGET", repo or cfg, f"~{total} tokens loaded in every session (limit {policy['tokens']['max_always_loaded']}); "
-                "top: " + ", ".join(f"{g} ({n}) ~{t}" for g, n, t in grouped[:3]))
-    return {"total": total, "parts": {k: [(str(p), t) for p, t in v] for k, v in parts.items()},
-            "sums": {k: sum(t for _, t in v) for k, v in parts.items()},
-            "groups": [{"group": g, "items": n, "tokens": t} for g, n, t in grouped],
-            "counts": {"skills": sum(1 for p, _ in parts["listing"] if p.name == "SKILL.md"),
-                       "subagents": sum(1 for p, _ in parts["listing"] if p.name != "SKILL.md")}}
+        rep.add(
+            "warn",
+            "TOKEN_BUDGET",
+            repo or cfg,
+            f"~{total} tokens loaded in every session (limit "
+            f"{policy['tokens']['max_always_loaded']}); "
+            "top: " + ", ".join(f"{g} ({n}) ~{t}" for g, n, t in grouped[:3]),
+        )
+    return {
+        "total": total,
+        "parts": {k: [(str(p), t) for p, t in v] for k, v in parts.items()},
+        "sums": {k: sum(t for _, t in v) for k, v in parts.items()},
+        "groups": [{"group": g, "items": n, "tokens": t} for g, n, t in grouped],
+        "counts": {
+            "skills": sum(1 for p, _ in parts["listing"] if p.name == "SKILL.md"),
+            "subagents": sum(1 for p, _ in parts["listing"] if p.name != "SKILL.md"),
+        },
+    }
 
 
 def check_token_levers(repo: Path, policy: dict, rep: Report, stack: dict | None = None) -> None:
     if policy["tokens"]["prefer_cli_over_mcp"]:
         try:
-            servers = (json.loads(read_text(repo / ".mcp.json") or "{}").get("mcpServers") or {})
+            servers = json.loads(read_text(repo / ".mcp.json") or "{}").get("mcpServers") or {}
         except json.JSONDecodeError:
             servers = {}
-        for name, cli in (("github", "gh"), ("sentry", "sentry-cli"), ("aws", "aws"), ("gcloud", "gcloud")):
+        for name, cli in (
+            ("github", "gh"),
+            ("sentry", "sentry-cli"),
+            ("aws", "aws"),
+            ("gcloud", "gcloud"),
+        ):
             if any(name in n.lower() for n in servers) and shutil.which(cli):
-                rep.add("info", "MCP_PREFER_CLI", repo / ".mcp.json", f"{cli} is installed: the '{name}' MCP server adds a tool listing the CLI doesn't")
-    for sub in sorted((repo / ".claude" / "agents").glob("*.md")) if (repo / ".claude" / "agents").is_dir() else []:
+                rep.add(
+                    "info",
+                    "MCP_PREFER_CLI",
+                    repo / ".mcp.json",
+                    f"{cli} is installed: the '{name}' MCP server adds a tool listing the "
+                    f"CLI doesn't",
+                )
+    for sub in (
+        sorted((repo / ".claude" / "agents").glob("*.md"))
+        if (repo / ".claude" / "agents").is_dir()
+        else []
+    ):
         meta, _ = split_frontmatter(read_text(sub) or "")
         text = f"{sub.stem} {(meta or {}).get('description', '')}".lower()
         if re.search(r"\b(test|lint|log|triage|format)", text) and not (meta or {}).get("model"):
-            rep.add("info", "TOKEN_SUBAGENT_MODEL", sub, "mechanical subagent without 'model': consider model: haiku")
+            rep.add(
+                "info",
+                "TOKEN_SUBAGENT_MODEL",
+                sub,
+                "mechanical subagent without 'model': consider model: haiku",
+            )
     user_s = read_text(config_dir() / "settings.json")
     try:
         model = str((json.loads(user_s) if user_s else {}).get("model", ""))
     except json.JSONDecodeError:
         model = ""
     if "opus" in model.lower() and not any(f.code == "TOKEN_MODEL" for f in rep.findings):
-        rep.add("info", "TOKEN_MODEL", config_dir() / "settings.json", f"default model {model!r}: Opus for every session and inheriting subagents")
+        rep.add(
+            "info",
+            "TOKEN_MODEL",
+            config_dir() / "settings.json",
+            f"default model {model!r}: Opus for every session and inheriting subagents",
+        )
     stack = stack or detect_stack(repo)
     typed = stack["python"] or bool(stack["pm"])
     enabled = []
@@ -3169,8 +5217,16 @@ def check_token_levers(repo: Path, policy: dict, rep: Report, stack: dict | None
             enabled += list((json.loads(read_text(f) or "{}").get("enabledPlugins") or {}))
         except json.JSONDecodeError:
             pass
-    if typed and not any(re.search(r"lsp|pyright|typescript|pylsp|basedpyright|vtsls|gopls", p, re.I) for p in enabled):
-        rep.add("info", "TOKEN_LSP", repo, "no code intelligence plugin enabled for this typed stack (see /plugin)")
+    if typed and not any(
+        re.search(r"lsp|pyright|typescript|pylsp|basedpyright|vtsls|gopls", p, re.I)
+        for p in enabled
+    ):
+        rep.add(
+            "info",
+            "TOKEN_LSP",
+            repo,
+            "no code intelligence plugin enabled for this typed stack (see /plugin)",
+        )
 
 
 def render_token_budget(budget: dict, color: bool, before: dict | None = None) -> str:
@@ -3178,9 +5234,13 @@ def render_token_budget(budget: dict, color: bool, before: dict | None = None) -
         return ""
     b, r0, g = ("\033[1m", "\033[0m", "\033[32m") if color else ("", "", "")
     sums, counts = budget["sums"], budget.get("counts", {})
-    labels = {"instructions": "instruction files + imports", "rules": "unscoped rules",
-              "listing": f"listing: {counts.get('skills', 0)} skills, {counts.get('subagents', 0)} subagents",
-              "memory": "auto memory index", "mcp": "MCP servers (deferred, est.)"}
+    labels = {
+        "instructions": "instruction files + imports",
+        "rules": "unscoped rules",
+        "listing": f"listing: {counts.get('skills', 0)} skills, {counts.get('subagents', 0)} subagents",
+        "memory": "auto memory index",
+        "mcp": "MCP servers (deferred, est.)",
+    }
     # Before/after: when a --fix pass changed the budget, show the delta actually
     # realised; otherwise show the potential gain still on the table.
     head = f"{b}TOKENS{r0}  ~{budget['total']} tokens loaded in every session (estimate, bytes/4)"
@@ -3197,30 +5257,63 @@ def render_token_budget(budget: dict, color: bool, before: dict | None = None) -
     groups = budget.get("groups", [])[:6]
     if groups:
         lines.append("  biggest groups:")
-        lines += [f"    {g_['group']:52} {g_['items']:>4} item(s)  ~{g_['tokens']}" for g_ in groups]
+        lines += [
+            f"    {g_['group']:52} {g_['items']:>4} item(s)  ~{g_['tokens']}" for g_ in groups
+        ]
     if budget.get("potential"):
-        lines.append(f"  {g}potential: ~{budget['potential']} tokens/session reclaimable"
-                     f"{r0} (act with --fix / -i; see --details)")
-    lines.append("  habits: /clear between tasks, /context and /usage to check, /skill-doctor for unused skills,"
-                 " Sonnet by default, subagents for verbose work")
+        lines.append(
+            f"  {g}potential: ~{budget['potential']} tokens/session reclaimable"
+            f"{r0} (act with --fix / -i; see --details)"
+        )
+    lines.append(
+        "  habits: /clear between tasks, /context and /usage to check, /skill-doctor for "
+        "unused skills,"
+        " Sonnet by default, subagents for verbose work"
+    )
     return "\n".join(lines)
+
 
 # --------------------------------------------------------------------------- #
 # Duplicates and interactive review (-i)
 # --------------------------------------------------------------------------- #
 
-STOPWORDS = set("""a an and are as at be by for from in into is it its of on or that the this to use used using
+STOPWORDS = set(
+    """a an and are as at be by for from in into is it its of on or that the this to use used using
 when with without you your via across any all can will should must who what which also more most very
 agent agents skill skills specialist specialists expert experts helps help assistant claude code tasks task
-based work works working user users project projects""".split())
-HINTS.update({
-    "DUP_EXACT": ("Identical content in several places: every copy is listed (and paid for) separately.", ""),
-    "DUP_NAME": ("Same name in several places: only one wins, the others are dead weight or confusing.", DOCS + "skills#resolve-skills-that-share-a-name"),
-    "DUP_SIMILAR": ("Very similar name and description: the model has to pick between near-duplicates. Keep one.", ""),
-    "DUP_FAMILY": ("Items generated from one template are not duplicates, but each one is listed in every request.", ""),
-    "DUP_ACROSS_PROJECTS": ("The same skill copied in many repositories drifts over time; one shared source is easier to maintain.", ""),
-    "INTERACTIVE": ("Run with -i to review duplicates, packs and long descriptions one by one.", ""),
-})
+based work works working user users project projects""".split()
+)
+HINTS.update(
+    {
+        "DUP_EXACT": (
+            "Identical content in several places: every copy is listed (and paid for) separately.",
+            "",
+        ),
+        "DUP_NAME": (
+            "Same name in several places: only one wins, the others are dead weight or confusing.",
+            DOCS + "skills#resolve-skills-that-share-a-name",
+        ),
+        "DUP_SIMILAR": (
+            "Very similar name and description: the model has to pick between "
+            "near-duplicates. Keep one.",
+            "",
+        ),
+        "DUP_FAMILY": (
+            "Items generated from one template are not duplicates, but each one is listed "
+            "in every request.",
+            "",
+        ),
+        "DUP_ACROSS_PROJECTS": (
+            "The same skill copied in many repositories drifts over time; one shared source "
+            "is easier to maintain.",
+            "",
+        ),
+        "INTERACTIVE": (
+            "Run with -i to review duplicates, packs and long descriptions one by one.",
+            "",
+        ),
+    }
+)
 
 
 def _words(text: str) -> set[str]:
@@ -3229,9 +5322,10 @@ def _words(text: str) -> set[str]:
 
 def _body_hash(text: str) -> str:
     import hashlib
+
     stripped = text.lstrip("\ufeff \t\r\n")
     if stripped.startswith("---") and (end := stripped.find("\n---", 3)) != -1:
-        stripped = stripped[end + 4:]
+        stripped = stripped[end + 4 :]
     norm = re.sub(r"\s+", " ", stripped).strip()
     return hashlib.sha1(norm.encode()).hexdigest() if len(norm) > 200 else ""
 
@@ -3245,28 +5339,54 @@ def collect_items(roots: list[Path]) -> list[dict]:
             text = read_text(sk) or ""
             meta, _ = split_frontmatter(text)
             meta = meta or {}
-            items.append({"kind": "skill", "name": sk.parent.name, "path": sk.parent, "file": sk,
-                          "desc": meta.get("description", ""), "hash": _body_hash(text),
-                          "lines": text.count("\n") + 1})
+            items.append(
+                {
+                    "kind": "skill",
+                    "name": sk.parent.name,
+                    "path": sk.parent,
+                    "file": sk,
+                    "desc": meta.get("description", ""),
+                    "hash": _body_hash(text),
+                    "lines": text.count("\n") + 1,
+                }
+            )
         for ag in sorted(root.glob("agents/**/*.md")):
             text = read_text(ag) or ""
             meta, _ = split_frontmatter(text)
             meta = meta or {}
-            items.append({"kind": "agent", "name": meta.get("name") or ag.stem, "path": ag, "file": ag,
-                          "desc": meta.get("description", ""), "hash": _body_hash(text),
-                          "lines": text.count("\n") + 1})
+            items.append(
+                {
+                    "kind": "agent",
+                    "name": meta.get("name") or ag.stem,
+                    "path": ag,
+                    "file": ag,
+                    "desc": meta.get("description", ""),
+                    "hash": _body_hash(text),
+                    "lines": text.count("\n") + 1,
+                }
+            )
         for cm in sorted(root.glob("commands/**/*.md")):
             text = read_text(cm) or ""
             meta, _ = split_frontmatter(text)
-            items.append({"kind": "command", "name": cm.stem, "path": cm, "file": cm,
-                          "desc": (meta or {}).get("description", ""), "hash": _body_hash(text),
-                          "lines": text.count("\n") + 1})
+            items.append(
+                {
+                    "kind": "command",
+                    "name": cm.stem,
+                    "path": cm,
+                    "file": cm,
+                    "desc": (meta or {}).get("description", ""),
+                    "hash": _body_hash(text),
+                    "lines": text.count("\n") + 1,
+                }
+            )
     for it in items:
         it["words"] = _words(it["name"].replace("-", " ") + " " + it["desc"])
     return items
 
 
-def find_duplicates(items: list[dict], threshold: float = 0.6, focus: set | None = None) -> list[tuple[str, list[dict]]]:
+def find_duplicates(
+    items: list[dict], threshold: float = 0.6, focus: set | None = None
+) -> list[tuple[str, list[dict]]]:
     """Cluster duplicates. With focus (item indexes), only pairs touching a focus item count."""
     parent = list(range(len(items)))
     reason: dict[int, str] = {}
@@ -3312,7 +5432,7 @@ def find_duplicates(items: list[dict], threshold: float = 0.6, focus: set | None
         for a_pos, i in enumerate(bucket):
             wi = items[i]["words"]
             ni = len(wi)
-            for j in bucket[a_pos + 1:]:
+            for j in bucket[a_pos + 1 :]:
                 if focus is not None and i not in focus and j not in focus:
                     continue
                 wj = items[j]["words"]
@@ -3327,10 +5447,16 @@ def find_duplicates(items: list[dict], threshold: float = 0.6, focus: set | None
     clusters: dict[int, list[dict]] = {}
     for i, it in enumerate(items):
         clusters.setdefault(find(i), []).append(it)
-    return [(reason.get(r, "DUP_SIMILAR"), members) for r, members in clusters.items() if len(members) > 1]
+    return [
+        (reason.get(r, "DUP_SIMILAR"), members)
+        for r, members in clusters.items()
+        if len(members) > 1
+    ]
 
 
-def session_duplicates(user_roots: list[Path], project_roots: list[Path]) -> list[tuple[str, list[dict]]]:
+def session_duplicates(
+    user_roots: list[Path], project_roots: list[Path]
+) -> list[tuple[str, list[dict]]]:
     """Duplicates that coexist in one session: user scope alone, then user scope + each project."""
     user_items = collect_items([r for r in user_roots if r.is_dir()])
     seen: set = set()
@@ -3353,30 +5479,51 @@ def session_duplicates(user_roots: list[Path], project_roots: list[Path]) -> lis
     return out
 
 
-def check_duplicates(user_roots: list[Path], project_roots: list[Path], rep: Report) -> list[tuple[str, list[dict]]]:
+def check_duplicates(
+    user_roots: list[Path], project_roots: list[Path], rep: Report
+) -> list[tuple[str, list[dict]]]:
     dups = session_duplicates(user_roots, project_roots)
     rep.stats["duplicate groups"] = len(dups)
     for why, members in dups:
-        names = ", ".join(f"{m['kind']}:{m['name']}" for m in members[:4]) + (" ..." if len(members) > 4 else "")
+        names = ", ".join(f"{m['kind']}:{m['name']}" for m in members[:4]) + (
+            " ..." if len(members) > 4 else ""
+        )
         if why == "DUP_SIMILAR" and is_generated_family(members):
             stem = os.path.commonprefix([m["name"] for m in members]).rstrip("-_")
             toks = sum((len(m["desc"]) + 40) // 4 for m in members)
-            rep.add("info", "DUP_FAMILY", members[0]["path"], f"{stem}-*: {len(members)} {members[0]['kind']}s from one template "
-                    f"(~{toks} tokens/session); not duplicates, a plugin keeps them out of unrelated sessions (-i)")
+            rep.add(
+                "info",
+                "DUP_FAMILY",
+                members[0]["path"],
+                f"{stem}-*: {len(members)} {members[0]['kind']}s from one template "
+                f"(~{toks} tokens/session); not duplicates, a plugin keeps them out of "
+                f"unrelated sessions (-i)",
+            )
             continue
         level = "warn" if why in ("DUP_EXACT", "DUP_NAME") else "info"
-        rep.add(level, why, members[0]["path"], f"{len(members)} items loaded together: {names} (review with -i)")
+        rep.add(
+            level,
+            why,
+            members[0]["path"],
+            f"{len(members)} items loaded together: {names} (review with -i)",
+        )
     copies: dict[str, int] = {}
     for pr in project_roots:
         for sk in pr.glob("skills/*/SKILL.md"):
             copies[sk.parent.name] = copies.get(sk.parent.name, 0) + 1
     for name, n in sorted(copies.items(), key=lambda kv: -kv[1]):
         if n >= 5:
-            rep.add("info", "DUP_ACROSS_PROJECTS", f"skill {name}", f"copied in {n} projects: a shared plugin or the user scope would keep one copy")
+            rep.add(
+                "info",
+                "DUP_ACROSS_PROJECTS",
+                f"skill {name}",
+                f"copied in {n} projects: a shared plugin or the user scope would keep one copy",
+            )
     return dups
 
 
 # ---- interactive session -------------------------------------------------- #
+
 
 def _fr_plural(n: int, singular: str, plural: str | None = None) -> str:
     """French count phrase: '1 groupe', '3 groupes'. In French 0 takes the
@@ -3429,15 +5576,21 @@ def _trash(path: Path, trash_root: Path, log_lines: list[str]) -> None:
 # --------------------------------------------------------------------------- #
 
 DEFAULT_POLICY["restructure"] = {
-    "marketplace_name": "personal",   # local marketplace holding the generated plugins
-    "min_pack_agents": 3,             # agents/<pack>/<group> with at least this many agents
-    "min_skill_family": 3,            # skills sharing a name prefix
-    "skill_keep_lines": 150,          # lines kept in SKILL.md when splitting a long skill
-    "procedure_min_lines": 15,        # CLAUDE.md section long enough to become a skill
+    "marketplace_name": "personal",  # local marketplace holding the generated plugins
+    "min_pack_agents": 3,  # agents/<pack>/<group> with at least this many agents
+    "min_skill_family": 3,  # skills sharing a name prefix
+    "skill_keep_lines": 150,  # lines kept in SKILL.md when splitting a long skill
+    "procedure_min_lines": 15,  # CLAUDE.md section long enough to become a skill
 }
-HINTS.update({
-    "RESTRUCTURE": ("A restructuring that makes the setup load less and work better; apply it with -i (reversible).", DOCS + "features-overview"),
-})
+HINTS.update(
+    {
+        "RESTRUCTURE": (
+            "A restructuring that makes the setup load less and work better; apply it with "
+            "-i (reversible).",
+            DOCS + "features-overview",
+        ),
+    }
+)
 LANG_PATHS = [
     (r"\b(python|pytest|django|fastapi|pydantic|\.py\b)", "**/*.py"),
     (r"\b(typescript|tsx|react|next\.js|\.ts\b)", "**/*.{ts,tsx}"),
@@ -3451,11 +5604,25 @@ LANG_PATHS = [
 ]
 
 
-FILE_PATHS = [("makefile", "**/Makefile*"), ("dockerfile", "**/Dockerfile*"), ("docker", "**/{Dockerfile*,*compose*.y*ml}"),
-              ("terraform", "**/*.tf"), ("helm", "**/*.{yaml,yml,tpl}"), ("k8s", "**/*.{yaml,yml}"),
-              ("python", "**/*.py"), ("django", "**/*.py"), ("typescript", "**/*.{ts,tsx}"), ("react", "**/*.{ts,tsx,jsx}"),
-              ("sql", "**/*.sql"), ("migration", "**/migrations/**"), ("github-actions", ".github/workflows/**"),
-              ("workflow", ".github/workflows/**"), ("unity", "**/*.cs"), ("csharp", "**/*.cs"), ("golang", "**/*.go")]
+FILE_PATHS = [
+    ("makefile", "**/Makefile*"),
+    ("dockerfile", "**/Dockerfile*"),
+    ("docker", "**/{Dockerfile*,*compose*.y*ml}"),
+    ("terraform", "**/*.tf"),
+    ("helm", "**/*.{yaml,yml,tpl}"),
+    ("k8s", "**/*.{yaml,yml}"),
+    ("python", "**/*.py"),
+    ("django", "**/*.py"),
+    ("typescript", "**/*.{ts,tsx}"),
+    ("react", "**/*.{ts,tsx,jsx}"),
+    ("sql", "**/*.sql"),
+    ("migration", "**/migrations/**"),
+    ("github-actions", ".github/workflows/**"),
+    ("workflow", ".github/workflows/**"),
+    ("unity", "**/*.cs"),
+    ("csharp", "**/*.cs"),
+    ("golang", "**/*.go"),
+]
 
 
 def _sections(text: str) -> list[tuple[str, list[str]]]:
@@ -3486,9 +5653,28 @@ def compute_proposals(roots: list[Path], repos: list[Path], policy: dict) -> lis
                     packs.setdefault(key, []).append(f)
             for p, fs in sorted(packs.items(), key=lambda kv: -len(kv[1])):
                 if len(fs) >= pol["min_pack_agents"]:
-                    tok = sum((len(((split_frontmatter(read_text(f) or "")[0]) or {}).get("description", "")) + 40) // 4 for f in fs)
-                    props.append({"kind": "agent-pack", "root": root, "path": p, "files": fs, "gain": tok,
-                                  "title": f"turn {short_path(str(p))} ({len(fs)} agents) into an on-demand plugin"})
+                    tok = sum(
+                        (
+                            len(
+                                ((split_frontmatter(read_text(f) or "")[0]) or {}).get(
+                                    "description", ""
+                                )
+                            )
+                            + 40
+                        )
+                        // 4
+                        for f in fs
+                    )
+                    props.append(
+                        {
+                            "kind": "agent-pack",
+                            "root": root,
+                            "path": p,
+                            "files": fs,
+                            "gain": tok,
+                            "title": f"turn {short_path(str(p))} ({len(fs)} agents) into an on-demand plugin",
+                        }
+                    )
         sd = root / "skills"
         if sd.is_dir():
             fams: dict[str, list[Path]] = {}
@@ -3496,22 +5682,55 @@ def compute_proposals(roots: list[Path], repos: list[Path], policy: dict) -> lis
                 fams.setdefault(d.name.split("-")[0], []).append(d)
             for prefix, ds in fams.items():
                 if len(ds) >= pol["min_skill_family"] and len(prefix) > 2:
-                    tok = sum((len(((split_frontmatter(read_text(d / "SKILL.md") or "")[0]) or {}).get("description", "")) + 30) // 4 for d in ds)
-                    props.append({"kind": "skill-family", "root": root, "prefix": prefix, "dirs": ds, "gain": tok,
-                                  "title": f"group {len(ds)} '{prefix}-*' skills into an on-demand plugin"})
+                    tok = sum(
+                        (
+                            len(
+                                ((split_frontmatter(read_text(d / "SKILL.md") or "")[0]) or {}).get(
+                                    "description", ""
+                                )
+                            )
+                            + 30
+                        )
+                        // 4
+                        for d in ds
+                    )
+                    props.append(
+                        {
+                            "kind": "skill-family",
+                            "root": root,
+                            "prefix": prefix,
+                            "dirs": ds,
+                            "gain": tok,
+                            "title": f"group {len(ds)} '{prefix}-*' skills into an on-demand plugin",
+                        }
+                    )
             for d in sorted(x for x in sd.iterdir() if x.is_dir()):
                 sk = d / "SKILL.md"
                 text = read_text(sk) or ""
                 n = text.count("\n") + 1
                 if n > policy["skills"]["max_lines"] and len(_sections(text)) >= 4:
-                    props.append({"kind": "split-skill", "path": sk, "gain": 0, "lines": n,
-                                  "title": f"split {short_path(str(sk))} ({n} lines) into SKILL.md + references/"})
+                    props.append(
+                        {
+                            "kind": "split-skill",
+                            "path": sk,
+                            "gain": 0,
+                            "lines": n,
+                            "title": f"split {short_path(str(sk))} ({n} lines) into SKILL.md + references/",
+                        }
+                    )
         cd = root / "commands"
         if cd.is_dir():
             for f in sorted(cd.glob("*.md")):
                 if not (root / "skills" / f.stem).exists():
-                    props.append({"kind": "command-to-skill", "root": root, "path": f, "gain": 0,
-                                  "title": f"convert command {short_path(str(f))} into skill /{f.stem}"})
+                    props.append(
+                        {
+                            "kind": "command-to-skill",
+                            "root": root,
+                            "path": f,
+                            "gain": 0,
+                            "title": f"convert command {short_path(str(f))} into skill /{f.stem}",
+                        }
+                    )
         rd = root / "rules"
         if rd.is_dir():
             for f in sorted(rd.rglob("*.md")):
@@ -3523,24 +5742,58 @@ def compute_proposals(roots: list[Path], repos: list[Path], policy: dict) -> lis
                 stem = f.stem.lower()
                 by_name = next((g for key, g in FILE_PATHS if key in stem), None)
                 if by_name:
-                    props.append({"kind": "rule-paths", "path": f, "glob": by_name, "gain": est(text),
-                                  "title": f"scope rule {short_path(str(f))} to {by_name}"})
+                    props.append(
+                        {
+                            "kind": "rule-paths",
+                            "path": f,
+                            "glob": by_name,
+                            "gain": est(text),
+                            "title": f"scope rule {short_path(str(f))} to {by_name}",
+                        }
+                    )
                     continue
-                if any(k in stem for k in ("test", "general", "global", "common", "convention", "guideline", "style")):
+                if any(
+                    k in stem
+                    for k in (
+                        "test",
+                        "general",
+                        "global",
+                        "common",
+                        "convention",
+                        "guideline",
+                        "style",
+                    )
+                ):
                     continue
                 hits = [(glob, len(re.findall(pat, low))) for pat, glob in LANG_PATHS]
                 hits = sorted([h for h in hits if h[1] >= 3], key=lambda h: -h[1])
                 if hits and (len(hits) == 1 or hits[0][1] >= 2 * hits[1][1]):
-                    props.append({"kind": "rule-paths", "path": f, "glob": hits[0][0], "gain": est(text),
-                                  "title": f"scope rule {short_path(str(f))} to {hits[0][0]}"})
-    cfgs = [config_dir() / "CLAUDE.md"] + [r / n for r in repos for n in ("CLAUDE.md", ".claude/CLAUDE.md")]
+                    props.append(
+                        {
+                            "kind": "rule-paths",
+                            "path": f,
+                            "glob": hits[0][0],
+                            "gain": est(text),
+                            "title": f"scope rule {short_path(str(f))} to {hits[0][0]}",
+                        }
+                    )
+    cfgs = [config_dir() / "CLAUDE.md"] + [
+        r / n for r in repos for n in ("CLAUDE.md", ".claude/CLAUDE.md")
+    ]
     for c in cfgs:
         text = read_text(c) or ""
         for title, lines in _sections(text)[1:]:
             steps = sum(1 for l in lines if re.match(r"^\s*(\d+\.|-|\*)\s+", l))
             if len(lines) >= policy["restructure"]["procedure_min_lines"] and steps >= 6:
-                props.append({"kind": "procedure-to-skill", "path": c, "section": title, "gain": est("\n".join(lines)),
-                              "title": f"move procedure '{title}' from {short_path(str(c))} into a skill"})
+                props.append(
+                    {
+                        "kind": "procedure-to-skill",
+                        "path": c,
+                        "section": title,
+                        "gain": est("\n".join(lines)),
+                        "title": f"move procedure '{title}' from {short_path(str(c))} into a skill",
+                    }
+                )
 
     def _applicable(p: dict) -> bool:
         # Drop proposals whose targets can't be written (symlinked / synced stores),
@@ -3577,7 +5830,9 @@ def _register_plugin(plugin: str, desc: str, policy: dict, restore: list[str]) -
     mf.write_text(dump_json(data), encoding="utf-8")
     pdir = mk / "plugins" / plugin / ".claude-plugin"
     pdir.mkdir(parents=True, exist_ok=True)
-    (pdir / "plugin.json").write_text(dump_json({"name": plugin, "version": "1.0.0", "description": desc}), encoding="utf-8")
+    (pdir / "plugin.json").write_text(
+        dump_json({"name": plugin, "version": "1.0.0", "description": desc}), encoding="utf-8"
+    )
     us = config_dir() / "settings.json"
     try:
         udata = json.loads(read_text(us) or "{}")
@@ -3622,9 +5877,18 @@ def apply_proposal(p: dict, policy: dict, restore: list[str], trash_root: Path) 
                 restore.append(f"mv '{dest}' '{d}'")
             desc = f"{len(p['dirs'])} {p['prefix']} skills"
         _register_plugin(plugin, desc, policy, restore)
-        return (f"plugin '{plugin}@{mname}' created, not loaded anywhere yet. In a project that needs it: /plugin -> "
-                f"marketplace '{mname}' -> install '{plugin}' with the project scope"
-                + (" (its skills are then invoked as /" + plugin + ":<skill>, or by their bare name when unique)" if kind == "skill-family" else ""))
+        return (
+            f"plugin '{plugin}@{mname}' created, not loaded anywhere yet. In a project that "
+            f"needs it: /plugin -> "
+            f"marketplace '{mname}' -> install '{plugin}' with the project scope"
+            + (
+                " (its skills are then invoked as /"
+                + plugin
+                + ":<skill>, or by their bare name when unique)"
+                if kind == "skill-family"
+                else ""
+            )
+        )
     if kind == "split-skill":
         sk: Path = p["path"]
         text = read_text(sk) or ""
@@ -3632,7 +5896,7 @@ def apply_proposal(p: dict, policy: dict, restore: list[str], trash_root: Path) 
         stripped = text.lstrip("\ufeff \t\r\n")
         head, body = "", text
         if stripped.startswith("---") and (end := stripped.find("\n---", 3)) != -1:
-            head, body = stripped[:end + 4] + "\n", stripped[end + 4:]
+            head, body = stripped[: end + 4] + "\n", stripped[end + 4 :]
         secs = _sections(body)
         keep, moved, count = [secs[0]], [], len(secs[0][1])
         for title, lines in secs[1:]:
@@ -3650,7 +5914,13 @@ def apply_proposal(p: dict, policy: dict, restore: list[str], trash_root: Path) 
             name = slugify(title)[:40] + ".md"
             (refdir / name).write_text("\n".join(lines).strip() + "\n", encoding="utf-8")
             links.append(f"- {title}: read [references/{name}](references/{name}) when needed")
-        new = head + "\n".join(l for _, ls in keep for l in ls).rstrip() + "\n\n## Additional resources\n\n" + "\n".join(links) + "\n"
+        new = (
+            head
+            + "\n".join(l for _, ls in keep for l in ls).rstrip()
+            + "\n\n## Additional resources\n\n"
+            + "\n".join(links)
+            + "\n"
+        )
         sk.write_text(new, encoding="utf-8")
         return f"SKILL.md now {new.count(chr(10)) + 1} lines, {len(moved)} section(s) in references/ (backup in ~/.cache)"
     if kind == "command-to-skill":
@@ -3674,12 +5944,26 @@ def apply_proposal(p: dict, policy: dict, restore: list[str], trash_root: Path) 
         title = p["section"]
         lines = next(ls for t, ls in secs if t == title)
         slug = slugify(title)[:40]
-        root = config_dir() if c.parent == config_dir() else c.parent / ".claude" if c.parent.name != ".claude" else c.parent
+        root = (
+            config_dir()
+            if c.parent == config_dir()
+            else c.parent / ".claude"
+            if c.parent.name != ".claude"
+            else c.parent
+        )
         skill = root / "skills" / slug / "SKILL.md"
         skill.parent.mkdir(parents=True, exist_ok=True)
         body = "\n".join(lines[1:]).strip()
-        skill.write_text(f"---\nname: {slug}\ndescription: {yaml_scalar('Procedure: ' + title + '. Use when this procedure is needed.')}\n---\n\n{body}\n", encoding="utf-8")
-        out = [l for t, ls in secs for l in (ls if t != title else [f"## {title}", "", f"Follow the /{slug} skill."])]
+        skill.write_text(
+            f"---\nname: {slug}\ndescription: "
+            f"{yaml_scalar('Procedure: ' + title + '. Use when this procedure is needed.')}\n---\n\n{body}\n",
+            encoding="utf-8",
+        )
+        out = [
+            l
+            for t, ls in secs
+            for l in (ls if t != title else [f"## {title}", "", f"Follow the /{slug} skill."])
+        ]
         c.write_text("\n".join(out) + "\n", encoding="utf-8")
         restore.append(f"rm -r '{skill.parent}'  # and restore {c.name} from ~/.cache/claude-lint")
         return f"section moved to skill /{slug}; review its description"
@@ -3691,7 +5975,10 @@ def render_proposals(props: list[dict], color: bool) -> str:
         return ""
     b, r0 = ("\033[1m", "\033[0m") if color else ("", "")
     total = sum(p["gain"] for p in props)
-    lines = [f"{b}RESTRUCTURE{r0}  {len(props)} proposal(s), up to ~{total} tokens less per session (apply with -i)"]
+    lines = [
+        f"{b}RESTRUCTURE{r0}  {len(props)} proposal(s), up to ~{total} tokens less per "
+        f"session (apply with -i)"
+    ]
     for p in props[:12]:
         gain = f"~{p['gain']} tok/session" if p["gain"] else "per-use"
         lines.append(f"  - {p['title']}  [{gain}]")
@@ -3699,47 +5986,152 @@ def render_proposals(props: list[dict], color: bool) -> str:
         lines.append(f"  ... {len(props) - 12} more (all listed in --format json)")
     return "\n".join(lines)
 
+
 # --------------------------------------------------------------------------- #
 # Brief report: what matters, in plain language, in priority order
 # --------------------------------------------------------------------------- #
 
 BRIEF_FR = {
     # code: (section, what it means, what to do)
-    "API_KEY_LEAK": ("security", "clé API Anthropic en clair", "révoquer la clé (console.anthropic.com) puis retirer la ligne"),
-    "SECRET_INLINE": ("security", "secret écrit en clair dans une config", "--fix le remplace par ${VAR} quand c'est possible"),
-    "ATTR_TRACE": ("security", "signature Claude/Anthropic dans des fichiers", "--fix retire les lignes dans .claude/, CLAUDE.md, AGENTS.md ; ailleurs à la main"),
-    "PERM_EXEC_RUNNER": ("security", "autorisation trop large (xargs, npx... lancent n'importe quelle commande)", "remplacer par des commandes précises"),
+    "API_KEY_LEAK": (
+        "security",
+        "clé API Anthropic en clair",
+        "révoquer la clé (console.anthropic.com) puis retirer la ligne",
+    ),
+    "SECRET_INLINE": (
+        "security",
+        "secret écrit en clair dans une config",
+        "--fix le remplace par ${VAR} quand c'est possible",
+    ),
+    "ATTR_TRACE": (
+        "security",
+        "signature Claude/Anthropic dans des fichiers",
+        "--fix retire les lignes dans .claude/, CLAUDE.md, AGENTS.md ; ailleurs à la main",
+    ),
+    "PERM_EXEC_RUNNER": (
+        "security",
+        "autorisation trop large (xargs, npx... lancent n'importe quelle commande)",
+        "remplacer par des commandes précises",
+    ),
     "PERM_TOO_BROAD": ("security", "autorisation qui laisse tout passer", "--fix la retire"),
     "PERM_BYPASS": ("security", "mode sans permissions dans un dépôt", "--fix le retire"),
     "CI_ACTION": ("security", "workflow GitHub Actions à durcir", "voir --details"),
     "CI_TRIGGER": ("security", "workflow déclenchable par des inconnus", "voir --details"),
-    "HOOK_MISSING_SCRIPT": ("broken", "hook qui appelle un script absent : il ne fait rien", "corriger le chemin du script"),
-    "SKILL_MISSING": ("broken", "dossier de skill sans SKILL.md : ignoré", "ajouter SKILL.md ou supprimer le dossier"),
-    "IMPORT_MISSING": ("broken", "@import vers un fichier introuvable", "corriger ou retirer l'import"),
-    "AGENT_FRONTMATTER": ("broken", "fichier dans agents/ qui n'est pas un agent", "-i propose de le déplacer"),
-    "JSON_INVALID": ("broken", "fichier JSON illisible : ignoré entièrement", "corriger la syntaxe"),
-    "SETTINGS_DEAD_KEY": ("broken", "réglage sans effet à cet endroit (ex. forceLoginOrgUUID dans un dépôt)", "le retirer"),
-    "MISPLACED": ("broken", "fichier au mauvais endroit, jamais lu", "--fix le déplace quand c'est sûr"),
-    "SKILL_NAME": ("broken", "nom de dossier de skill invalide", "renommer le dossier en minuscules-tirets"),
-    "ATTR_HOOK_CONFLICT": ("broken", "hook commit-msg existant qui ne retire pas les signatures", "y ajouter les 2 lignes sed (voir --details)"),
+    "HOOK_MISSING_SCRIPT": (
+        "broken",
+        "hook qui appelle un script absent : il ne fait rien",
+        "corriger le chemin du script",
+    ),
+    "SKILL_MISSING": (
+        "broken",
+        "dossier de skill sans SKILL.md : ignoré",
+        "ajouter SKILL.md ou supprimer le dossier",
+    ),
+    "IMPORT_MISSING": (
+        "broken",
+        "@import vers un fichier introuvable",
+        "corriger ou retirer l'import",
+    ),
+    "AGENT_FRONTMATTER": (
+        "broken",
+        "fichier dans agents/ qui n'est pas un agent",
+        "-i propose de le déplacer",
+    ),
+    "JSON_INVALID": (
+        "broken",
+        "fichier JSON illisible : ignoré entièrement",
+        "corriger la syntaxe",
+    ),
+    "SETTINGS_DEAD_KEY": (
+        "broken",
+        "réglage sans effet à cet endroit (ex. forceLoginOrgUUID dans un dépôt)",
+        "le retirer",
+    ),
+    "MISPLACED": (
+        "broken",
+        "fichier au mauvais endroit, jamais lu",
+        "--fix le déplace quand c'est sûr",
+    ),
+    "SKILL_NAME": (
+        "broken",
+        "nom de dossier de skill invalide",
+        "renommer le dossier en minuscules-tirets",
+    ),
+    "ATTR_HOOK_CONFLICT": (
+        "broken",
+        "hook commit-msg existant qui ne retire pas les signatures",
+        "y ajouter les 2 lignes sed (voir --details)",
+    ),
     "PLUGIN_MANIFEST": ("broken", "manifeste de plugin à corriger", "voir --details"),
     "HOOK_IF_DEAD": ("broken", "condition de hook jamais évaluée", "--fix la retire"),
     "RTK_NO_HOOK": ("broken", "rtk installé mais pas branché", "--fix --user l'ajoute"),
-    "RTK_MISSING": ("broken", "rtk exigé mais pas installé", "installer rtk, ou require_rtk = false pour l'esquiver"),
-    "LLMTRIM_MISSING": ("broken", "subagents de routage llmtrim mais llmtrim absent", "installer llmtrim, ou -i pour retirer ces agents"),
-    "TOKEN_AGENT_PACK": ("tokens", "packs de subagents listés à chaque requête", "-i : les transformer en plugins à activer par projet"),
-    "DUP_FAMILY": ("tokens", "familles d'agents/skills générés sur un même modèle (pas des doublons)", "-i : en faire un plugin ou les mettre de côté"),
-    "TOKEN_SKILL_DESC": ("tokens", "descriptions de skills trop longues (relues à chaque tour)", "-i propose une version courte"),
-    "SKILL_LONG": ("tokens", "skills de plus de 500 lignes", "-i : découper en SKILL.md + references/"),
-    "INSTR_LONG": ("tokens", "fichiers d'instructions de plus de 200 lignes", "-i : sortir les procédures dans des skills"),
-    "RULE_UNSCOPED": ("tokens", "règles chargées partout faute de 'paths:'", "-i propose le bon filtre quand il est évident"),
-    "TOKEN_MODEL": ("tokens", "Opus par défaut pour toutes les sessions", "-i propose Sonnet par défaut (/model opus au besoin)"),
-    "MCP_PREFER_CLI": ("tokens", "serveur MCP alors que la CLI équivalente est installée", "retirer le serveur (gh fait le travail)"),
-    "TOKEN_SUBAGENT_MODEL": ("tokens", "subagents mécaniques sans modèle léger", "ajouter 'model: haiku'"),
+    "RTK_MISSING": (
+        "broken",
+        "rtk exigé mais pas installé",
+        "installer rtk, ou require_rtk = false pour l'esquiver",
+    ),
+    "LLMTRIM_MISSING": (
+        "broken",
+        "subagents de routage llmtrim mais llmtrim absent",
+        "installer llmtrim, ou -i pour retirer ces agents",
+    ),
+    "TOKEN_AGENT_PACK": (
+        "tokens",
+        "packs de subagents listés à chaque requête",
+        "-i : les transformer en plugins à activer par projet",
+    ),
+    "DUP_FAMILY": (
+        "tokens",
+        "familles d'agents/skills générés sur un même modèle (pas des doublons)",
+        "-i : en faire un plugin ou les mettre de côté",
+    ),
+    "TOKEN_SKILL_DESC": (
+        "tokens",
+        "descriptions de skills trop longues (relues à chaque tour)",
+        "-i propose une version courte",
+    ),
+    "SKILL_LONG": (
+        "tokens",
+        "skills de plus de 500 lignes",
+        "-i : découper en SKILL.md + references/",
+    ),
+    "INSTR_LONG": (
+        "tokens",
+        "fichiers d'instructions de plus de 200 lignes",
+        "-i : sortir les procédures dans des skills",
+    ),
+    "RULE_UNSCOPED": (
+        "tokens",
+        "règles chargées partout faute de 'paths:'",
+        "-i propose le bon filtre quand il est évident",
+    ),
+    "TOKEN_MODEL": (
+        "tokens",
+        "Opus par défaut pour toutes les sessions",
+        "-i propose Sonnet par défaut (/model opus au besoin)",
+    ),
+    "MCP_PREFER_CLI": (
+        "tokens",
+        "serveur MCP alors que la CLI équivalente est installée",
+        "retirer le serveur (gh fait le travail)",
+    ),
+    "TOKEN_SUBAGENT_MODEL": (
+        "tokens",
+        "subagents mécaniques sans modèle léger",
+        "ajouter 'model: haiku'",
+    ),
     "DUP_EXACT": ("dups", "copies identiques chargées ensemble", "-i : choisir celle à garder"),
     "DUP_NAME": ("dups", "même nom chargé deux fois (un seul sert)", "-i : choisir celle à garder"),
-    "DUP_SIMILAR": ("dups", "quasi-doublons (nom et description très proches)", "-i : garder la meilleure"),
-    "DUP_ACROSS_PROJECTS": ("dups", "même skill copié dans beaucoup de dépôts", "le mettre dans un plugin partagé"),
+    "DUP_SIMILAR": (
+        "dups",
+        "quasi-doublons (nom et description très proches)",
+        "-i : garder la meilleure",
+    ),
+    "DUP_ACROSS_PROJECTS": (
+        "dups",
+        "même skill copié dans beaucoup de dépôts",
+        "le mettre dans un plugin partagé",
+    ),
 }
 SECTION_TITLES = {
     "security": "1. SÉCURITÉ ET RÈGLES DU PORTEFEUILLE (à traiter d'abord)",
@@ -3748,41 +6140,121 @@ SECTION_TITLES = {
     "dups": "4. DOUBLONS",
 }
 BRIEF_EN = {
-    "API_KEY_LEAK": ("security", "plaintext Anthropic API key", "revoke the key (console.anthropic.com), then remove the line"),
-    "SECRET_INLINE": ("security", "secret written in cleartext in a config", "--fix replaces it with ${VAR} where possible"),
-    "ATTR_TRACE": ("security", "Claude/Anthropic signature in files", "--fix strips lines in .claude/, CLAUDE.md, AGENTS.md; elsewhere by hand"),
-    "PERM_EXEC_RUNNER": ("security", "over-broad allow rule (xargs, npx... run any command)", "replace with specific commands"),
+    "API_KEY_LEAK": (
+        "security",
+        "plaintext Anthropic API key",
+        "revoke the key (console.anthropic.com), then remove the line",
+    ),
+    "SECRET_INLINE": (
+        "security",
+        "secret written in cleartext in a config",
+        "--fix replaces it with ${VAR} where possible",
+    ),
+    "ATTR_TRACE": (
+        "security",
+        "Claude/Anthropic signature in files",
+        "--fix strips lines in .claude/, CLAUDE.md, AGENTS.md; elsewhere by hand",
+    ),
+    "PERM_EXEC_RUNNER": (
+        "security",
+        "over-broad allow rule (xargs, npx... run any command)",
+        "replace with specific commands",
+    ),
     "PERM_TOO_BROAD": ("security", "allow rule that lets everything through", "--fix removes it"),
     "PERM_BYPASS": ("security", "permission-bypass mode in a repository", "--fix removes it"),
     "CI_ACTION": ("security", "GitHub Actions workflow to harden", "see --details"),
     "CI_TRIGGER": ("security", "workflow triggerable by strangers", "see --details"),
-    "HOOK_MISSING_SCRIPT": ("broken", "hook calling a missing script: it does nothing", "fix the script path"),
-    "SKILL_MISSING": ("broken", "skill folder without SKILL.md: ignored", "add SKILL.md or delete the folder"),
+    "HOOK_MISSING_SCRIPT": (
+        "broken",
+        "hook calling a missing script: it does nothing",
+        "fix the script path",
+    ),
+    "SKILL_MISSING": (
+        "broken",
+        "skill folder without SKILL.md: ignored",
+        "add SKILL.md or delete the folder",
+    ),
     "IMPORT_MISSING": ("broken", "@import to a missing file", "fix or remove the import"),
-    "AGENT_FRONTMATTER": ("broken", "file under agents/ that is not an agent", "-i offers to move it"),
+    "AGENT_FRONTMATTER": (
+        "broken",
+        "file under agents/ that is not an agent",
+        "-i offers to move it",
+    ),
     "JSON_INVALID": ("broken", "unreadable JSON file: ignored entirely", "fix the syntax"),
-    "SETTINGS_DEAD_KEY": ("broken", "setting with no effect here (e.g. forceLoginOrgUUID in a repo)", "remove it"),
+    "SETTINGS_DEAD_KEY": (
+        "broken",
+        "setting with no effect here (e.g. forceLoginOrgUUID in a repo)",
+        "remove it",
+    ),
     "MISPLACED": ("broken", "file in the wrong place, never read", "--fix moves it when safe"),
     "SKILL_NAME": ("broken", "invalid skill folder name", "rename the folder to lowercase-dashes"),
-    "ATTR_HOOK_CONFLICT": ("broken", "existing commit-msg hook that does not strip signatures", "add the 2 sed lines (see --details)"),
+    "ATTR_HOOK_CONFLICT": (
+        "broken",
+        "existing commit-msg hook that does not strip signatures",
+        "add the 2 sed lines (see --details)",
+    ),
     "PLUGIN_MANIFEST": ("broken", "plugin manifest to fix", "see --details"),
     "HOOK_IF_DEAD": ("broken", "hook condition never evaluated", "--fix removes it"),
     "RTK_NO_HOOK": ("broken", "rtk installed but not wired in", "--fix --user adds it"),
-    "RTK_MISSING": ("broken", "rtk required but not installed", "install rtk, or set require_rtk = false to skip it"),
-    "LLMTRIM_MISSING": ("broken", "llmtrim route subagents but llmtrim not installed", "install llmtrim, or -i to remove those agents"),
-    "TOKEN_AGENT_PACK": ("tokens", "subagent packs listed on every request", "-i: turn them into per-project plugins"),
-    "DUP_FAMILY": ("tokens", "families of generated agents/skills from one template (not duplicates)", "-i: make a plugin or park them"),
-    "TOKEN_SKILL_DESC": ("tokens", "skill descriptions too long (re-read every turn)", "-i offers a short version"),
+    "RTK_MISSING": (
+        "broken",
+        "rtk required but not installed",
+        "install rtk, or set require_rtk = false to skip it",
+    ),
+    "LLMTRIM_MISSING": (
+        "broken",
+        "llmtrim route subagents but llmtrim not installed",
+        "install llmtrim, or -i to remove those agents",
+    ),
+    "TOKEN_AGENT_PACK": (
+        "tokens",
+        "subagent packs listed on every request",
+        "-i: turn them into per-project plugins",
+    ),
+    "DUP_FAMILY": (
+        "tokens",
+        "families of generated agents/skills from one template (not duplicates)",
+        "-i: make a plugin or park them",
+    ),
+    "TOKEN_SKILL_DESC": (
+        "tokens",
+        "skill descriptions too long (re-read every turn)",
+        "-i offers a short version",
+    ),
     "SKILL_LONG": ("tokens", "skills over 500 lines", "-i: split into SKILL.md + references/"),
     "INSTR_LONG": ("tokens", "instruction files over 200 lines", "-i: move procedures into skills"),
-    "RULE_UNSCOPED": ("tokens", "rules loaded everywhere for lack of 'paths:'", "-i offers the right filter when obvious"),
-    "TOKEN_MODEL": ("tokens", "Opus as the default for every session", "-i offers Sonnet by default (/model opus when needed)"),
-    "MCP_PREFER_CLI": ("tokens", "MCP server while the equivalent CLI is installed", "remove the server (gh does the job)"),
-    "TOKEN_SUBAGENT_MODEL": ("tokens", "mechanical subagents without a light model", "add 'model: haiku'"),
+    "RULE_UNSCOPED": (
+        "tokens",
+        "rules loaded everywhere for lack of 'paths:'",
+        "-i offers the right filter when obvious",
+    ),
+    "TOKEN_MODEL": (
+        "tokens",
+        "Opus as the default for every session",
+        "-i offers Sonnet by default (/model opus when needed)",
+    ),
+    "MCP_PREFER_CLI": (
+        "tokens",
+        "MCP server while the equivalent CLI is installed",
+        "remove the server (gh does the job)",
+    ),
+    "TOKEN_SUBAGENT_MODEL": (
+        "tokens",
+        "mechanical subagents without a light model",
+        "add 'model: haiku'",
+    ),
     "DUP_EXACT": ("dups", "identical copies loaded together", "-i: pick the one to keep"),
     "DUP_NAME": ("dups", "same name loaded twice (only one runs)", "-i: pick the one to keep"),
-    "DUP_SIMILAR": ("dups", "near-duplicates (very close name and description)", "-i: keep the best"),
-    "DUP_ACROSS_PROJECTS": ("dups", "same skill copied into many repositories", "put it in a shared plugin"),
+    "DUP_SIMILAR": (
+        "dups",
+        "near-duplicates (very close name and description)",
+        "-i: keep the best",
+    ),
+    "DUP_ACROSS_PROJECTS": (
+        "dups",
+        "same skill copied into many repositories",
+        "put it in a shared plugin",
+    ),
 }
 SECTION_TITLES_EN = {
     "security": "1. SECURITY AND PORTFOLIO RULES (handle first)",
@@ -3802,7 +6274,7 @@ def section_titles() -> dict:
 
 def home_path(p: str) -> str:
     home = str(Path.home())
-    return "~" + p[len(home):] if p.startswith(home) else p
+    return "~" + p[len(home) :] if p.startswith(home) else p
 
 
 def proposal_fr(p: dict) -> str:
@@ -3844,16 +6316,29 @@ def proposal_desc(p: dict) -> str:
     return p["title"]
 
 
-def render_brief(rep: Report, fixed: list[Finding], fix: bool, repos_count: int, color: bool) -> str:
+def render_brief(
+    rep: Report, fixed: list[Finding], fix: bool, repos_count: int, color: bool
+) -> str:
     b, dim, r0 = ("\033[1m", "\033[2m", "\033[0m") if color else ("", "", "")
     red, yel, grn = ("\033[31m", "\033[33m", "\033[32m") if color else ("", "", "")
-    out = [f"{b}claude-lint {VERSION}{r0} - "
-           + _L(f"{repos_count} dépôt(s) analysé(s)", f"{repos_count} repository(ies) scanned")
-           + (_L(" + configuration utilisateur", " + user configuration")
-              if any("perso" in str(f.path) or ".claude" in str(f.path) for f in rep.findings) else "")]
+    out = [
+        f"{b}claude-lint {VERSION}{r0} - "
+        + _loc(f"{repos_count} dépôt(s) analysé(s)", f"{repos_count} repository(ies) scanned")
+        + (
+            _loc(" + configuration utilisateur", " + user configuration")
+            if any("perso" in str(f.path) or ".claude" in str(f.path) for f in rep.findings)
+            else ""
+        )
+    ]
     if fix:
-        out.append(_L(f"{grn}Corrigé automatiquement : {len(fixed)} point(s).{r0}", f"{grn}Fixed automatically: {len(fixed)} item(s).{r0}")
-                   if fixed else _L("Rien à corriger automatiquement.", "Nothing to fix automatically."))
+        out.append(
+            _loc(
+                f"{grn}Corrigé automatiquement : {len(fixed)} point(s).{r0}",
+                f"{grn}Fixed automatically: {len(fixed)} item(s).{r0}",
+            )
+            if fixed
+            else _loc("Rien à corriger automatiquement.", "Nothing to fix automatically.")
+        )
     budget = getattr(rep, "budget", None) or {}
     by_code: dict[str, list[Finding]] = {}
     for f in rep.findings:
@@ -3871,32 +6356,62 @@ def render_brief(rep: Report, fixed: list[Finding], fix: bool, repos_count: int,
             fixable = sum(1 for f in items if f.fixable)
             n = len(items)
             if code == "TOKEN_AGENT_PACK":
-                toks = sum(int(m.group(1)) for f in items if (m := re.search(r"~(\d+) tokens", f.message)))
+                toks = sum(
+                    int(m.group(1)) for f in items if (m := re.search(r"~(\d+) tokens", f.message))
+                )
                 what = f"{what} (~{toks} tokens)"
             level = max(items, key=lambda f: LEVELS.index(f.level) * -1).level
             mark = {"error": f"{red}●{r0}", "warn": f"{yel}●{r0}", "info": f"{dim}○{r0}"}[level]
             rows.append(f"  {mark} {n:>4} × {what}")
-            rows.append(f"         {dim}{_L('où', 'where')} :{r0} {where}")
-            rows.append(f"         {dim}{_L('que faire', 'what to do')} :{r0} {todo}"
-                        + (f"  {grn}[{_L(f'{fixable} corrigeable(s) par --fix', f'{fixable} fixable with --fix')}]{r0}" if fixable and not fix else ""))
+            rows.append(f"         {dim}{_loc('où', 'where')} :{r0} {where}")
+            rows.append(
+                f"         {dim}{_loc('que faire', 'what to do')} :{r0} {todo}"
+                + (
+                    f"  {grn}[{_loc(f'{fixable} corrigeable(s) par --fix', f'{fixable} fixable with --fix')}]{r0}"
+                    if fixable and not fix
+                    else ""
+                )
+            )
         if section == "tokens" and budget:
-            rows.insert(0, "  " + _L(
-                f"Total estimé : ~{budget.get('total', 0)} tokens renvoyés à chaque requête"
-                f" (objectif < {DEFAULT_POLICY['tokens']['max_always_loaded']}). Plus gros postes :",
-                f"Estimated total: ~{budget.get('total', 0)} tokens re-sent on every request"
-                f" (target < {DEFAULT_POLICY['tokens']['max_always_loaded']}). Biggest contributors:"))
+            rows.insert(
+                0,
+                "  "
+                + _loc(
+                    f"Total estimé : ~{budget.get('total', 0)} tokens renvoyés à chaque requête"
+                    f" (objectif < {DEFAULT_POLICY['tokens']['max_always_loaded']}). Plus "
+                    f"gros postes :",
+                    f"Estimated total: ~{budget.get('total', 0)} tokens re-sent on every request"
+                    f" (target < {DEFAULT_POLICY['tokens']['max_always_loaded']}). Biggest "
+                    f"contributors:",
+                ),
+            )
             for k, g in enumerate(budget.get("groups", [])[:3], 1):
-                rows.insert(k, "     - " + _L(f"{home_path(g['group'])} : {g['items']} élément(s), ~{g['tokens']} tokens",
-                                              f"{home_path(g['group'])}: {g['items']} item(s), ~{g['tokens']} tokens"))
+                rows.insert(
+                    k,
+                    "     - "
+                    + _loc(
+                        f"{home_path(g['group'])} : {g['items']} élément(s), ~{g['tokens']} tokens",
+                        f"{home_path(g['group'])}: {g['items']} item(s), ~{g['tokens']} tokens",
+                    ),
+                )
             props = getattr(rep, "proposals", [])
             if props:
                 gain = sum(p["gain"] for p in props)
-                rows.append(f"  {grn}→{r0} " + _L(
-                    f"{len(props)} restructuration(s) proposée(s), jusqu'à ~{gain} tokens de moins par session. Les 3 plus rentables :",
-                    f"{len(props)} restructuring(s) proposed, up to ~{gain} fewer tokens per session. Top 3:"))
+                rows.append(
+                    f"  {grn}→{r0} "
+                    + _loc(
+                        f"{len(props)} restructuration(s) proposée(s), jusqu'à ~{gain} "
+                        f"tokens de moins par session. Les 3 plus rentables :",
+                        f"{len(props)} restructuring(s) proposed, up to ~{gain} fewer tokens "
+                        f"per session. Top 3:",
+                    )
+                )
                 for p in props[:3]:
-                    gain_txt = (f"~{p['gain']} tokens" if p["gain"]
-                                else _L("chargé seulement à l'usage", "loaded only when used"))
+                    gain_txt = (
+                        f"~{p['gain']} tokens"
+                        if p["gain"]
+                        else _loc("chargé seulement à l'usage", "loaded only when used")
+                    )
                     rows.append(f"     - {proposal_desc(p)} ({gain_txt})")
         if rows:
             out += ["", f"{b}{section_titles()[section]}{r0}"] + rows
@@ -3906,40 +6421,86 @@ def render_brief(rep: Report, fixed: list[Finding], fix: bool, repos_count: int,
         for f in rest:
             cats[category(f.code)] = cats.get(category(f.code), 0) + 1
         joined = ", ".join(f"{n} {c}" for c, n in sorted(cats.items(), key=lambda kv: -kv[1]))
-        out += ["", f"{b}" + _L("5. LE RESTE", "5. THE REST") + f"{r0} : "
-                + _L(f"{len(rest)} remarque(s) mineure(s) ({joined}) : voir --details",
-                     f"{len(rest)} minor note(s) ({joined}): see --details")]
+        out += [
+            "",
+            f"{b}"
+            + _loc("5. LE RESTE", "5. THE REST")
+            + f"{r0} : "
+            + _loc(
+                f"{len(rest)} remarque(s) mineure(s) ({joined}) : voir --details",
+                f"{len(rest)} minor note(s) ({joined}): see --details",
+            ),
+        ]
     auto = sum(1 for f in rep.findings if f.fixable)
     steps = []
     if auto and not fix:
-        steps.append(_L(f"lancer avec --fix : corrige {auto} point(s) sans rien demander (sauvegarde automatique)",
-                        f"run with --fix: fixes {auto} item(s) with no prompts (automatic backup)"))
-    if any(c in by_code for c in ("DUP_EXACT", "DUP_NAME", "DUP_SIMILAR", "TOKEN_AGENT_PACK", "TOKEN_SKILL_DESC", "TOKEN_MODEL")) or getattr(rep, "proposals", []):
-        steps.append(_L("lancer avec -i : doublons, packs et restructurations, un par un, réversible",
-                        "run with -i: duplicates, packs and restructurings, one by one, reversible"))
-    steps.append(_L("--details : la liste complète, fichier par fichier",
-                    "--details: the full list, file by file"))
-    out += ["", f"{b}" + _L("ÉTAPES SUIVANTES", "NEXT STEPS") + f"{r0}"] + [f"  {i}. {s}" for i, s in enumerate(steps, 1)]
+        steps.append(
+            _loc(
+                f"lancer avec --fix : corrige {auto} point(s) sans rien demander (sauvegarde "
+                f"automatique)",
+                f"run with --fix: fixes {auto} item(s) with no prompts (automatic backup)",
+            )
+        )
+    if any(
+        c in by_code
+        for c in (
+            "DUP_EXACT",
+            "DUP_NAME",
+            "DUP_SIMILAR",
+            "TOKEN_AGENT_PACK",
+            "TOKEN_SKILL_DESC",
+            "TOKEN_MODEL",
+        )
+    ) or getattr(rep, "proposals", []):
+        steps.append(
+            _loc(
+                "lancer avec -i : doublons, packs et restructurations, un par un, réversible",
+                "run with -i: duplicates, packs and restructurings, one by one, reversible",
+            )
+        )
+    steps.append(
+        _loc(
+            "--details : la liste complète, fichier par fichier",
+            "--details: the full list, file by file",
+        )
+    )
+    out += ["", f"{b}" + _loc("ÉTAPES SUIVANTES", "NEXT STEPS") + f"{r0}"] + [
+        f"  {i}. {s}" for i, s in enumerate(steps, 1)
+    ]
     return "\n".join(out)
+
 
 # --------------------------------------------------------------------------- #
 # Interactive review, v2: sections menu, explanations, advice, batch actions
 # --------------------------------------------------------------------------- #
 
+
 class Tty:
     def __init__(self) -> None:
         on = sys.stdout.isatty() and not os.environ.get("NO_COLOR")
         c = lambda code: f"\033[{code}m" if on else ""
-        self.b, self.dim, self.r, self.red, self.grn, self.yel, self.cyan = c(1), c(2), c(0), c(31), c(32), c(33), c(36)
+        self.b, self.dim, self.r, self.red, self.grn, self.yel, self.cyan = (
+            c(1),
+            c(2),
+            c(0),
+            c(31),
+            c(32),
+            c(33),
+            c(36),
+        )
         self.width = min(shutil.get_terminal_size((110, 40)).columns, 140)
 
     def rule(self, title: str = "") -> None:
         line = "─" * max(0, self.width - len(title) - 3)
-        print(f"\n{self.b}── {title} {line}{self.r}" if title else f"{self.dim}{'─' * self.width}{self.r}")
+        print(
+            f"\n{self.b}── {title} {line}{self.r}"
+            if title
+            else f"{self.dim}{'─' * self.width}{self.r}"
+        )
 
     def short(self, p: str, width: int) -> str:
         p = home_path(str(p))
-        return p if len(p) <= width else p[: width // 3] + "…" + p[-(width - width // 3 - 1):]
+        return p if len(p) <= width else p[: width // 3] + "…" + p[-(width - width // 3 - 1) :]
 
 
 def _affixes(texts: list[str]) -> tuple[str, str]:
@@ -3962,8 +6523,12 @@ def is_generated_family(members: list[dict]) -> bool:
     bodies = []
     for m in members:
         text = read_text(m["file"]) or ""
-        var = m["name"][len(stem):]
-        for v in sorted({var, var.replace("-", "."), var.replace("-", " "), var.replace("-", "_")}, key=len, reverse=True):
+        var = m["name"][len(stem) :]
+        for v in sorted(
+            {var, var.replace("-", "."), var.replace("-", " "), var.replace("-", "_")},
+            key=len,
+            reverse=True,
+        ):
             if v:
                 text = text.replace(v, "V")
         text = re.sub(r"\b[\w.-]*V[\w.-]*\b", "V", text)
@@ -3990,23 +6555,34 @@ def advice(why: str, members: list[dict]) -> tuple[list[int], str]:
     if len(scopes) == 2:
         proj = [i for i, m in enumerate(members) if _scope_of(m) == "projet"]
         if kind in ("skill", "command"):
-            return proj, ("dans ce projet, la version utilisateur passe avant : la copie du projet n'est jamais utilisée"
-                          if why != "DUP_SIMILAR" else "proches mais pas identiques : à toi de juger")
+            return proj, (
+                "dans ce projet, la version utilisateur passe avant : la copie du projet "
+                "n'est jamais utilisée"
+                if why != "DUP_SIMILAR"
+                else "proches mais pas identiques : à toi de juger"
+            )
         if why == "DUP_EXACT":
             return proj, "copie du projet identique à ta version utilisateur : elle n'apporte rien"
-        return [], ("pour les agents, la version du projet remplace la tienne dans ce projet : "
-                    "surcharge probablement voulue, rien n'est proposé")
+        return [], (
+            "pour les agents, la version du projet remplace la tienne dans ce projet : "
+            "surcharge probablement voulue, rien n'est proposé"
+        )
     mt = [m["file"].stat().st_mtime for m in members]
     best = max(range(len(members)), key=lambda i: (members[i]["lines"], mt[i]))
     if why == "DUP_EXACT":
-        return [i for i in range(len(members)) if i != best], "contenu identique : une seule copie suffit"
+        return [
+            i for i in range(len(members)) if i != best
+        ], "contenu identique : une seule copie suffit"
     if why == "DUP_NAME":
-        return [i for i in range(len(members)) if i != best], "même nom au même niveau : Claude n'en voit qu'un, garder le plus complet"
+        return [
+            i for i in range(len(members)) if i != best
+        ], "même nom au même niveau : Claude n'en voit qu'un, garder le plus complet"
     return [], "proches mais pas identiques : à toi de juger (rien n'est proposé par défaut)"
 
 
 class RestoreLog(list):
     """Undo commands, written to restore.sh as soon as each move happens (survives a crash)."""
+
     def __init__(self, script: Path) -> None:
         super().__init__()
         self.script = script
@@ -4048,7 +6624,10 @@ def _family_to_plugin(members: list[dict], name: str, policy: dict, restore: lis
 def interactive(rep: Report, repos: list[Path], policy: dict, user_scope: bool) -> int:
     t = Tty()
     if not sys.stdin.isatty():
-        print("\n-i a besoin d'un vrai terminal (pas d'un pipe) : relance-le directement dans ton shell.")
+        print(
+            "\n-i a besoin d'un vrai terminal (pas d'un pipe) : relance-le directement dans "
+            "ton shell."
+        )
         return 0
     cfg = config_dir()
     roots = ([cfg] if user_scope else []) + [r / ".claude" for r in repos]
@@ -4073,7 +6652,9 @@ def interactive(rep: Report, repos: list[Path], policy: dict, user_scope: bool) 
     for r in roots:
         for sk in sorted(r.glob("skills/*/SKILL.md")):
             meta, _ = split_frontmatter(read_text(sk) or "")
-            if len((meta or {}).get("description", "")) > limit and (meta or {}).get("disable-model-invocation", "").lower() not in ("true", "yes", "on", "1"):
+            if len((meta or {}).get("description", "")) > limit and (meta or {}).get(
+                "disable-model-invocation", ""
+            ).lower() not in ("true", "yes", "on", "1"):
                 if _writable(sk):
                     long_desc.append(sk)
                 else:
@@ -4088,9 +6669,23 @@ def interactive(rep: Report, repos: list[Path], policy: dict, user_scope: bool) 
     misc += [f for f in rep.findings if f.code == "GENERATE_USER_MCP"]
 
     sections = [
-        ("dups", f"Doublons chargés ensemble ({sum(1 for g in dups if g[0] != 'DUP_SIMILAR')} sûrs, {sum(1 for g in dups if g[0] == 'DUP_SIMILAR')} à juger)", len(dups)),
-        ("families", f"Familles générées ({len(families)}) : même modèle, noms différents", len(families)),
-        ("restructure", f"Restructurations ({len(props)}), ~{sum(p['gain'] for p in props)} tokens/session en jeu", len(props)),
+        (
+            "dups",
+            f"Doublons chargés ensemble ({sum(1 for g in dups if g[0] != 'DUP_SIMILAR')} "
+            f"sûrs, {sum(1 for g in dups if g[0] == 'DUP_SIMILAR')} à juger)",
+            len(dups),
+        ),
+        (
+            "families",
+            f"Familles générées ({len(families)}) : même modèle, noms différents",
+            len(families),
+        ),
+        (
+            "restructure",
+            f"Restructurations ({len(props)}), ~{sum(p['gain'] for p in props)} "
+            f"tokens/session en jeu",
+            len(props),
+        ),
         ("descriptions", f"Descriptions de skills trop longues ({len(long_desc)})", len(long_desc)),
         ("misc", f"Modèle par défaut et serveurs MCP ({len(misc)})", len(misc)),
     ]
@@ -4099,20 +6694,28 @@ def interactive(rep: Report, repos: list[Path], policy: dict, user_scope: bool) 
         print(f"\n{t.grn}Rien à revoir.{t.r}")
         return 0
     t.rule("REVUE INTERACTIVE")
-    print(f"Rien n'est supprimé : ce que tu retires part dans {t.cyan}{home_path(str(trash_root))}{t.r},")
+    print(
+        f"Rien n'est supprimé : ce que tu retires part dans "
+        f"{t.cyan}{home_path(str(trash_root))}{t.r},"
+    )
     print("et un script restore.sh annule toute la session. À chaque question : ? pour l'aide.\n")
     for i, (_, label, _) in enumerate(sections, 1):
         print(f"  {t.b}{i}{t.r}. {label}")
     pick = _ask("\nSections à revoir (ex. 1,3 ; Entrée = toutes ; q = quitter) : ")
     if pick.lower() == "q":
         return 0
-    chosen = [sections[int(x) - 1][0] for x in re.findall(r"\d+", pick) if 0 < int(x) <= len(sections)] or [s[0] for s in sections]
+    chosen = [
+        sections[int(x) - 1][0] for x in re.findall(r"\d+", pick) if 0 < int(x) <= len(sections)
+    ] or [s[0] for s in sections]
 
     # ---- duplicates
     if "dups" in chosen:
         t.rule(f"DOUBLONS ({_fr_plural(len(dups), 'groupe')})")
-        print(f"{t.dim}Un doublon, c'est deux éléments chargés dans la même session : Claude n'en utilise qu'un,\n"
-              f"ou hésite entre les deux. Les groupes sûrs viennent en premier.{t.r}")
+        print(
+            f"{t.dim}Un doublon, c'est deux éléments chargés dans la même session : Claude "
+            f"n'en utilise qu'un,\n"
+            f"ou hésite entre les deux. Les groupes sûrs viennent en premier.{t.r}"
+        )
         auto_all = False
         for n, (why, members) in enumerate(dups, 1):
             members = [m for m in members if Path(m["path"]).exists()]
@@ -4122,7 +6725,11 @@ def interactive(rep: Report, repos: list[Path], policy: dict, user_scope: bool) 
                 remove, reason = advice(why, members)
             except OSError:
                 continue
-            label = {"DUP_EXACT": "copies identiques", "DUP_NAME": "même nom", "DUP_SIMILAR": "quasi-doublons"}[why]
+            label = {
+                "DUP_EXACT": "copies identiques",
+                "DUP_NAME": "même nom",
+                "DUP_SIMILAR": "quasi-doublons",
+            }[why]
             # Once "apply to all" is on, don't reprint the full listing for every
             # group (dozens of identical project-vs-user pairs); one receipt line each.
             if auto_all and remove:
@@ -4130,10 +6737,15 @@ def interactive(rep: Report, repos: list[Path], policy: dict, user_scope: bool) 
                     if Path(members[k]["path"]).exists():
                         _trash(Path(members[k]["path"]), trash_root, restore)
                         count("doublons retirés")
-                        print(f"  {t.grn}✓{t.r} [{n}/{len(dups)}] {label} · {members[0]['name']} → "
-                              f"{t.dim}retiré {t.short(str(members[k]['path']), t.width - 24)}{t.r}")
+                        print(
+                            f"  {t.grn}✓{t.r} [{n}/{len(dups)}] {label} · {members[0]['name']} → "
+                            f"{t.dim}retiré {t.short(str(members[k]['path']), t.width - 24)}{t.r}"
+                        )
                 continue
-            print(f"\n{t.b}[{n}/{len(dups)}] {label}{t.r} · {_fr_plural(len(members), members[0]['kind'])}")
+            print(
+                f"\n{t.b}[{n}/{len(dups)}] {label}{t.r} · "
+                f"{_fr_plural(len(members), members[0]['kind'])}"
+            )
             descs = [m["desc"] for m in members]
             pre, suf = _affixes(descs)
             if len(pre) + len(suf) > 30:
@@ -4142,25 +6754,47 @@ def interactive(rep: Report, repos: list[Path], policy: dict, user_scope: bool) 
             for i, m in enumerate(members):
                 mark = f"{t.red}✗{t.r}" if i in remove else f"{t.grn}✓{t.r}"
                 mtime = dt.datetime.fromtimestamp(m["file"].stat().st_mtime).strftime("%d/%m/%y")
-                var = m["desc"][len(pre): len(m["desc"]) - len(suf) if suf else None] if len(pre) + len(suf) > 30 else m["desc"]
-                print(f"  {mark} {t.b}{i + 1:>2}{t.r} {m['name']:<{wname}}  {_scope_of(m):<11} {m['lines']:>4} l.  {mtime}  "
-                      f"{t.dim}{t.short(str(m['path']), t.width - wname - 40)}{t.r}")
+                var = (
+                    m["desc"][len(pre) : len(m["desc"]) - len(suf) if suf else None]
+                    if len(pre) + len(suf) > 30
+                    else m["desc"]
+                )
+                print(
+                    f"  {mark} {t.b}{i + 1:>2}{t.r} {m['name']:<{wname}}  {_scope_of(m):<11} "
+                    f"{m['lines']:>4} l.  {mtime}  "
+                    f"{t.dim}{t.short(str(m['path']), t.width - wname - 40)}{t.r}"
+                )
                 if var.strip():
                     print(f"       {t.dim}{var.strip()[: t.width - 8]}{t.r}")
-            print(f"  {t.yel}Conseil :{t.r} {reason}" + (f" → retirer {', '.join(str(i + 1) for i in remove)}" if remove else ""))
+            print(
+                f"  {t.yel}Conseil :{t.r} {reason}"
+                + (f" → retirer {', '.join(str(i + 1) for i in remove)}" if remove else "")
+            )
             if auto_all and remove:
                 ans = ""
             else:
                 default = "appliquer le conseil" if remove else "tout garder"
                 while True:
-                    ans = _ask(f"  Entrée = {default} · g = tout garder · 2,3 = retirer ces numéros · v2 = voir le n°2 · "
-                               f"A = conseil pour tous les groupes sûrs · s = passer · q = fin des doublons : ", "")
+                    ans = _ask(
+                        f"  Entrée = {default} · g = tout garder · 2,3 = retirer ces numéros "
+                        f"· v2 = voir le n°2 · "
+                        f"A = conseil pour tous les groupes sûrs · s = passer · q = fin des "
+                        f"doublons : ",
+                        "",
+                    )
                     low = ans.lower()
-                    if low.startswith("v") and low[1:].isdigit() and 0 < int(low[1:]) <= len(members):
+                    if (
+                        low.startswith("v")
+                        and low[1:].isdigit()
+                        and 0 < int(low[1:]) <= len(members)
+                    ):
                         _show_file(Path(members[int(low[1:]) - 1]["path"]), t)
                         continue
                     if ans == "?":
-                        print("  Retirer = déplacer dans la corbeille de la session (restore.sh pour annuler).")
+                        print(
+                            "  Retirer = déplacer dans la corbeille de la session "
+                            "(restore.sh pour annuler)."
+                        )
                         continue
                     break
             low = ans.lower()
@@ -4169,10 +6803,14 @@ def interactive(rep: Report, repos: list[Path], policy: dict, user_scope: bool) 
             if low in ("s", "g"):
                 count("groupes gardés tels quels")
                 continue
-            if ans == "A":              # apply the advice to every safe group from here on
+            if ans == "A":  # apply the advice to every safe group from here on
                 auto_all = True
                 ans = ""
-            targets = remove if ans == "" else [int(x) - 1 for x in re.findall(r"\d+", ans) if 0 < int(x) <= len(members)]
+            targets = (
+                remove
+                if ans == ""
+                else [int(x) - 1 for x in re.findall(r"\d+", ans) if 0 < int(x) <= len(members)]
+            )
             for k in targets:
                 if not Path(members[k]["path"]).exists():
                     continue
@@ -4185,9 +6823,13 @@ def interactive(rep: Report, repos: list[Path], policy: dict, user_scope: bool) 
     # ---- generated families
     if "families" in chosen:
         t.rule(f"FAMILLES GÉNÉRÉES ({len(families)})")
-        print(f"{t.dim}Ces éléments suivent le même modèle (seuls le nom ou le modèle d'IA changent) : ce ne sont pas des\n"
-              f"doublons. Ils coûtent des tokens à chaque requête ; si tu ne t'en sers que dans certains projets, un\n"
-              f"plugin à activer là-bas est plus léger.{t.r}")
+        print(
+            f"{t.dim}Ces éléments suivent le même modèle (seuls le nom ou le modèle d'IA "
+            f"changent) : ce ne sont pas des\n"
+            f"doublons. Ils coûtent des tokens à chaque requête ; si tu ne t'en sers que "
+            f"dans certains projets, un\n"
+            f"plugin à activer là-bas est plus léger.{t.r}"
+        )
         for n, (_, members) in enumerate(families, 1):
             members = [m for m in members if Path(m["path"]).exists()]
             if len(members) < 2:
@@ -4195,9 +6837,16 @@ def interactive(rep: Report, repos: list[Path], policy: dict, user_scope: bool) 
             names = [m["name"] for m in members]
             stem = os.path.commonprefix(names).rstrip("-_") or names[0]
             toks = sum((len(m["desc"]) + 40) // 4 for m in members)
-            print(f"\n{t.b}[{n}/{len(families)}] {stem}-*{t.r} · {_fr_plural(len(members), members[0]['kind'])} · ~{toks} tokens/session")
-            print("  " + ", ".join(nm[len(stem):].lstrip("-_") or nm for nm in names))
-            ans = _ask("  Entrée = garder · p = en faire un plugin · k = mettre de côté (parked/) · q = fin : ", "").lower()
+            print(
+                f"\n{t.b}[{n}/{len(families)}] {stem}-*{t.r} · "
+                f"{_fr_plural(len(members), members[0]['kind'])} · ~{toks} tokens/session"
+            )
+            print("  " + ", ".join(nm[len(stem) :].lstrip("-_") or nm for nm in names))
+            ans = _ask(
+                "  Entrée = garder · p = en faire un plugin · k = mettre de côté (parked/) "
+                "· q = fin : ",
+                "",
+            ).lower()
             if ans == "q":
                 break
             if ans == "p":
@@ -4239,11 +6888,15 @@ def interactive(rep: Report, repos: list[Path], policy: dict, user_scope: bool) 
                 ans = "y"
             else:
                 extra = " · k = mettre de côté" if k == "agent-pack" else ""
-                ans = _ask(f"  o = appliquer{extra} · Entrée = passer · A = appliquer tous les '{k}' · S = passer tous les '{k}' · q = fin : ", "")
-                if ans == "A":                # apply every proposal of this kind
+                ans = _ask(
+                    f"  o = appliquer{extra} · Entrée = passer · A = appliquer tous les "
+                    f"'{k}' · S = passer tous les '{k}' · q = fin : ",
+                    "",
+                )
+                if ans == "A":  # apply every proposal of this kind
                     accept_kind.add(k)
                     ans = "o"
-                elif ans == "S":              # skip every proposal of this kind
+                elif ans == "S":  # skip every proposal of this kind
                     skip_kind.add(k)
                     continue
             if ans.lower() == "q":
@@ -4265,10 +6918,16 @@ def interactive(rep: Report, repos: list[Path], policy: dict, user_scope: bool) 
     # ---- long descriptions
     if "descriptions" in chosen:
         t.rule(f"DESCRIPTIONS TROP LONGUES ({len(long_desc)})")
-        print(f"{t.dim}La description de chaque skill est relue à chaque tour. Version courte proposée ; le texte complet\n"
-              f"reste dans metadata.full_description.{t.r}")
+        print(
+            f"{t.dim}La description de chaque skill est relue à chaque tour. Version courte "
+            f"proposée ; le texte complet\n"
+            f"reste dans metadata.full_description.{t.r}"
+        )
         if long_desc_ro:
-            print(f"{t.dim}({_fr_plural(long_desc_ro, 'skill')} en lecture seule ignoré{'s' if long_desc_ro > 1 else ''} : liens vers un store synchronisé.){t.r}")
+            print(
+                f"{t.dim}({_fr_plural(long_desc_ro, 'skill')} en lecture seule "
+                f"ignoré{'s' if long_desc_ro > 1 else ''} : liens vers un store synchronisé.){t.r}"
+            )
         for n, sk in enumerate(long_desc, 1):
             text = read_text(sk) or ""
             desc = (split_frontmatter(text)[0] or {}).get("description", "")
@@ -4279,7 +6938,10 @@ def interactive(rep: Report, repos: list[Path], policy: dict, user_scope: bool) 
                 short.append(s)
                 acc += len(s) + 1
             proposal = " ".join(short)[:limit]
-            print(f"\n{t.b}[{n}/{len(long_desc)}] {sk.parent.name}{t.r} {t.dim}{len(desc)} → {len(proposal)} caractères{t.r}")
+            print(
+                f"\n{t.b}[{n}/{len(long_desc)}] {sk.parent.name}{t.r} {t.dim}{len(desc)} → "
+                f"{len(proposal)} caractères{t.r}"
+            )
             print(f"  {t.dim}avant :{t.r} {desc[:200]}{'…' if len(desc) > 200 else ''}")
             print(f"  {t.grn}après :{t.r} {proposal}")
             ans = _ask("  o = appliquer · Entrée = passer · q = fin : ", "").lower()
@@ -4287,7 +6949,9 @@ def interactive(rep: Report, repos: list[Path], policy: dict, user_scope: bool) 
                 break
             if ans == "o":
                 new = set_frontmatter(text, {"description": proposal})
-                new = move_to_metadata(set_frontmatter(new, {"full_description": desc}), ["full_description"])
+                new = move_to_metadata(
+                    set_frontmatter(new, {"full_description": desc}), ["full_description"]
+                )
                 try:
                     backup([sk])
                     sk.write_text(new, encoding="utf-8")
@@ -4301,13 +6965,23 @@ def interactive(rep: Report, repos: list[Path], policy: dict, user_scope: bool) 
         t.rule("MODÈLE ET MCP")
         for item in misc:
             if item == "model":
-                print(f"Modèle par défaut : {t.b}{udata['model']}{t.r}. Opus sert à chaque session et aux subagents qui en héritent.")
-                if _ask("  o = passer à Sonnet par défaut (/model opus quand il le faut) · Entrée = garder : ", "").lower() == "o":
+                print(
+                    f"Modèle par défaut : {t.b}{udata['model']}{t.r}. Opus sert à chaque "
+                    f"session et aux subagents qui en héritent."
+                )
+                if (
+                    _ask(
+                        "  o = passer à Sonnet par défaut (/model opus quand il le faut) · "
+                        "Entrée = garder : ",
+                        "",
+                    ).lower()
+                    == "o"
+                ):
                     backup([cfg / "settings.json"])
                     udata["model"] = "sonnet"
                     (cfg / "settings.json").write_text(dump_json(udata), encoding="utf-8")
                     count("modèle changé")
-            elif (m := re.search(r"(claude mcp add .+)$", item.message)):
+            elif m := re.search(r"(claude mcp add .+)$", item.message):
                 print(f"Serveur MCP proposé : {t.b}{m.group(1)}{t.r}")
                 if _ask("  o = lancer la commande · Entrée = passer : ", "").lower() == "o":
                     subprocess.run(shlex.split(m.group(1)), check=False)
@@ -4321,8 +6995,10 @@ def interactive(rep: Report, repos: list[Path], policy: dict, user_scope: bool) 
     else:
         print("  aucune modification")
     if restore:
-        print(f"\n  Pour tout annuler : {t.cyan}{home_path(str(restore.script))}{t.r}"
-              f"  (ou : claude-lint.py --restore)")
+        print(
+            f"\n  Pour tout annuler : {t.cyan}{home_path(str(restore.script))}{t.r}"
+            f"  (ou : claude-lint.py --restore)"
+        )
     return sum(v for k, v in done.items() if "gardés" not in k)
 
 
@@ -4331,7 +7007,10 @@ def restore_trash(target: str | None) -> int:
     Returns 1 when the requested session is missing or nothing could be restored."""
     # Also read trash written under the tool's former name, so sessions from before
     # the rename stay restorable.
-    bases = [Path(os.path.expanduser(p)) for p in ("~/.cache/claude-lint/trash", "~/.cache/agent-config-lint/trash")]
+    bases = [
+        Path(os.path.expanduser(p))
+        for p in ("~/.cache/claude-lint/trash", "~/.cache/agent-config-lint/trash")
+    ]
     sessions = sorted(d for b in bases if b.is_dir() for d in b.iterdir() if d.is_dir())
     if target:
         root = Path(target).expanduser()
@@ -4370,8 +7049,13 @@ def restore_trash(target: str | None) -> int:
         parts.append(_fr_plural(failed, "échec"))
     print(f"Session {root.name} : " + ", ".join(parts) + ".")
     if len(sessions) > 1 and not target:
-        print("Autres sessions : " + ", ".join(s.name for s in sessions[:-1]) + " (--restore <dossier>)")
+        print(
+            "Autres sessions : "
+            + ", ".join(s.name for s in sessions[:-1])
+            + " (--restore <dossier>)"
+        )
     return 1 if (moved == 0 and failed) else 0
+
 
 # --------------------------------------------------------------------------- #
 # Attribution traces
@@ -4386,16 +7070,41 @@ def hooks_dir(repo: Path) -> Path:
 def check_attribution(repo: Path, policy: dict, rep: Report, history: bool) -> None:
     pol = policy["attribution"]
     exts = set(pol["scan_extensions"])
-    skip = {".git", "node_modules", ".venv", "venv", "dist", "build", "__pycache__", "Library",
-            "Temp", ".mypy_cache", ".ruff_cache", ".cache", ".next", ".nuxt", ".svelte-kit",
-            "coverage", "target", "vendor", ".terraform", ".gradle", ".tox", "Pods", ".obj"}
+    skip = {
+        ".git",
+        "node_modules",
+        ".venv",
+        "venv",
+        "dist",
+        "build",
+        "__pycache__",
+        "Library",
+        "Temp",
+        ".mypy_cache",
+        ".ruff_cache",
+        ".cache",
+        ".next",
+        ".nuxt",
+        ".svelte-kit",
+        "coverage",
+        "target",
+        "vendor",
+        ".terraform",
+        ".gradle",
+        ".tox",
+        "Pods",
+        ".obj",
+    }
     self_path = Path(__file__).resolve()
     self_name = self_path.name
     max_bytes = pol["max_file_bytes"]
     scanned = skipped = 0
     for dirpath, dirnames, filenames in os.walk(repo):
-        dirnames[:] = [d for d in dirnames if d not in skip
-                       and not (d == "worktrees" and Path(dirpath).name == ".claude")]
+        dirnames[:] = [
+            d
+            for d in dirnames
+            if d not in skip and not (d == "worktrees" and Path(dirpath).name == ".claude")
+        ]
         for fn in filenames:
             # Suffix check first (a string test), and resolve() only for a file
             # whose name could be this script: resolve() is a syscall per file and
@@ -4424,9 +7133,19 @@ def check_attribution(repo: Path, policy: dict, rep: Report, history: bool) -> N
             bad = [i for i, line in enumerate(text.splitlines(), 1) if _is_attribution(line)]
             if bad:
                 rel_parts = p.relative_to(repo).parts
-                agent_file = (rel_parts[0] == ".claude" or p.name in ("CLAUDE.md", "AGENTS.md", "CLAUDE.local.md"))
-                rep.add("error", "ATTR_TRACE", f"{p}:{bad[0]}", f"assistant attribution on {len(bad)} line(s)"
-                        + (" (lines removed)" if agent_file else ""), agent_file)
+                agent_file = rel_parts[0] == ".claude" or p.name in (
+                    "CLAUDE.md",
+                    "AGENTS.md",
+                    "CLAUDE.local.md",
+                )
+                rep.add(
+                    "error",
+                    "ATTR_TRACE",
+                    f"{p}:{bad[0]}",
+                    f"assistant attribution on {len(bad)} line(s)"
+                    + (" (lines removed)" if agent_file else ""),
+                    agent_file,
+                )
                 if agent_file:
                     kept = [l for l in text.splitlines(True) if not _is_attribution(l)]
                     rep.edit(p, text, "".join(kept))
@@ -4438,11 +7157,19 @@ def check_attribution(repo: Path, policy: dict, rep: Report, history: bool) -> N
         out = git(repo, "log", f"-n{pol['scan_history_commits']}", "--format=%H%x00%B%x01")
         entries = [e for e in (out or "").split("\x01") if "\x00" in e]
         log(1, f"history: {len(entries)} commit(s) scanned", 1)
-        tainted = [e.strip().split("\x00", 1)[0][:10] for e in entries
-                   if any(p.search(e.split("\x00", 1)[1]) for p in ATTRIBUTION_PATTERNS)]
+        tainted = [
+            e.strip().split("\x00", 1)[0][:10]
+            for e in entries
+            if any(p.search(e.split("\x00", 1)[1]) for p in ATTRIBUTION_PATTERNS)
+        ]
         if tainted:
-            rep.add("info", "ATTR_HISTORY", repo, f"{len(tainted)} of the last {len(entries)} commits carry attribution "
-                    f"(e.g. {tainted[0]}); rewriting published history is your decision")
+            rep.add(
+                "info",
+                "ATTR_HISTORY",
+                repo,
+                f"{len(tainted)} of the last {len(entries)} commits carry attribution "
+                f"(e.g. {tainted[0]}); rewriting published history is your decision",
+            )
     hook = hooks_dir(repo) / "commit-msg"
     log(1, f"commit-msg hook: {hook} ({'present' if hook.exists() else 'absent'})", 1)
     precommit = read_text(repo / ".pre-commit-config.yaml") or ""
@@ -4450,15 +7177,24 @@ def check_attribution(repo: Path, policy: dict, rep: Report, history: bool) -> N
     # Recognise the guard by what it does, not by which tool wrote it: any hook that
     # strips a Co-Authored-By / Generated-with trailer counts (covers hooks installed
     # under this tool's former name too).
-    strips = bool(hook_text) and (HOOK_SIGNATURE in hook_text
-                                  or re.search(r"[Cc]o-[Aa]uthored-[Bb]y|[Gg]enerated with|attribution", hook_text))
+    strips = bool(hook_text) and (
+        HOOK_SIGNATURE in hook_text
+        or re.search(r"[Cc]o-[Aa]uthored-[Bb]y|[Gg]enerated with|attribution", hook_text)
+    )
     guarded = strips or ("commit-msg" in precommit and "attribution" in precommit.lower())
     if guarded:
         return
     if hook.exists():
-        rep.add("warn", "ATTR_HOOK_CONFLICT", hook, "existing commit-msg hook without attribution stripping")
+        rep.add(
+            "warn",
+            "ATTR_HOOK_CONFLICT",
+            hook,
+            "existing commit-msg hook without attribution stripping",
+        )
     elif pol["install_commit_msg_hook"]:
-        rep.add("warn", "ATTR_HOOK_MISSING", repo, "no commit-msg guard stripping attribution", True)
+        rep.add(
+            "warn", "ATTR_HOOK_MISSING", repo, "no commit-msg guard stripping attribution", True
+        )
         rep.new_files[hook] = (COMMIT_MSG_HOOK, 0o755)
 
 
@@ -4471,7 +7207,11 @@ def detect_commands(repo: Path) -> str:
     cmds: list[str] = []
     mk = read_text(repo / "Makefile") or ""
     targets = re.findall(r"^([a-zA-Z][\w-]*):(?!=)", mk, re.M)
-    cmds += [f"- `make {t}`" for t in ("up", "down", "build", "test", "lint", "fmt", "run", "dev") if t in targets]
+    cmds += [
+        f"- `make {t}`"
+        for t in ("up", "down", "build", "test", "lint", "fmt", "run", "dev")
+        if t in targets
+    ]
     pkg = read_text(repo / "package.json")
     if pkg:
         try:
@@ -4492,37 +7232,85 @@ def scaffold_project(repo: Path, policy: dict, rep: Report) -> None:
         ask = [f"Bash({p} *)" for p in perms["external_action_prefixes"]]
         if perms["require_rtk"] and perms.get("rtk_twin_deny", True):
             ask += [t for r in ask if (t := rtk_twin(r, perms["rtk_exempt"]))]
-        data = {"$schema": pol["schema_url"], "attribution": {"commit": "", "pr": ""},
-                "permissions": {"ask": ask, "deny": list(perms["required_deny"])}}
-        rep.add("warn", "SCAFFOLD_SETTINGS", settings, "missing project settings (baseline created)", True)
+        data = {
+            "$schema": pol["schema_url"],
+            "attribution": {"commit": "", "pr": ""},
+            "permissions": {"ask": ask, "deny": list(perms["required_deny"])},
+        }
+        rep.add(
+            "warn",
+            "SCAFFOLD_SETTINGS",
+            settings,
+            "missing project settings (baseline created)",
+            True,
+        )
         rep.new_files[settings] = (dump_json(data), 0o644)
     if not pol["instructions"]:
         return
     agents, claude = repo / "AGENTS.md", repo / "CLAUDE.md"
     if (repo / policy["instructions"]["doctrine_dir"]).is_dir():
-        missing = [f for f in policy["instructions"]["rendered_files"][:2] if not (repo / f).exists()]
+        missing = [
+            f for f in policy["instructions"]["rendered_files"][:2] if not (repo / f).exists()
+        ]
         if missing:
-            rep.add("warn", "SCAFFOLD_RENDER_MISSING", repo, f"doctrine source present but {', '.join(missing)} not rendered")
+            rep.add(
+                "warn",
+                "SCAFFOLD_RENDER_MISSING",
+                repo,
+                f"doctrine source present but {', '.join(missing)} not rendered",
+            )
         return
     has_claude = claude.exists() or (repo / ".claude/CLAUDE.md").exists()
     has_agents = agents.exists() or (repo / ".claude/AGENTS.md").exists()
     if not has_claude and not has_agents:
-        rep.add("warn", "SCAFFOLD_INSTRUCTIONS", repo, "no agent instructions (AGENTS.md skeleton created)", True)
-        rep.new_files[agents] = (AGENTS_SKELETON.format(name=repo.name, commands=detect_commands(repo)), 0o644)
+        rep.add(
+            "warn",
+            "SCAFFOLD_INSTRUCTIONS",
+            repo,
+            "no agent instructions (AGENTS.md skeleton created)",
+            True,
+        )
+        rep.new_files[agents] = (
+            AGENTS_SKELETON.format(name=repo.name, commands=detect_commands(repo)),
+            0o644,
+        )
         if policy["instructions"]["claude_md_import"]:
-            extra = COMPACT_SECTION if policy.get("tokens", {}).get("compact_instructions", True) else ""
+            extra = (
+                COMPACT_SECTION
+                if policy.get("tokens", {}).get("compact_instructions", True)
+                else ""
+            )
             rep.new_files[claude] = ("@AGENTS.md\n" + extra, 0o644)
-    elif has_agents and not has_claude and policy["instructions"]["claude_md_import"] \
-            and not (repo / "CLAUDE.local.md").exists():
-        rep.add("info", "SCAFFOLD_CLAUDE_IMPORT", repo, "AGENTS.md without CLAUDE.md (import created)", True)
+    elif (
+        has_agents
+        and not has_claude
+        and policy["instructions"]["claude_md_import"]
+        and not (repo / "CLAUDE.local.md").exists()
+    ):
+        rep.add(
+            "info",
+            "SCAFFOLD_CLAUDE_IMPORT",
+            repo,
+            "AGENTS.md without CLAUDE.md (import created)",
+            True,
+        )
         rep.new_files[claude] = ("@AGENTS.md\n", 0o644)
 
 
 def scaffold_user(policy: dict, rep: Report) -> None:
     settings = config_dir() / "settings.json"
     if policy["scaffold"]["user_settings"] and not settings.exists():
-        data = {"$schema": policy["scaffold"]["schema_url"], "attribution": {"commit": "", "pr": ""}}
-        rep.add("warn", "SCAFFOLD_USER_SETTINGS", settings, "missing user settings (baseline created)", True)
+        data = {
+            "$schema": policy["scaffold"]["schema_url"],
+            "attribution": {"commit": "", "pr": ""},
+        }
+        rep.add(
+            "warn",
+            "SCAFFOLD_USER_SETTINGS",
+            settings,
+            "missing user settings (baseline created)",
+            True,
+        )
         rep.new_files[settings] = (dump_json(data), 0o644)
 
 
@@ -4568,7 +7356,12 @@ def lint_repo(repo: Path, policy: dict, rep: Report, history: bool, user_text: s
         except (json.JSONDecodeError, AttributeError):
             pass
     if user_mode and project_perms:
-        rep.add("info", "SETTINGS_BUG_55507", repo, f"user defaultMode={user_mode} may be dropped by this project's permissions block")
+        rep.add(
+            "info",
+            "SETTINGS_BUG_55507",
+            repo,
+            f"user defaultMode={user_mode} may be dropped by this project's permissions block",
+        )
     check_mcp(repo / ".mcp.json", rep, policy)
     check_agent_assets(dot, policy, rep, "project", repo)
     check_output_styles(dot, rep)
@@ -4579,8 +7372,14 @@ def lint_repo(repo: Path, policy: dict, rep: Report, history: bool, user_text: s
     check_workflows(repo, rep)
     check_repo_secrets(repo, rep)
     texts = []
-    for rel in ["CLAUDE.md", ".claude/CLAUDE.md", "AGENTS.md", ".claude/AGENTS.md", "CLAUDE.local.md",
-                *policy["instructions"]["rendered_files"][2:]]:
+    for rel in [
+        "CLAUDE.md",
+        ".claude/CLAUDE.md",
+        "AGENTS.md",
+        ".claude/AGENTS.md",
+        "CLAUDE.local.md",
+        *policy["instructions"]["rendered_files"][2:],
+    ]:
         t = check_instruction_file(repo / rel, "project", policy, rep, repo)
         if t:
             texts.append(t)
@@ -4588,11 +7387,18 @@ def lint_repo(repo: Path, policy: dict, rep: Report, history: bool, user_text: s
     check_rendered(repo, policy, rep)
     if user_text and texts:
         min_len = policy["instructions"]["min_duplicate_line_len"]
-        norm = lambda t: {l.strip().lower() for l in strip_code(t).splitlines() if len(l.strip()) >= min_len}
+        norm = lambda t: {
+            l.strip().lower() for l in strip_code(t).splitlines() if len(l.strip()) >= min_len
+        }
         dup = norm(user_text) & set().union(*(norm(t) for t in texts))
         log(1, f"{len(dup)} line(s) shared with user instructions", 1)
         if len(dup) >= 3:
-            rep.add("warn", "INSTR_DUPLICATED", repo, f"{len(dup)} lines repeated from user instructions")
+            rep.add(
+                "warn",
+                "INSTR_DUPLICATED",
+                repo,
+                f"{len(dup)} lines repeated from user instructions",
+            )
     check_attribution(repo, policy, rep, history)
 
 
@@ -4609,7 +7415,11 @@ def discover_repos(root: Path, max_depth: int = 3) -> list[Path]:
             dirnames[:] = []
             continue
         depth = len(p.parts) - base
-        dirnames[:] = [d for d in dirnames if d not in skip and not d.startswith(".")] if depth < max_depth else []
+        dirnames[:] = (
+            [d for d in dirnames if d not in skip and not d.startswith(".")]
+            if depth < max_depth
+            else []
+        )
     if found:
         log(1, f"{root} is not a git repository: {len(found)} repositories found below it")
         return sorted(found)
@@ -4621,7 +7431,9 @@ def run_lint(repos: list[Path], policy: dict, args: argparse.Namespace, history:
     user_text = lint_user(policy, rep, repos) if (args.user or args.user_only) else None
     check_rtk(policy, rep, repos, bool(args.user or args.user_only))
     check_llmtrim(rep, repos, bool(args.user or args.user_only))
-    rep.budget = token_budget(repos[0] if repos else None, bool(args.user or args.user_only), policy, rep)
+    rep.budget = token_budget(
+        repos[0] if repos else None, bool(args.user or args.user_only), policy, rep
+    )
     user_roots = [config_dir()] if (args.user or args.user_only) else []
     dup_roots = user_roots + [r / ".claude" for r in repos]
     check_duplicates(user_roots, [r / ".claude" for r in repos], rep)
@@ -4643,8 +7455,9 @@ def run_lint(repos: list[Path], policy: dict, args: argparse.Namespace, history:
         log(1, f"{r}: {len(rep.findings) - before} finding(s) in {time.perf_counter() - t0:.2f}s")
     progress(len(repos), len(repos), "done")
     if isinstance(rep.budget, dict):
-        rep.budget["potential"] = (sum(_finding_gain(f) for f in rep.findings)
-                                   + sum(p["gain"] for p in rep.proposals))
+        rep.budget["potential"] = sum(_finding_gain(f) for f in rep.findings) + sum(
+            p["gain"] for p in rep.proposals
+        )
     return rep
 
 
@@ -4652,8 +7465,15 @@ def log_dir() -> Path:
     return Path(os.path.expanduser("~/.cache/claude-lint/logs"))
 
 
-def write_run_log(argv: list[str], repos: list[Path], rep: Report, fixed: list,
-                  applied: list[str], elapsed: float, code: int) -> None:
+def write_run_log(
+    argv: list[str],
+    repos: list[Path],
+    rep: Report,
+    fixed: list,
+    applied: list[str],
+    elapsed: float,
+    code: int,
+) -> None:
     """Append one JSON line per run to ~/.cache/claude-lint/logs/<date>.log.
     Best-effort: a logging failure never affects the run's exit code, and no file
     contents or secrets are recorded, only counts and finding codes."""
@@ -4663,10 +7483,18 @@ def write_run_log(argv: list[str], repos: list[Path], rep: Report, fixed: list,
         codes: dict[str, int] = {}
         for f in rep.findings:
             codes[f.code] = codes.get(f.code, 0) + 1
-        record = {"ts": dt.datetime.now().isoformat(timespec="seconds"), "version": VERSION,
-                  "args": argv, "repos": len(repos), "elapsed_s": round(elapsed, 2),
-                  "findings": {lvl: rep.count(lvl) for lvl in LEVELS}, "fixed": len(fixed),
-                  "applied": len(applied), "exit": code, "codes": codes}
+        record = {
+            "ts": dt.datetime.now().isoformat(timespec="seconds"),
+            "version": VERSION,
+            "args": argv,
+            "repos": len(repos),
+            "elapsed_s": round(elapsed, 2),
+            "findings": {lvl: rep.count(lvl) for lvl in LEVELS},
+            "fixed": len(fixed),
+            "applied": len(applied),
+            "exit": code,
+            "codes": codes,
+        }
         with (d / f"{dt.date.today().isoformat()}.log").open("a", encoding="utf-8") as fh:
             fh.write(json.dumps(record, ensure_ascii=False) + "\n")
     except OSError as e:
@@ -4762,15 +7590,30 @@ def _finding_gain(f: Finding) -> int:
     if f.code == "TOKEN_SKILL_DESC":  # the listing description is re-sent every turn
         m = re.search(r"(\d+)\s*chars", f.message)
         return max(0, (int(m.group(1)) - 400) // 4) if m else 0
-    if f.code in ("RULE_UNSCOPED", "DUP_EXACT", "DUP_NAME", "DUP_SIMILAR", "DUP_ACROSS_PROJECTS", "DUP_FAMILY"):
+    if f.code in (
+        "RULE_UNSCOPED",
+        "DUP_EXACT",
+        "DUP_NAME",
+        "DUP_SIMILAR",
+        "DUP_ACROSS_PROJECTS",
+        "DUP_FAMILY",
+    ):
         return 60  # small per-item listing cost removed
     # SKILL_LONG is deliberately 0: a skill body is loaded on demand, not every
     # session, so splitting it does not reduce per-session tokens.
     return 0
 
 
-def render_text(rep: Report, fix: bool, color: bool, quiet: bool, fixed: list[Finding],
-                applied: list[str], failures: list[tuple[str, str]], backups: list[str]) -> str:
+def render_text(
+    rep: Report,
+    fix: bool,
+    color: bool,
+    quiet: bool,
+    fixed: list[Finding],
+    applied: list[str],
+    failures: list[tuple[str, str]],
+    backups: list[str],
+) -> str:
     out: list[str] = []
     g, r0, dim = ("\033[32m", "\033[0m", "\033[2m") if color else ("", "", "")
     if fix and applied and not quiet:
@@ -4784,7 +7627,9 @@ def render_text(rep: Report, fix: bool, color: bool, quiet: bool, fixed: list[Fi
         if fix and rep.findings:
             out.append("== Remaining findings (details)")
         lvl_c = {k: (COLORS[k] if color else "") for k in LEVELS}
-        for kind, items in grouped_findings([f for f in rep.findings if not quiet or f.level == "error"]):
+        for kind, items in grouped_findings(
+            [f for f in rep.findings if not quiet or f.level == "error"]
+        ):
             if kind == "group":
                 out += render_group(items, lvl_c, r0, indent="", mark="")
                 f = items[0]
@@ -4793,10 +7638,13 @@ def render_text(rep: Report, fix: bool, color: bool, quiet: bool, fixed: list[Fi
                 tag = f"{COLORS[f.level] if color else ''}{f.level.upper():5}{r0}"
                 gain = sum(_finding_gain(x) for x in items) if kind == "group" else _finding_gain(f)
                 gtxt = f"{dim} · ~{gain} tokens/session{r0}" if gain else ""
-                out.append(f"{tag} {f.code:24} {short_path(f.path)}\n      {f.message}{' [fixable]' if f.fixable else ''}{gtxt}")
+                out.append(
+                    f"{tag} {f.code:24} {short_path(f.path)}\n      "
+                    f"{f.message}{' [fixable]' if f.fixable else ''}{gtxt}"
+                )
             action = _action_for(f.code)
             if action:
-                out.append(f"{g}      {_L('→ solution', '→ fix')} : {r0}{action}")
+                out.append(f"{g}      {_loc('→ solution', '→ fix')} : {r0}{action}")
             if VERBOSITY >= 1 and f.code in HINTS:
                 why, ref = HINTS[f.code]
                 if not _action_for(f.code) or ref:
@@ -4804,13 +7652,30 @@ def render_text(rep: Report, fix: bool, color: bool, quiet: bool, fixed: list[Fi
         total_gain = sum(_finding_gain(f) for f in rep.findings)
         props_gain = sum(p["gain"] for p in getattr(rep, "proposals", []))
         if total_gain or props_gain:
-            out.append(f"{g}Potential savings: ~{total_gain + props_gain} tokens/session{r0} "
-                       f"{dim}(~{total_gain} from findings + ~{props_gain} from restructurings; acted on with --fix / -i){r0}")
+            out.append(
+                f"{g}Potential savings: ~{total_gain + props_gain} tokens/session{r0} "
+                f"{dim}(~{total_gain} from findings + ~{props_gain} from restructurings; "
+                f"acted on with --fix / -i){r0}"
+            )
     if not fix and not quiet:
         for p, (old, new) in rep.edits.items():
-            out.append(redact("".join(difflib.unified_diff(old.splitlines(True), new.splitlines(True), f"a{p}", f"b{p}"))))
+            out.append(
+                redact(
+                    "".join(
+                        difflib.unified_diff(
+                            old.splitlines(True), new.splitlines(True), f"a{p}", f"b{p}"
+                        )
+                    )
+                )
+            )
         for p, (content, _) in rep.new_files.items():
-            out.append(redact("".join(difflib.unified_diff([], content.splitlines(True), "/dev/null", f"b{p}"))))
+            out.append(
+                redact(
+                    "".join(
+                        difflib.unified_diff([], content.splitlines(True), "/dev/null", f"b{p}")
+                    )
+                )
+            )
         out += [f"chmod +x {p}" for p in rep.chmods]
         out += [f"mv {short_path(str(s))} {short_path(str(d))}" for s, d in rep.moves]
     out.append(render_summary(rep, fix, color, quiet, fixed, applied, failures, backups))
@@ -4820,7 +7685,7 @@ def render_text(rep: Report, fix: bool, color: bool, quiet: bool, fixed: list[Fi
 def short_path(p: str) -> str:
     try:
         rel = os.path.relpath(p.split(":")[0] if re.search(r":\d+$", p) else p)
-        rel = rel + p[len(p.split(":")[0]):] if re.search(r":\d+$", p) else rel
+        rel = rel + p[len(p.split(":")[0]) :] if re.search(r":\d+$", p) else rel
         return rel if not rel.startswith("../../..") else p
     except ValueError:
         return p
@@ -4828,17 +7693,46 @@ def short_path(p: str) -> str:
 
 GROUP_THRESHOLD = 5
 SHOW_ALL = False
-CATEGORIES = [("PERM_", "permissions"), ("HOOK_", "hooks"), ("HELPER_", "hooks"), ("SKILL_", "skills"),
-              ("COMMAND_", "skills"), ("AGENT_", "subagents"), ("MCP_", "mcp"), ("DESKTOP_", "mcp"),
-              ("RTK_", "rtk"), ("TOKEN_", "tokens"), ("ATTR_", "attribution"), ("INSTR_", "instructions"),
-              ("IMPORT_", "instructions"), ("AGENTS_", "instructions"), ("RULE_", "instructions"),
-              ("MEMORY_", "instructions"), ("RENDER_", "instructions"), ("LOCAL_MD", "instructions"),
-              ("FRONTMATTER_", "instructions"), ("SECRET_", "secrets"), ("API_KEY", "secrets"),
-              ("CI_", "ci"), ("PLUGIN_", "plugins"), ("MARKETPLACE", "plugins"), ("ENABLED_PLUGINS", "plugins"),
-              ("OUTPUT_", "plugins"), ("SETTINGS_", "settings"), ("JSON_", "settings"), ("LOCAL_NOT", "settings"),
-              ("KEYBINDINGS", "settings"), ("MANAGED_", "settings"), ("MISPLACED", "files"), ("CLAUDEIGNORE", "files"),
-              ("GENERATE", "generation"), ("SCAFFOLD_", "generation"), ("USER_SCOPE", "settings"), ("DUP_", "duplicates"),
-              ("WRITE_", "files")]
+CATEGORIES = [
+    ("PERM_", "permissions"),
+    ("HOOK_", "hooks"),
+    ("HELPER_", "hooks"),
+    ("SKILL_", "skills"),
+    ("COMMAND_", "skills"),
+    ("AGENT_", "subagents"),
+    ("MCP_", "mcp"),
+    ("DESKTOP_", "mcp"),
+    ("RTK_", "rtk"),
+    ("TOKEN_", "tokens"),
+    ("ATTR_", "attribution"),
+    ("INSTR_", "instructions"),
+    ("IMPORT_", "instructions"),
+    ("AGENTS_", "instructions"),
+    ("RULE_", "instructions"),
+    ("MEMORY_", "instructions"),
+    ("RENDER_", "instructions"),
+    ("LOCAL_MD", "instructions"),
+    ("FRONTMATTER_", "instructions"),
+    ("SECRET_", "secrets"),
+    ("API_KEY", "secrets"),
+    ("CI_", "ci"),
+    ("PLUGIN_", "plugins"),
+    ("MARKETPLACE", "plugins"),
+    ("ENABLED_PLUGINS", "plugins"),
+    ("OUTPUT_", "plugins"),
+    ("SETTINGS_", "settings"),
+    ("JSON_", "settings"),
+    ("LOCAL_NOT", "settings"),
+    ("KEYBINDINGS", "settings"),
+    ("MANAGED_", "settings"),
+    ("MISPLACED", "files"),
+    ("CLAUDEIGNORE", "files"),
+    ("GENERATE", "generation"),
+    ("SCAFFOLD_", "generation"),
+    ("USER_SCOPE", "settings"),
+    ("DUP_", "duplicates"),
+    ("WRITE_", "files"),
+]
 
 
 def category(code: str) -> str:
@@ -4852,7 +7746,9 @@ def grouped_findings(findings: list[Finding]) -> list[tuple[str, list[Finding]]]
         by.setdefault((f.level, f.code), []).append(f)
     order = {lvl: i for i, lvl in enumerate(LEVELS)}
     out: list[tuple[str, list[Finding]]] = []
-    for (_lvl, _code), items in sorted(by.items(), key=lambda kv: (order[kv[0][0]], -len(kv[1]), kv[0][1])):
+    for (_lvl, _code), items in sorted(
+        by.items(), key=lambda kv: (order[kv[0][0]], -len(kv[1]), kv[0][1])
+    ):
         if SHOW_ALL or len(items) <= GROUP_THRESHOLD:
             out += [("one", [f]) for f in sorted(items, key=lambda f: f.path)]
         else:
@@ -4860,7 +7756,9 @@ def grouped_findings(findings: list[Finding]) -> list[tuple[str, list[Finding]]]
     return out
 
 
-def render_group(items: list[Finding], lvl_color: dict, r0: str, indent: str = "  ", mark: str = "✘ ") -> list[str]:
+def render_group(
+    items: list[Finding], lvl_color: dict, r0: str, indent: str = "  ", mark: str = "✘ "
+) -> list[str]:
     f0 = items[0]
     msgs: dict[str, int] = {}
     for f in items:
@@ -4868,58 +7766,99 @@ def render_group(items: list[Finding], lvl_color: dict, r0: str, indent: str = "
     common, n_common = max(msgs.items(), key=lambda kv: kv[1])
     files = sorted({short_path(f.path) for f in items})
     fixable = sum(1 for f in items if f.fixable)
-    return [f"{indent}{lvl_color[f0.level]}{mark}{f0.level.upper():5}{r0} {f0.code:24} x{len(items)}"
-            + (f"  ({fixable} fixable)" if fixable else ""),
-            f"{indent}        most common ({n_common}): {items[0].message if len(msgs) == 1 else common}",
-            f"{indent}        in: {', '.join(files[:3])}" + (f" +{len(files) - 3} more" if len(files) > 3 else "")
-            + ("  (--all to list every one)" if not SHOW_ALL else "")]
+    return [
+        f"{indent}{lvl_color[f0.level]}{mark}{f0.level.upper():5}{r0} {f0.code:24} x{len(items)}"
+        + (f"  ({fixable} fixable)" if fixable else ""),
+        f"{indent}        most common ({n_common}): "
+        f"{items[0].message if len(msgs) == 1 else common}",
+        f"{indent}        in: {', '.join(files[:3])}"
+        + (f" +{len(files) - 3} more" if len(files) > 3 else "")
+        + ("  (--all to list every one)" if not SHOW_ALL else ""),
+    ]
 
 
 def render_stats(rep: Report, first: Report | None, fixed: list[Finding], color: bool) -> str:
     b, r0 = ("\033[1m", "\033[0m") if color else ("", "")
     lines = [f"{b}STATS{r0}"]
     if rep.stats:
-        lines.append("  checked: " + ", ".join(f"{v} {k}" for k, v in sorted(rep.stats.items(), key=lambda kv: -kv[1])))
+        lines.append(
+            "  checked: "
+            + ", ".join(f"{v} {k}" for k, v in sorted(rep.stats.items(), key=lambda kv: -kv[1]))
+        )
     cats: dict[str, dict[str, int]] = {}
     for f in rep.findings:
-        c = cats.setdefault(category(f.code), {"error": 0, "warn": 0, "info": 0, "fixed": 0, "found": 0})
+        c = cats.setdefault(
+            category(f.code), {"error": 0, "warn": 0, "info": 0, "fixed": 0, "found": 0}
+        )
         c[f.level] += 1
     for f in fixed:
-        c = cats.setdefault(category(f.code), {"error": 0, "warn": 0, "info": 0, "fixed": 0, "found": 0})
+        c = cats.setdefault(
+            category(f.code), {"error": 0, "warn": 0, "info": 0, "fixed": 0, "found": 0}
+        )
         c["fixed"] += 1
     if first is not None:
         for f in first.findings:
-            cats.setdefault(category(f.code), {"error": 0, "warn": 0, "info": 0, "fixed": 0, "found": 0})["found"] += 1
+            cats.setdefault(
+                category(f.code), {"error": 0, "warn": 0, "info": 0, "fixed": 0, "found": 0}
+            )["found"] += 1
     if cats:
-        lines.append(f"  {'category':14} {'found':>6} {'fixed':>6} {'error':>6} {'warn':>6} {'info':>6}   (error/warn/info = remaining)")
-        for name, c in sorted(cats.items(), key=lambda kv: -(kv[1]["found"] or kv[1]["error"] + kv[1]["warn"] + kv[1]["info"])):
+        lines.append(
+            f"  {'category':14} {'found':>6} {'fixed':>6} {'error':>6} {'warn':>6} "
+            f"{'info':>6}   (error/warn/info = remaining)"
+        )
+        for name, c in sorted(
+            cats.items(),
+            key=lambda kv: -(kv[1]["found"] or kv[1]["error"] + kv[1]["warn"] + kv[1]["info"]),
+        ):
             found = c["found"] or c["error"] + c["warn"] + c["info"]
-            lines.append(f"  {name:14} {found:>6} {c['fixed']:>6} {c['error']:>6} {c['warn']:>6} {c['info']:>6}")
+            lines.append(
+                f"  {name:14} {found:>6} {c['fixed']:>6} {c['error']:>6} {c['warn']:>6} "
+                f"{c['info']:>6}"
+            )
     codes: dict[str, int] = {}
     for f in rep.findings:
         codes[f.code] = codes.get(f.code, 0) + 1
     top = sorted(codes.items(), key=lambda kv: -kv[1])[:5]
     if top:
-        lines.append("  noisiest checks: " + ", ".join(f"{c} x{n}" for c, n in top)
-                     + "  (silence with [reference] extra_*_fields or [tokens] thresholds)")
+        lines.append(
+            "  noisiest checks: "
+            + ", ".join(f"{c} x{n}" for c, n in top)
+            + "  (silence with [reference] extra_*_fields or [tokens] thresholds)"
+        )
     return "\n".join(lines)
 
 
-def render_summary(rep: Report, fix: bool, color: bool, quiet: bool, fixed: list[Finding],
-                   applied: list[str], failures: list[tuple[str, str]], backups: list[str]) -> str:
+def render_summary(
+    rep: Report,
+    fix: bool,
+    color: bool,
+    quiet: bool,
+    fixed: list[Finding],
+    applied: list[str],
+    failures: list[tuple[str, str]],
+    backups: list[str],
+) -> str:
     """Final recap: what was (or would be) fixed, and what still needs a human."""
-    g, red, yel, cyan, b, r0 = (("\033[32m", "\033[31m", "\033[33m", "\033[36m", "\033[1m", "\033[0m")
-                                if color else ("",) * 6)
+    g, red, yel, cyan, b, r0 = (
+        ("\033[32m", "\033[31m", "\033[33m", "\033[36m", "\033[1m", "\033[0m")
+        if color
+        else ("",) * 6
+    )
     lvl_color = {"error": red, "warn": yel, "info": cyan}
     rule = "=" * 72
     lines = ["", rule]
     if fix:
-        lines.append(f"{b}SUMMARY{r0}  (claude-lint {VERSION})  {len(fixed)} issue(s) fixed, {len(applied)} change(s) written"
-                     + (f", {len(failures)} write failure(s)" if failures else ""))
+        lines.append(
+            f"{b}SUMMARY{r0}  (claude-lint {VERSION})  {len(fixed)} issue(s) fixed, "
+            f"{len(applied)} change(s) written"
+            + (f", {len(failures)} write failure(s)" if failures else "")
+        )
         done = fixed
         title_done, mark_done = "FIXED OR GENERATED", f"{g}✔{r0}"
     else:
-        lines.append(f"{b}SUMMARY{r0}  read-only run: nothing was modified  (claude-lint {VERSION})")
+        lines.append(
+            f"{b}SUMMARY{r0}  read-only run: nothing was modified  (claude-lint {VERSION})"
+        )
         done = [f for f in rep.findings if f.fixable]
         title_done, mark_done = "WOULD BE FIXED OR GENERATED by --fix", f"{g}○{r0}"
     manual = [f for f in rep.findings if not f.fixable or fix]
@@ -4937,9 +7876,11 @@ def render_summary(rep: Report, fix: bool, color: bool, quiet: bool, fixed: list
         lines.append(f"  {mark_done} {code:24} x{len(items):<3} {where}")
 
     shown = [f for f in manual if not quiet or f.level == "error"]
-    lines.append(f"{red if any(f.level == 'error' for f in manual) else yel}"
-                 f"NOT FIXED - manual action needed ({len(manual)}){r0}"
-                 + (" [errors only, -q]" if quiet and len(shown) != len(manual) else ""))
+    lines.append(
+        f"{red if any(f.level == 'error' for f in manual) else yel}"
+        f"NOT FIXED - manual action needed ({len(manual)}){r0}"
+        + (" [errors only, -q]" if quiet and len(shown) != len(manual) else "")
+    )
     if not manual:
         lines.append("  (none)")
     for kind, items in grouped_findings(shown):
@@ -4947,29 +7888,40 @@ def render_summary(rep: Report, fix: bool, color: bool, quiet: bool, fixed: list
             lines += render_group(items, lvl_color, r0)
             continue
         f = items[0]
-        lines.append(f"  {lvl_color[f.level]}✘ {f.level.upper():5}{r0} {f.code:24} {short_path(f.path)}")
+        lines.append(
+            f"  {lvl_color[f.level]}✘ {f.level.upper():5}{r0} {f.code:24} {short_path(f.path)}"
+        )
         lines.append(f"          {f.message}")
     if failures:
         lines.append(f"{red}NOT WRITTEN ({len(failures)}){r0}")
         lines += [f"  {red}✘{r0} {short_path(p)}: {m}" for p, m in failures]
 
     lines.append(rule)
-    tb = render_token_budget(getattr(rep, "budget", None), color,
-                             getattr(FIRST_REPORT, "budget", None) if fix else None)
+    tb = render_token_budget(
+        getattr(rep, "budget", None), color, getattr(FIRST_REPORT, "budget", None) if fix else None
+    )
     if tb:
         lines += [tb, rule]
     rp = render_proposals(getattr(rep, "proposals", []), color)
     if rp:
         lines += [rp, rule]
     lines += [render_stats(rep, FIRST_REPORT, fixed if fix else [], color), rule]
-    counts = f"{rep.count('error')} error(s), {rep.count('warn')} warning(s), {rep.count('info')} info"
+    counts = (
+        f"{rep.count('error')} error(s), {rep.count('warn')} warning(s), {rep.count('info')} info"
+    )
     dups = sum(1 for f in rep.findings if f.code.startswith("DUP_"))
     packs = [f for f in rep.findings if f.code == "TOKEN_AGENT_PACK"]
     longdesc = sum(1 for f in rep.findings if f.code == "TOKEN_SKILL_DESC")
     if (dups or packs or longdesc or getattr(rep, "proposals", [])) and not INTERACTIVE_RAN:
-        pack_tokens = sum(int(m.group(1)) for f in packs if (m := re.search(r"~(\d+) tokens", f.message)))
-        lines.append(f"NEXT: run again with -i to review {dups} duplicate group(s), {len(getattr(rep, 'proposals', []))} restructuring"
-                     f" proposal(s), {len(packs)} subagent pack(s) (~{pack_tokens} tokens) and {longdesc} long description(s) one by one (reversible).")
+        pack_tokens = sum(
+            int(m.group(1)) for f in packs if (m := re.search(r"~(\d+) tokens", f.message))
+        )
+        lines.append(
+            f"NEXT: run again with -i to review {dups} duplicate group(s), "
+            f"{len(getattr(rep, 'proposals', []))} restructuring"
+            f" proposal(s), {len(packs)} subagent pack(s) (~{pack_tokens} tokens) and "
+            f"{longdesc} long description(s) one by one (reversible)."
+        )
     if fix:
         lines.append(f"Remaining: {counts}")
         lines += [f"Backup of modified files: {bk}" for bk in backups]
@@ -4996,10 +7948,14 @@ def to_toml(d: dict, prefix: str = "") -> str:
 # --------------------------------------------------------------------------- #
 
 GUARD_MARKER = "--guard"
-CONFIG_HINT = re.compile(r"(settings(\.local)?\.json|\.mcp\.json|\.claude\.json|/\.claude/|\.claude/|"
-                         r"\.agent-lint\.toml|\.git/hooks|claude-lint|SKILL\.md|CLAUDE(\.local)?\.md|AGENTS\.md)")
-BASH_WRITE_HINT = re.compile(r"(>|\btee\b|\bsed\s+-i|\bperl\s+-[a-z]*i|\bmv\b|\bcp\b|\brm\b|\bln\b|\bchmod\b|"
-                             r"\btruncate\b|\bdd\b|\binstall\b|\bpython3?\b|\bnode\b|\bruby\b|\bjq\b.*>|\bgit\s+(checkout|restore|apply|stash))")
+CONFIG_HINT = re.compile(
+    r"(settings(\.local)?\.json|\.mcp\.json|\.claude\.json|/\.claude/|\.claude/|"
+    r"\.agent-lint\.toml|\.git/hooks|claude-lint|SKILL\.md|CLAUDE(\.local)?\.md|AGENTS\.md)"
+)
+BASH_WRITE_HINT = re.compile(
+    r"(>|\btee\b|\bsed\s+-i|\bperl\s+-[a-z]*i|\bmv\b|\bcp\b|\brm\b|\bln\b|\bchmod\b|"
+    r"\btruncate\b|\bdd\b|\binstall\b|\bpython3?\b|\bnode\b|\bruby\b|\bjq\b.*>|\bgit\s+(checkout|restore|apply|stash))"
+)
 
 
 def _norm_handlers(hooks: Any) -> set[str]:
@@ -5011,7 +7967,12 @@ def _norm_handlers(hooks: Any) -> set[str]:
             for h in (g or {}).get("hooks", []) if isinstance(g, dict) else []:
                 if not isinstance(h, dict):
                     continue
-                target = h.get("command") or h.get("url") or f"{h.get('server')}:{h.get('tool')}" or h.get("prompt")
+                target = (
+                    h.get("command")
+                    or h.get("url")
+                    or f"{h.get('server')}:{h.get('tool')}"
+                    or h.get("prompt")
+                )
                 target = " ".join([str(target), *map(str, h.get("args") or [])])
                 target = re.sub(r"[\"']?\$\{?CLAUDE_PROJECT_DIR\}?[\"']?/|^\./", "", target.strip())
                 sigs.add(f"{event}:{target}")
@@ -5036,7 +7997,9 @@ def settings_violations(old: dict, new: dict) -> list[str]:
             pools = [pn.get(key) or []] + [pn.get(k) or [] for k in stricter]
             if not any(r in pool or any(covers(n, r) for n in pool) for pool in pools):
                 v.append(f"{key} rule removed {r!r}")
-    if pn.get("defaultMode") in ("bypassPermissions", "auto", "acceptEdits") and pn.get("defaultMode") != po.get("defaultMode"):
+    if pn.get("defaultMode") in ("bypassPermissions", "auto", "acceptEdits") and pn.get(
+        "defaultMode"
+    ) != po.get("defaultMode"):
         v.append(f"defaultMode set to {pn.get('defaultMode')!r}")
     for k in ("disableBypassPermissionsMode", "disableAutoMode"):
         if po.get(k) and pn.get(k) != po.get(k):
@@ -5059,8 +8022,17 @@ def settings_violations(old: dict, new: dict) -> list[str]:
         v.append("allowUnsandboxedCommands enabled")
     if set((new.get("env") or {})) - set((old.get("env") or {})):
         v.append("env variable(s) added")
-    for k in ("apiKeyHelper", "awsAuthRefresh", "awsCredentialExport", "otelHeadersHelper",
-              "statusLine", "fileSuggestion", "processWrapper", "extraKnownMarketplaces", "enabledPlugins"):
+    for k in (
+        "apiKeyHelper",
+        "awsAuthRefresh",
+        "awsCredentialExport",
+        "otelHeadersHelper",
+        "statusLine",
+        "fileSuggestion",
+        "processWrapper",
+        "extraKnownMarketplaces",
+        "enabledPlugins",
+    ):
         if new.get(k) not in (None, old.get(k)):
             v.append(f"{k} added or changed (executes code)")
     attr = new.get("attribution")
@@ -5075,8 +8047,12 @@ def mcp_violations(old: dict, new: dict) -> list[str]:
     v = [f"new MCP server {n!r}" for n in set(sn) - set(so)]
     for n in set(sn) & set(so):
         a, b = so[n] if isinstance(so[n], dict) else {}, sn[n] if isinstance(sn[n], dict) else {}
-        old_cmd = " ".join([str(a.get("command") or a.get("url") or ""), *map(str, a.get("args") or [])]).split()
-        new_cmd = " ".join([str(b.get("command") or b.get("url") or ""), *map(str, b.get("args") or [])]).split()
+        old_cmd = " ".join(
+            [str(a.get("command") or a.get("url") or ""), *map(str, a.get("args") or [])]
+        ).split()
+        new_cmd = " ".join(
+            [str(b.get("command") or b.get("url") or ""), *map(str, b.get("args") or [])]
+        ).split()
         if old_cmd != new_cmd:
             v.append(f"MCP server {n!r} command/url changed")
         if set(b.get("env") or {}) - set(a.get("env") or {}):
@@ -5093,17 +8069,23 @@ def frontmatter_violations(old: str, new: str) -> list[str]:
     for key in ("allowed-tools", "tools", "allowed_tools", "allowedTools"):
         if tok(mn.get(key)) - tok(mo.get(key)):
             v.append(f"{key} extended")
-    if (mo.get("disable-model-invocation", "").lower() in ("true", "yes", "on", "1")
-            and mn.get("disable-model-invocation", "").lower() not in ("true", "yes", "on", "1")):
+    if mo.get("disable-model-invocation", "").lower() in ("true", "yes", "on", "1") and mn.get(
+        "disable-model-invocation", ""
+    ).lower() not in ("true", "yes", "on", "1"):
         v.append("disable-model-invocation removed")
-    if set(tok(mo.get("disallowed-tools"))) - tok(mn.get("disallowed-tools")) or \
-            set(tok(mo.get("disallowedTools"))) - tok(mn.get("disallowedTools")):
+    if set(tok(mo.get("disallowed-tools"))) - tok(mn.get("disallowed-tools")) or set(
+        tok(mo.get("disallowedTools"))
+    ) - tok(mn.get("disallowedTools")):
         v.append("disallowed tools reduced")
     if ("hooks" in frontmatter_block(new)) and "hooks" not in frontmatter_block(old):
         v.append("frontmatter hooks added")
-    if mn.get("permissionMode") in ("bypassPermissions", "auto", "acceptEdits") and mn.get("permissionMode") != mo.get("permissionMode"):
+    if mn.get("permissionMode") in ("bypassPermissions", "auto", "acceptEdits") and mn.get(
+        "permissionMode"
+    ) != mo.get("permissionMode"):
         v.append("permissionMode loosened")
-    if (mn.get("mcpServers") or "mcpServers" in frontmatter_block(new)) and "mcpServers" not in frontmatter_block(old):
+    if (
+        mn.get("mcpServers") or "mcpServers" in frontmatter_block(new)
+    ) and "mcpServers" not in frontmatter_block(old):
         v.append("inline mcpServers added")
     if re.search(r"(?m)^\s*!`|^```!", new) and not re.search(r"(?m)^\s*!`|^```!", old):
         v.append("shell injection (!`cmd`) added")
@@ -5130,7 +8112,13 @@ def protected_path(p: Path) -> str | None:
         return "the linter itself"
     if rp.name == ".claude.json":
         return "~/.claude.json is written by Claude Code"
-    if s.startswith(("/etc/claude-code", "/Library/Application Support/ClaudeCode", "C:\\Program Files\\ClaudeCode")):
+    if s.startswith(
+        (
+            "/etc/claude-code",
+            "/Library/Application Support/ClaudeCode",
+            "C:\\Program Files\\ClaudeCode",
+        )
+    ):
         return "managed settings"
     if "/skills/synced/" in s:
         return "skills synced from claude.ai"
@@ -5152,12 +8140,16 @@ def guard_check(data: dict) -> str | None:
     if tool in ("Bash", "PowerShell", "Monitor"):
         cmd = str(ti.get("command", ""))
         if re.fullmatch(r"\s*(rtk\s+)?(python3?\s+)?\S*claude-lint\.py(\s+[\w\-./=~:]+)*\s*", cmd):
-            if re.search(r"--session-settings\b|--policy\b|\s-i\b|--interactive\b", cmd) or (re.search(r"--generate\b", cmd) and re.search(r"--fix\b", cmd)):
+            if re.search(r"--session-settings\b|--policy\b|\s-i\b|--interactive\b", cmd) or (
+                re.search(r"--generate\b", cmd) and re.search(r"--fix\b", cmd)
+            ):
                 return "guard: --generate --fix, --session-settings and --policy add permissions: the human runs them (a --generate preview is allowed)"
             return None  # the linter only tightens
         if CONFIG_HINT.search(cmd) and BASH_WRITE_HINT.search(cmd):
-            return ("guard: agent configuration files may only be changed with Edit/Write "
-                    "(so the change can be inspected), or by running claude-lint.py")
+            return (
+                "guard: agent configuration files may only be changed with Edit/Write "
+                "(so the change can be inspected), or by running claude-lint.py"
+            )
         for pat in ATTRIBUTION_PATTERNS:
             if pat.search(cmd):
                 return "guard: assistant attribution is forbidden"
@@ -5199,7 +8191,9 @@ def guard_check(data: dict) -> str | None:
             n = json.loads(new)
         except json.JSONDecodeError as e:
             return f"guard: settings must stay strict JSON ({e})"
-        violations = settings_violations(o if isinstance(o, dict) else {}, n if isinstance(n, dict) else {})
+        violations = settings_violations(
+            o if isinstance(o, dict) else {}, n if isinstance(n, dict) else {}
+        )
     elif name == ".mcp.json":
         try:
             o = lenient_json(old)[0] if old.strip() else {}
@@ -5220,9 +8214,11 @@ def guard_check(data: dict) -> str | None:
             n = json.loads(new)
         except json.JSONDecodeError as e:
             return f"guard: plugin.json must stay strict JSON ({e})"
-        violations = [f"plugin {k} added or changed (executes code)" for k in
-                      ("hooks", "mcpServers", "lspServers", "monitors", "channels", "userConfig")
-                      if n.get(k) not in (None, o.get(k))]
+        violations = [
+            f"plugin {k} added or changed (executes code)"
+            for k in ("hooks", "mcpServers", "lspServers", "monitors", "channels", "userConfig")
+            if n.get(k) not in (None, o.get(k))
+        ]
     elif name == "marketplace.json" and path.parent.name == ".claude-plugin":
         try:
             o = lenient_json(old)[0] if old.strip() else {}
@@ -5239,21 +8235,41 @@ def guard_check(data: dict) -> str | None:
         except json.JSONDecodeError as e:
             return f"guard: hooks.json must stay strict JSON ({e})"
         violations = settings_violations({"hooks": o.get("hooks")}, {"hooks": n.get("hooks")})
-    elif path.suffix in (".yml", ".yaml") and "/.github/workflows/" in str(path) and "claude-code" in new:
-        risky = [(r"dangerously-skip-permissions|permission-mode\W+bypassPermissions", "permissions bypass added"),
-                 (r"(?m)^\s*pull_request_target\s*:", "pull_request_target trigger added"),
-                 (r"(allowed_tools|allowedTools)\W+[^\n]*\bBash(\(\*\))?(?=[\s,\"']|$)", "unrestricted Bash added")]
+    elif (
+        path.suffix in (".yml", ".yaml")
+        and "/.github/workflows/" in str(path)
+        and "claude-code" in new
+    ):
+        risky = [
+            (
+                r"dangerously-skip-permissions|permission-mode\W+bypassPermissions",
+                "permissions bypass added",
+            ),
+            (r"(?m)^\s*pull_request_target\s*:", "pull_request_target trigger added"),
+            (
+                r"(allowed_tools|allowedTools)\W+[^\n]*\bBash(\(\*\))?(?=[\s,\"']|$)",
+                "unrestricted Bash added",
+            ),
+        ]
         violations = [msg for pat, msg in risky if re.search(pat, new) and not re.search(pat, old)]
-        if re.search(r"(?m)^\s*permissions\s*:", old) and not re.search(r"(?m)^\s*permissions\s*:", new):
+        if re.search(r"(?m)^\s*permissions\s*:", old) and not re.search(
+            r"(?m)^\s*permissions\s*:", new
+        ):
             violations.append("workflow permissions block removed")
     elif name in (".claude-lint.toml", ".agent-lint.toml"):
         violations = lint_toml_violations(old, new)
-    elif name.endswith(".md") and ("/.claude/skills/" in str(path) or "/.claude/agents/" in str(path)
-                                   or "/.claude/commands/" in str(path)):
+    elif name.endswith(".md") and (
+        "/.claude/skills/" in str(path)
+        or "/.claude/agents/" in str(path)
+        or "/.claude/commands/" in str(path)
+    ):
         violations = frontmatter_violations(old, new)
     if violations:
-        return ("guard: this change would loosen the configuration: " + "; ".join(violations)
-                + ". Leave it for the human and list it under 'not fixed'.")
+        return (
+            "guard: this change would loosen the configuration: "
+            + "; ".join(violations)
+            + ". Leave it for the human and list it under 'not fixed'."
+        )
     return None
 
 
@@ -5274,30 +8290,59 @@ def session_settings(policy: dict) -> dict:
     perms = policy["permissions"]
     deny = [f"Bash({p} *)" for p in perms["external_action_prefixes"]]
     deny += [t for r in deny if (t := rtk_twin(r, perms["rtk_exempt"]))]
-    deny += ["Bash(git commit *)", "Bash(rtk git commit *)", "Bash(git reset *)", "Bash(rtk git reset *)",
-             "Bash(rtk init *)", "Bash(rtk telemetry enable *)", "Bash(rtk hook *)",
-             "Edit(~/.claude.json)", "Edit(//etc/claude-code/**)"]
+    deny += [
+        "Bash(git commit *)",
+        "Bash(rtk git commit *)",
+        "Bash(git reset *)",
+        "Bash(rtk git reset *)",
+        "Bash(rtk init *)",
+        "Bash(rtk telemetry enable *)",
+        "Bash(rtk hook *)",
+        "Edit(~/.claude.json)",
+        "Edit(//etc/claude-code/**)",
+    ]
     return {
         "$schema": policy["scaffold"]["schema_url"],
         "disableAllHooks": False,
         "permissions": {
-            "allow": [f"Bash({exe} {script} *)", f"Bash(rtk {exe} {script} *)",
-                      "WebFetch(domain:code.claude.com)", "WebFetch(domain:github.com)",
-                      "WebFetch(domain:agentskills.io)"],
+            "allow": [
+                f"Bash({exe} {script} *)",
+                f"Bash(rtk {exe} {script} *)",
+                "WebFetch(domain:code.claude.com)",
+                "WebFetch(domain:github.com)",
+                "WebFetch(domain:agentskills.io)",
+            ],
             "deny": dedupe(deny),
         },
-        "hooks": {"PreToolUse": [{
-            "matcher": "Edit|Write|MultiEdit|NotebookEdit|Bash|PowerShell|Monitor",
-            "hooks": [{"type": "command", "command": exe, "args": [script, GUARD_MARKER], "timeout": 30}],
-        }]},
+        "hooks": {
+            "PreToolUse": [
+                {
+                    "matcher": "Edit|Write|MultiEdit|NotebookEdit|Bash|PowerShell|Monitor",
+                    "hooks": [
+                        {
+                            "type": "command",
+                            "command": exe,
+                            "args": [script, GUARD_MARKER],
+                            "timeout": 30,
+                        }
+                    ],
+                }
+            ]
+        },
     }
 
 
 def dump_reference() -> dict:
-    return {"docs_snapshot": "2026-09", "settings_keys": sorted(KNOWN_SETTINGS_KEYS),
-            "hook_events": sorted(KNOWN_HOOK_EVENTS), "tools": sorted(KNOWN_TOOLS),
-            "legacy_tools": LEGACY_TOOLS, "skill_fields": sorted(SKILL_FIELDS),
-            "agent_fields": sorted(AGENT_FIELDS), "project_dead_keys": PROJECT_DEAD_KEYS}
+    return {
+        "docs_snapshot": "2026-09",
+        "settings_keys": sorted(KNOWN_SETTINGS_KEYS),
+        "hook_events": sorted(KNOWN_HOOK_EVENTS),
+        "tools": sorted(KNOWN_TOOLS),
+        "legacy_tools": LEGACY_TOOLS,
+        "skill_fields": sorted(SKILL_FIELDS),
+        "agent_fields": sorted(AGENT_FIELDS),
+        "project_dead_keys": PROJECT_DEAD_KEYS,
+    }
 
 
 # --------------------------------------------------------------------------- #
@@ -5355,10 +8400,12 @@ def catalog_data() -> dict:
 def dump_catalog() -> str:
     if yaml is None:
         return "# PyYAML not installed: run `pip install pyyaml` to use the catalog.\n"
-    header = ("# claude-lint catalog. Edit and pass with --catalog FILE.\n"
-              "# reference.*: extend the known keys/events/tools/fields the linter accepts.\n"
-              "# checks.<CODE>.severity: error|warn|info|off  ·  enabled: false to silence.\n"
-              "# checks.<CODE>.action_fr/action_en: the '-> fix' line shown in --details.\n\n")
+    header = (
+        "# claude-lint catalog. Edit and pass with --catalog FILE.\n"
+        "# reference.*: extend the known keys/events/tools/fields the linter accepts.\n"
+        "# checks.<CODE>.severity: error|warn|info|off  ·  enabled: false to silence.\n"
+        "# checks.<CODE>.action_fr/action_en: the '-> fix' line shown in --details.\n\n"
+    )
     return header + yaml.safe_dump(catalog_data(), sort_keys=True, allow_unicode=True, width=100)
 
 
@@ -5405,17 +8452,19 @@ def load_catalog(path: Path) -> None:
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(
         description="Validate, repair and optimize coding-agent configurations "
-                    "(Claude Code settings, permissions, hooks, MCP, skills, subagents, "
-                    "commands, rules, instruction files, plugins, CI and secrets).",
+        "(Claude Code settings, permissions, hooks, MCP, skills, subagents, "
+        "commands, rules, instruction files, plugins, CI and secrets).",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=(
             "examples:\n"
             "  claude-lint.py .                      read-only report for the current repo\n"
             "  claude-lint.py . --fix               apply safe repairs (backup kept)\n"
-            "  claude-lint.py . --user              include user scope (~/.claude or $CLAUDE_CONFIG_DIR)\n"
+            "  claude-lint.py . --user              include user scope (~/.claude or "
+            "$CLAUDE_CONFIG_DIR)\n"
             "  claude-lint.py ~/dev --user          every git repo under ~/dev, plus user scope\n"
             "  claude-lint.py . --generate          preview config to generate for the stack\n"
-            "  claude-lint.py . -i                  interactive review (duplicates, packs, restructurings)\n"
+            "  claude-lint.py . -i                  interactive review (duplicates, packs, "
+            "restructurings)\n"
             "  claude-lint.py --restore             undo the last interactive session\n"
             "  claude-lint.py . --strict --format json --no-cli   CI-friendly run\n"
             "\n"
@@ -5435,39 +8484,94 @@ def main(argv: list[str] | None = None) -> int:
             "  skill description warns above 1024 chars in the listing\n"
             "  MCP servers       capped at 6\n"
             "  rtk routing       required (permissions.require_rtk = true)\n"
-            "run with --print-policy to print every default as TOML."),
+            "run with --print-policy to print every default as TOML."
+        ),
     )
-    ap.add_argument("repos", nargs="*", type=Path, help="repositories or folders of repositories (default: cwd)")
+    ap.add_argument(
+        "repos", nargs="*", type=Path, help="repositories or folders of repositories (default: cwd)"
+    )
     ap.add_argument("--user", action="store_true", help="also check user scope")
     ap.add_argument("--user-only", action="store_true", help="check user scope only")
     ap.add_argument("--fix", action="store_true", help="apply repairs (with backup)")
     ap.add_argument("--no-scaffold", action="store_true", help="do not create missing files")
-    ap.add_argument("--format", choices=("text", "json"), default="text", help="output format (default: text)")
+    ap.add_argument(
+        "--format", choices=("text", "json"), default="text", help="output format (default: text)"
+    )
     ap.add_argument("--policy", type=Path, help="policy TOML (default: <repo>/.claude-lint.toml)")
     ap.add_argument("--strict", action="store_true", help="fail on warnings too")
     ap.add_argument("--no-history", action="store_true", help="skip git history scan")
     ap.add_argument("--no-cli", action="store_true", help="do not call the claude / rtk CLIs")
-    ap.add_argument("--generate", action="store_true",
-                    help="generate missing config for the detected stack: settings, hooks, skills, subagents, MCP, rtk (with --user: user scope too)")
-    ap.add_argument("-i", "--interactive", action="store_true",
-                    help="review duplicates, subagent packs, long descriptions and model choice one by one (reversible)")
-    ap.add_argument("--restore", nargs="?", const="", metavar="TRASH_DIR",
-                    help="move back everything removed by the last -i session (or the given trash folder)")
-    ap.add_argument("--details", action="store_true", help="full per-file report instead of the brief one")
-    ap.add_argument("--all", action="store_true", help="list every finding instead of grouping repeated ones")
-    ap.add_argument("--rtk-report", action="store_true", help="append 'rtk gain' and 'rtk discover' output")
-    ap.add_argument("--lang", choices=("en", "fr"), default=None,
-                    help="brief-report language (default: fr when $LANG starts with 'fr', else en)")
+    ap.add_argument(
+        "--generate",
+        action="store_true",
+        help="generate missing config for the detected stack: settings, hooks, skills, "
+        "subagents, MCP, rtk (with --user: user scope too)",
+    )
+    ap.add_argument(
+        "-i",
+        "--interactive",
+        action="store_true",
+        help="review duplicates, subagent packs, long descriptions and model choice one by "
+        "one (reversible)",
+    )
+    ap.add_argument(
+        "--restore",
+        nargs="?",
+        const="",
+        metavar="TRASH_DIR",
+        help="move back everything removed by the last -i session (or the given trash folder)",
+    )
+    ap.add_argument(
+        "--details", action="store_true", help="full per-file report instead of the brief one"
+    )
+    ap.add_argument(
+        "--all", action="store_true", help="list every finding instead of grouping repeated ones"
+    )
+    ap.add_argument(
+        "--rtk-report", action="store_true", help="append 'rtk gain' and 'rtk discover' output"
+    )
+    ap.add_argument(
+        "--lang",
+        choices=("en", "fr"),
+        default=None,
+        help="brief-report language (default: fr when $LANG starts with 'fr', else en)",
+    )
     vg = ap.add_mutually_exclusive_group()
-    vg.add_argument("-v", "--verbose", action="count", default=0, help="-v progress+hints+refs, -vv transformations, -vvv debug")
+    vg.add_argument(
+        "-v",
+        "--verbose",
+        action="count",
+        default=0,
+        help="-v progress+hints+refs, -vv transformations, -vvv debug",
+    )
     vg.add_argument("-q", "--quiet", action="store_true", help="errors and summary only")
     ap.add_argument("--version", action="version", version=f"claude-lint {VERSION}")
     ap.add_argument("--print-policy", action="store_true", help="print the default policy as TOML")
-    ap.add_argument("--guard", action="store_true", help="PreToolUse hook mode: read hook JSON on stdin, exit 2 to block")
-    ap.add_argument("--session-settings", type=Path, metavar="FILE", help="write guarded session settings for 'claude --settings FILE'")
-    ap.add_argument("--dump-reference", action="store_true", help="print built-in reference data as JSON")
-    ap.add_argument("--print-catalog", action="store_true", help="print the editable catalog (reference + checks) as YAML")
-    ap.add_argument("--catalog", type=Path, metavar="FILE", help="load an edited catalog YAML (extends reference, overrides checks)")
+    ap.add_argument(
+        "--guard",
+        action="store_true",
+        help="PreToolUse hook mode: read hook JSON on stdin, exit 2 to block",
+    )
+    ap.add_argument(
+        "--session-settings",
+        type=Path,
+        metavar="FILE",
+        help="write guarded session settings for 'claude --settings FILE'",
+    )
+    ap.add_argument(
+        "--dump-reference", action="store_true", help="print built-in reference data as JSON"
+    )
+    ap.add_argument(
+        "--print-catalog",
+        action="store_true",
+        help="print the editable catalog (reference + checks) as YAML",
+    )
+    ap.add_argument(
+        "--catalog",
+        type=Path,
+        metavar="FILE",
+        help="load an edited catalog YAML (extends reference, overrides checks)",
+    )
     # No arguments at all: show help (with defaults) instead of silently scanning cwd.
     if not (argv if argv is not None else sys.argv[1:]):
         ap.print_help()
@@ -5479,7 +8583,9 @@ def main(argv: list[str] | None = None) -> int:
     VERBOSITY, SCAFFOLD, SHOW_ALL = args.verbose, not args.no_scaffold, args.all
     # Progress bar by default: interactive stderr, no -v (which logs per repo),
     # no -q, text output only. Keeps pipes, JSON and CI silent.
-    PROGRESS = sys.stderr.isatty() and args.verbose == 0 and not args.quiet and args.format == "text"
+    PROGRESS = (
+        sys.stderr.isatty() and args.verbose == 0 and not args.quiet and args.format == "text"
+    )
     if args.catalog:
         load_catalog(args.catalog)
     LANG = args.lang or ("fr" if os.environ.get("LANG", "").lower().startswith("fr") else "en")
@@ -5517,7 +8623,9 @@ def main(argv: list[str] | None = None) -> int:
         log(1, "claude CLI: " + (".".join(map(str, CLI_VERSION)) if CLI_VERSION else "not found"))
 
     run_started = time.perf_counter()
-    targets = [] if args.user_only else [r.expanduser().resolve() for r in (args.repos or [Path.cwd()])]
+    targets = (
+        [] if args.user_only else [r.expanduser().resolve() for r in (args.repos or [Path.cwd()])]
+    )
     for r in targets:
         if not r.is_dir():
             print(f"not a directory: {r}", file=sys.stderr)
@@ -5536,7 +8644,10 @@ def main(argv: list[str] | None = None) -> int:
         for n in range(1, 6):
             if not (rep.edits or rep.new_files or rep.chmods or rep.moves):
                 break
-            log(1, f"fix pass {n}: {len(rep.edits) + len(rep.new_files) + len(rep.chmods)} change(s)")
+            log(
+                1,
+                f"fix pass {n}: {len(rep.edits) + len(rep.new_files) + len(rep.chmods)} change(s)",
+            )
             where, done, failed = apply(rep)
             applied += done
             failures += failed
@@ -5563,38 +8674,77 @@ def main(argv: list[str] | None = None) -> int:
     if args.format == "text" and not (args.details or args.all):
         print(render_brief(rep, fixed, args.fix, len(repos), sys.stdout.isatty()))
         for bk in sorted(set(backups)):
-            print(_L("Sauvegarde des fichiers modifiés : ", "Backup of modified files: ") + bk)
+            print(_loc("Sauvegarde des fichiers modifiés : ", "Backup of modified files: ") + bk)
         code = 1 if rep.count("error") or (args.strict and rep.count("warn")) else 0
-        write_run_log(argv or sys.argv[1:], repos, rep, fixed, applied, time.perf_counter() - run_started, code)
+        write_run_log(
+            argv or sys.argv[1:],
+            repos,
+            rep,
+            fixed,
+            applied,
+            time.perf_counter() - run_started,
+            code,
+        )
         return code
     if args.format == "json":
         codes = {f.code for f in rep.findings} | {f.code for f in fixed}
-        print(json.dumps({
-            "cli_version": ".".join(map(str, CLI_VERSION)) if CLI_VERSION else None,
-            "repositories": [str(r) for r in repos],
-            "findings": [asdict(f) for f in rep.findings],
-            "fixed": [asdict(f) for f in fixed],
-            "not_fixed": [asdict(f) for f in rep.findings if args.fix or not f.fixable],
-            "would_fix": [] if args.fix else [asdict(f) for f in rep.findings if f.fixable],
-            "applied": applied,
-            "pending_changes": [str(p) for p in [*rep.edits, *rep.new_files, *rep.chmods]] + [f"{s} -> {d}" for s, d in rep.moves],
-            "hints": {c: {"why": HINTS[c][0], "ref": HINTS[c][1]} for c in sorted(codes) if c in HINTS},
-            "fix_mode": args.fix, "backups": backups, "token_budget": getattr(rep, "budget", None),
-            "restructure": [{"kind": p["kind"], "title": p["title"], "tokens_per_session": p["gain"]} for p in getattr(rep, "proposals", [])],
-            "stats": {"checked": rep.stats, "by_category": {c: sum(1 for f in rep.findings if category(f.code) == c)
-                                                            for c in {category(f.code) for f in rep.findings}}},
-            "rtk": {"path": RTK["path"], "version": ".".join(map(str, RTK["version"])) if RTK["version"] else None,
-                    "genuine": RTK["genuine"], "excluded": sorted(RTK["exclude"]),
-                    "report": rtk_report() if args.rtk_report else None}}, indent=2))
+        print(
+            json.dumps(
+                {
+                    "cli_version": ".".join(map(str, CLI_VERSION)) if CLI_VERSION else None,
+                    "repositories": [str(r) for r in repos],
+                    "findings": [asdict(f) for f in rep.findings],
+                    "fixed": [asdict(f) for f in fixed],
+                    "not_fixed": [asdict(f) for f in rep.findings if args.fix or not f.fixable],
+                    "would_fix": [] if args.fix else [asdict(f) for f in rep.findings if f.fixable],
+                    "applied": applied,
+                    "pending_changes": [str(p) for p in [*rep.edits, *rep.new_files, *rep.chmods]]
+                    + [f"{s} -> {d}" for s, d in rep.moves],
+                    "hints": {
+                        c: {"why": HINTS[c][0], "ref": HINTS[c][1]}
+                        for c in sorted(codes)
+                        if c in HINTS
+                    },
+                    "fix_mode": args.fix,
+                    "backups": backups,
+                    "token_budget": getattr(rep, "budget", None),
+                    "restructure": [
+                        {"kind": p["kind"], "title": p["title"], "tokens_per_session": p["gain"]}
+                        for p in getattr(rep, "proposals", [])
+                    ],
+                    "stats": {
+                        "checked": rep.stats,
+                        "by_category": {
+                            c: sum(1 for f in rep.findings if category(f.code) == c)
+                            for c in {category(f.code) for f in rep.findings}
+                        },
+                    },
+                    "rtk": {
+                        "path": RTK["path"],
+                        "version": ".".join(map(str, RTK["version"])) if RTK["version"] else None,
+                        "genuine": RTK["genuine"],
+                        "excluded": sorted(RTK["exclude"]),
+                        "report": rtk_report() if args.rtk_report else None,
+                    },
+                },
+                indent=2,
+            )
+        )
     else:
         if repos and (len(repos) > 1 or VERBOSITY):
             print("repositories: " + ", ".join(str(r) for r in repos))
-        print(render_text(rep, args.fix, sys.stdout.isatty(), args.quiet, fixed, applied, failures, backups))
+        print(
+            render_text(
+                rep, args.fix, sys.stdout.isatty(), args.quiet, fixed, applied, failures, backups
+            )
+        )
         if args.rtk_report:
             report = rtk_report()
             print("\n== rtk report\n" + (report or "rtk not available"))
     code = 1 if rep.count("error") or (args.strict and rep.count("warn")) else 0
-    write_run_log(argv or sys.argv[1:], repos, rep, fixed, applied, time.perf_counter() - run_started, code)
+    write_run_log(
+        argv or sys.argv[1:], repos, rep, fixed, applied, time.perf_counter() - run_started, code
+    )
     return code
 
 

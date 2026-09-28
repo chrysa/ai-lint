@@ -12,10 +12,6 @@ def main() -> int:
     path = (data.get("tool_input") or {}).get("file_path") or ""
     if not path or not os.path.isfile(path):
         return 0
-    # The linter itself ships as one deliberately dense single file; reflowing its
-    # packed literals nearly doubles its length. Lint it, never auto-format it.
-    if os.path.basename(path) == "claude-lint.py":
-        return 0
     root = os.environ.get("CLAUDE_PROJECT_DIR", os.getcwd())
     ext = os.path.splitext(path)[1].lower()
     local_prettier = os.path.join(root, "node_modules", ".bin", "prettier")

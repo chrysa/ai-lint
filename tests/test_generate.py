@@ -12,7 +12,10 @@ def _py_repo(tmp_path):
     repo.mkdir()
     (repo / "pyproject.toml").write_text("[project]\nname='svc'\n")
     (repo / "app.py").write_text("print('hi')\n")
-    subprocess.run(["git", "-c", "user.email=t@t", "-c", "user.name=t", "-C", str(repo), "init", "-q"], check=True)
+    subprocess.run(
+        ["git", "-c", "user.email=t@t", "-c", "user.name=t", "-C", str(repo), "init", "-q"],
+        check=True,
+    )
     subprocess.run(["git", "-C", str(repo), "add", "-A"], check=True, capture_output=True)
     subprocess.run(
         ["git", "-c", "user.email=t@t", "-c", "user.name=t", "-C", str(repo), "commit", "-qm", "i"],

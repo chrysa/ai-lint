@@ -1,6 +1,7 @@
 """Fuzz the interactive (-i) review over the fixture environment with every
 answer combination, asserting it never raises. This guards the crashes that hit
 real data twice."""
+
 from __future__ import annotations
 
 import itertools
@@ -27,8 +28,29 @@ def _run_interactive(mod, answers, repos, monkeypatch):
 
 
 # Individual tokens the dispatcher understands across every section.
-ANSWER_TOKENS = ["", "A", "S", "a", "s", "g", "p", "k", "o", "q", "y",
-                 "1", "2", "2,3", "v1", "v2", "?", "n", "zz", "9", "1,9,x"]
+ANSWER_TOKENS = [
+    "",
+    "A",
+    "S",
+    "a",
+    "s",
+    "g",
+    "p",
+    "k",
+    "o",
+    "q",
+    "y",
+    "1",
+    "2",
+    "2,3",
+    "v1",
+    "v2",
+    "?",
+    "n",
+    "zz",
+    "9",
+    "1,9,x",
+]
 
 
 @pytest.mark.parametrize("first", ANSWER_TOKENS)
@@ -40,7 +62,12 @@ def test_interactive_single_answer_never_crashes(env, linter_module, monkeypatch
 
 @pytest.mark.parametrize(
     "seq",
-    [list(c) for c in itertools.product(["", "1", "1,2,3"], ["", "A", "s", "g", "2"], ["", "S", "a", "o", "p"])],
+    [
+        list(c)
+        for c in itertools.product(
+            ["", "1", "1,2,3"], ["", "A", "s", "g", "2"], ["", "S", "a", "o", "p"]
+        )
+    ],
 )
 def test_interactive_answer_sequences_never_crash(env, linter_module, monkeypatch, seq):
     rc = _run_interactive(linter_module, seq + [""] * 40, env.repos, monkeypatch)

@@ -1,5 +1,6 @@
 """rtk rewrite probe: must detect support from stdout, not the exit code
 (rtk 0.42.1 exits 3 on a successful rewrite)."""
+
 from __future__ import annotations
 
 import shutil
@@ -18,6 +19,7 @@ class _Res:
 def _fake_run_factory(supported_prefixes):
     """Simulate rtk 0.42.1: rewrite prints 'rtk <cmd>' and exits 3 when supported,
     prints nothing and exits 1 otherwise; --version/gain/--help succeed."""
+
     def fake(cmd, timeout=10):
         if cmd[:2] == ["rtk", "rewrite"]:
             raw = cmd[2] if len(cmd) > 2 else ""
@@ -30,14 +32,27 @@ def _fake_run_factory(supported_prefixes):
         if cmd[:2] == ["rtk", "gain"]:
             return _Res(0, "usage")
         if cmd == ["rtk", "--help"]:
-            return _Res(0, "  git   thing\n  cargo build\n" + "\n".join(f"  cmd{i} x" for i in range(12)))
+            return _Res(
+                0, "  git   thing\n  cargo build\n" + "\n".join(f"  cmd{i} x" for i in range(12))
+            )
         return _Res(0, "")
+
     return fake
 
 
 def _reset_rtk(m):
-    m.RTK.update({"path": None, "version": None, "genuine": False, "help_commands": set(),
-                  "rewrite_cli": None, "rewrite_cache": {}, "exclude": set(), "config": None})
+    m.RTK.update(
+        {
+            "path": None,
+            "version": None,
+            "genuine": False,
+            "help_commands": set(),
+            "rewrite_cli": None,
+            "rewrite_cache": {},
+            "exclude": set(),
+            "config": None,
+        }
+    )
 
 
 def test_rewrite_probe_ignores_exit_code(linter_module, monkeypatch, tmp_path):

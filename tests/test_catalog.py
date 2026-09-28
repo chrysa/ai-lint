@@ -1,5 +1,6 @@
 """The editable catalog: export round-trips, and an overlay disables a code,
 re-ranks a severity, and extends the known settings keys."""
+
 from __future__ import annotations
 
 import pytest
@@ -20,8 +21,10 @@ def test_catalog_overlay_disables_and_reranks(linter_module, tmp_path, monkeypat
     monkeypatch.setattr(m, "DISABLED_CODES", set())
     monkeypatch.setattr(m, "SEVERITY_OVERRIDES", {})
     cat = tmp_path / "c.yaml"
-    cat.write_text("reference:\n  settings_keys: [myKey]\n"
-                   "checks:\n  SKILL_NAME:\n    enabled: false\n  RULE_UNSCOPED:\n    severity: error\n")
+    cat.write_text(
+        "reference:\n  settings_keys: [myKey]\n"
+        "checks:\n  SKILL_NAME:\n    enabled: false\n  RULE_UNSCOPED:\n    severity: error\n"
+    )
     m.load_catalog(cat)
     assert "SKILL_NAME" in m.DISABLED_CODES
     assert m.SEVERITY_OVERRIDES.get("RULE_UNSCOPED") == "error"

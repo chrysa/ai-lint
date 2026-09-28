@@ -16,7 +16,16 @@ def test_finding_gain_parses_message(linter_module):
 
 
 def test_details_report_shows_total(env, linter_module):
-    proc = env.run(str(env.repos[0]), "--user", "--no-cli", "--no-history", "--details", "--lang", "en", expect_ok=True)
+    proc = env.run(
+        str(env.repos[0]),
+        "--user",
+        "--no-cli",
+        "--no-history",
+        "--details",
+        "--lang",
+        "en",
+        expect_ok=True,
+    )
     assert "Potential savings:" in proc.stdout
     assert "tokens/session" in proc.stdout
 

@@ -1,5 +1,6 @@
 """Every finding proposes a solution: --details prints a '→ fix/solution' line,
 and _action_for resolves an action for headline and long-tail codes."""
+
 from __future__ import annotations
 
 
@@ -17,6 +18,7 @@ def test_action_for_headline_and_tail(linter_module, monkeypatch):
 
 def test_every_emitted_code_has_an_action(linter_module):
     import re
+
     src = open(m_path(linter_module)).read()
     emitted = set(re.findall(r'rep\.add\(\s*"[a-z]+",\s*"([A-Z_]+)"', src))
     missing = sorted(c for c in emitted if not linter_module._action_for(c))
@@ -25,6 +27,7 @@ def test_every_emitted_code_has_an_action(linter_module):
 
 def m_path(mod):
     import inspect
+
     return inspect.getsourcefile(mod)
 
 

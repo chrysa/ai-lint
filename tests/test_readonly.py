@@ -56,7 +56,9 @@ def test_proposals_skip_readonly(env, linter_module):
     # a 600-line read-only skill would otherwise yield a split-skill proposal
     store = env.cfg / ".agents" / "skills" / "bigfrozen"
     store.mkdir(parents=True, exist_ok=True)
-    body = "---\nname: bigfrozen\ndescription: big\n---\n\n" + "\n".join(f"## S{i}\n\nx" for i in range(300))
+    body = "---\nname: bigfrozen\ndescription: big\n---\n\n" + "\n".join(
+        f"## S{i}\n\nx" for i in range(300)
+    )
     (store / "SKILL.md").write_text(body)
     link = env.cfg / "skills" / "bigfrozen"
     link.symlink_to(os.path.relpath(store, link.parent))

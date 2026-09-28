@@ -1,4 +1,5 @@
 """Attribution scan: fast on a large tree, still finds and strips traces."""
+
 from __future__ import annotations
 
 import time

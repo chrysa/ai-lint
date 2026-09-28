@@ -1,4 +1,5 @@
 """Guard the s/S key distinction and French pluralization."""
+
 from __future__ import annotations
 
 import builtins

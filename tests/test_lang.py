@@ -1,4 +1,5 @@
 """--lang controls the brief report language; default follows $LANG."""
+
 from __future__ import annotations
 
 

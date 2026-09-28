@@ -9,8 +9,9 @@ help:  ## Show this help
 test:  ## Run the test suite
 	$(PY) -m pytest -q
 
-lint:  ## Lint the linter and its tests with ruff
+lint:  ## Lint (ruff check) and verify formatting (max 100 chars)
 	$(PY) -m ruff check claude-lint.py tests
+	$(PY) -m ruff format --check claude-lint.py tests
 
 fmt:  ## Format with ruff
 	$(PY) -m ruff format claude-lint.py tests

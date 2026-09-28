@@ -12,6 +12,15 @@ catalog = ["PyYAML>=6"]
 # Everything to run `make test` / `make lint` / `make selfcheck`.
 dev = ["pytest>=8", "ruff>=0.6", "PyYAML>=6"]
 
+[tool.coverage.run]
+# The tool is a single hyphenated file loaded via importlib in the tests; measure
+# it by path so coverage attaches to the right source.
+source = ["claude-lint.py"]
+branch = false
+
+[tool.coverage.report]
+show_missing = true
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 # Disable globally-installed pytest plugins that assume a Django app; this
@@ -19,13 +28,16 @@ testpaths = ["tests"]
 addopts = "-ra -p no:query_optimizer -p no:django -p no:qt -p no:asyncio -p no:cacheprovider"
 
 [tool.ruff]
-line-length = 120
+line-length = 100  # shared-standards: max 100 chars
 target-version = "py39"
 
 [tool.ruff.lint]
-select = ["E", "F", "W", "I", "UP", "B"]
-# E501 line length is enforced by line-length above; E741/E731/UP034 are
-# pre-existing stylistic choices in the single-file script, not defects.
+# shared-standards code-style: E, W, I, N, UP (+ F, B kept for real-bug coverage).
+select = ["E", "F", "W", "I", "N", "UP", "B"]
+# Line length (max 100) is enforced by `ruff format`, which lays out code to the
+# line-length above. E501 is left off because it only fires on long string
+# literals that cannot be wrapped without harming readability or corrupting
+# embedded generated templates. E741/E731/UP034 are deliberate style choices.
 ignore = ["E501", "B008", "E741", "E731", "UP034"]
 
 [tool.ruff.lint.per-file-ignores]

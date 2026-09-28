@@ -1,4 +1,5 @@
 """restore_trash: empty, partial, missing and normal sessions."""
+
 from __future__ import annotations
 
 

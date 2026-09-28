@@ -1,5 +1,6 @@
 """Smoke tests: the CLI runs read-only over the miniature environment without
 crashing, and the module imports cleanly for white-box tests."""
+
 from __future__ import annotations
 
 

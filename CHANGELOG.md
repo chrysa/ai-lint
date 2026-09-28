@@ -2,6 +2,15 @@
 
 All notable changes to `claude-lint`. Dates are ISO 8601.
 
+## 2026.09.28-23
+
+### Changed
+- Align with chrysa shared-standards code-style: ruff now selects N (naming) and the
+  code is formatted to a 100-char line length (`ruff format`, enforced in `make lint`
+  and CI). Renamed the `_L` i18n helper to `_loc`. The project format hook now formats
+  the main file too. E501 is delegated to the formatter (it only nagged on
+  unsplittable string literals). Dependencies live in `pyproject.toml`.
+
 ## 2026.09.28-22
 
 ### Added

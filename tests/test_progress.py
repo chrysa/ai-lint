@@ -1,5 +1,6 @@
 """Default-verbosity progress bar: writes to stderr only when enabled, never to
 stdout, and stays silent when piped (the test process has no TTY)."""
+
 from __future__ import annotations
 
 

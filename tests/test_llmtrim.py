@@ -26,7 +26,9 @@ def test_installed_llmtrim_is_skipped(linter_module, env, monkeypatch):
     _reset(m)
     monkeypatch.setattr(m.shutil, "which", lambda x: "/usr/bin/llmtrim")
     monkeypatch.setattr(
-        m, "_run", lambda *a, **k: type("R", (), {"stdout": "llmtrim 1.0.0", "stderr": "", "returncode": 0})()
+        m,
+        "_run",
+        lambda *a, **k: type("R", (), {"stdout": "llmtrim 1.0.0", "stderr": "", "returncode": 0})(),
     )
     m.detect_llmtrim(use_cli=True)
     rep = m.Report()

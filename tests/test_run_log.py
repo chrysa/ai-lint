@@ -1,4 +1,5 @@
 """Each run appends a JSON record to ~/.cache/claude-lint/logs/<date>.log."""
+
 from __future__ import annotations
 
 import datetime as dt

@@ -6,6 +6,7 @@ overridden so nothing touches the developer's real config.
 
 Everything written here is disposable and lives under pytest's tmp_path.
 """
+
 from __future__ import annotations
 
 import importlib.util
@@ -115,7 +116,9 @@ def _build_user_scope(cfg: Path) -> None:
         "---\nname: reviewer\ndescription: review code changes for quality and correctness issues\n---\n\nReview diffs.\n",
     )
     # a big CLAUDE.md (1200 lines)
-    _write(cfg / "CLAUDE.md", "# User memory\n" + "\n".join(f"- rule {i}" for i in range(1200)) + "\n")
+    _write(
+        cfg / "CLAUDE.md", "# User memory\n" + "\n".join(f"- rule {i}" for i in range(1200)) + "\n"
+    )
 
 
 def _build_projects(home: Path) -> list[Path]:
@@ -130,7 +133,11 @@ def _build_projects(home: Path) -> list[Path]:
             "CLAUDE.md": "@AGENTS.md\n",
             "AGENTS.md": "# app\n\n## Overview\n\n## Commands\n\n## Conventions\n\n## Boundaries\n",
             ".mcp.json": json.dumps(
-                {"mcpServers": {"github": {"type": "http", "url": "https://api.githubcopilot.com/mcp/"}}},
+                {
+                    "mcpServers": {
+                        "github": {"type": "http", "url": "https://api.githubcopilot.com/mcp/"}
+                    }
+                },
                 indent=2,
             ),
             ".claude/settings.json": json.dumps(
@@ -148,7 +155,13 @@ def _build_projects(home: Path) -> list[Path]:
 
     # a copied clone of the same repo (dedup / same-repo detection)
     copy = home / "dev" / "app-copy"
-    _make_git_repo(copy, {"CLAUDE.md": (proj / "CLAUDE.md").read_text(), "AGENTS.md": (proj / "AGENTS.md").read_text()})
+    _make_git_repo(
+        copy,
+        {
+            "CLAUDE.md": (proj / "CLAUDE.md").read_text(),
+            "AGENTS.md": (proj / "AGENTS.md").read_text(),
+        },
+    )
     repos.append(copy)
 
     # a git worktree under .claude/worktrees/
@@ -207,7 +220,12 @@ def env(tmp_path, monkeypatch):
             [sys.executable, str(SCRIPT), *args],
             capture_output=True,
             text=True,
-            env={**os.environ, "HOME": str(home), "CLAUDE_CONFIG_DIR": str(cfg), "XDG_CACHE_HOME": str(cache)},
+            env={
+                **os.environ,
+                "HOME": str(home),
+                "CLAUDE_CONFIG_DIR": str(cfg),
+                "XDG_CACHE_HOME": str(cache),
+            },
             cwd=str(home),
         )
         if expect_ok:
