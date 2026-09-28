@@ -2,6 +2,14 @@
 
 All notable changes to `claude-lint`. Dates are ISO 8601.
 
+## 2026.09.28-20
+
+### Fixed
+- `ATTR_HOOK_CONFLICT` no longer fires on a commit-msg hook that actually strips
+  attribution. Recognition is now by behaviour (the hook removes a Co-Authored-By /
+  Generated-with trailer), not by the tool's name, so hooks installed under the
+  former name are recognised — this had flooded the warning across every repo.
+
 ## 2026.09.28-19
 
 ### Added

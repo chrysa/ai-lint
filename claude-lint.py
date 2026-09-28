@@ -66,7 +66,7 @@ try:
 except ModuleNotFoundError:  # Python < 3.11: policy files unsupported, defaults apply
     tomllib = None
 
-VERSION = "2026.09.28-19"
+VERSION = "2026.09.28-20"
 DOCS = "https://code.claude.com/docs/en/"
 ISSUES = "https://github.com/anthropics/claude-code/issues/"
 
@@ -4425,8 +4425,13 @@ def check_attribution(repo: Path, policy: dict, rep: Report, history: bool) -> N
     hook = hooks_dir(repo) / "commit-msg"
     log(1, f"commit-msg hook: {hook} ({'present' if hook.exists() else 'absent'})", 1)
     precommit = read_text(repo / ".pre-commit-config.yaml") or ""
-    guarded = (hook.is_file() and HOOK_SIGNATURE in (read_text(hook) or "")) or \
-        ("commit-msg" in precommit and "attribution" in precommit.lower())
+    hook_text = read_text(hook) if hook.is_file() else ""
+    # Recognise the guard by what it does, not by which tool wrote it: any hook that
+    # strips a Co-Authored-By / Generated-with trailer counts (covers hooks installed
+    # under this tool's former name too).
+    strips = bool(hook_text) and (HOOK_SIGNATURE in hook_text
+                                  or re.search(r"[Cc]o-[Aa]uthored-[Bb]y|[Gg]enerated with|attribution", hook_text))
+    guarded = strips or ("commit-msg" in precommit and "attribution" in precommit.lower())
     if guarded:
         return
     if hook.exists():
