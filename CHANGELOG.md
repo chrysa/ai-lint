@@ -2,6 +2,17 @@
 
 All notable changes to `agent-config-lint`. Dates are ISO 8601.
 
+## 2026.09.27-16
+
+### Fixed
+- `SKILL_MISSING` no longer fires on a grouping directory that only holds nested
+  skill subdirectories (e.g. `gitnexus/gitnexus-cli/`, `ui-styling/ui-styling/`).
+  Such a folder is not itself a skill.
+- `ATTR_TRACE` no longer flags a line that forbids attribution ("NEVER add a
+  Co-Authored-By trailer", "strip the Generated-with line"). A negation near the
+  pattern marks the line as documentation, not a trace, so anti-attribution
+  guidance in commit instructions and plans is left alone.
+
 ## 2026.09.27-15
 
 ### Fixed

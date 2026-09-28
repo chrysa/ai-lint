@@ -66,7 +66,7 @@ try:
 except ModuleNotFoundError:  # Python < 3.11: policy files unsupported, defaults apply
     tomllib = None
 
-VERSION = "2026.09.27-15"
+VERSION = "2026.09.27-16"
 DOCS = "https://code.claude.com/docs/en/"
 ISSUES = "https://github.com/anthropics/claude-code/issues/"
 
@@ -254,6 +254,15 @@ ATTRIBUTION_PATTERNS = [   # written so this source file never matches itself
     re.compile(r"Generated with \[?Claude Code", re.I),
     re.compile(r"noreply@anthropic\.com", re.I),
 ]
+# A line that forbids attribution ("NEVER add Co-Authored-By...", "strip the
+# Generated-with line") is documentation, not a trace: don't flag it.
+ATTR_NEGATION = re.compile(
+    r"\b(never|do ?n['o]t|no|without|strip|remove|forbid|avoid|jamais|sans|ne pas|retire|supprime|interdit)\b",
+    re.I)
+
+
+def _is_attribution(line: str) -> bool:
+    return any(p.search(line) for p in ATTRIBUTION_PATTERNS) and not ATTR_NEGATION.search(line)
 SECRET_VALUE_PATTERNS = [
     re.compile(r"^gh[pousr]_[A-Za-z0-9]{20,}$"), re.compile(r"^github_pat_[A-Za-z0-9_]{20,}$"),
     re.compile(r"^sk-[A-Za-z0-9_-]{20,}$"), re.compile(r"^xox[abpr]-[A-Za-z0-9-]{10,}$"),
@@ -1724,6 +1733,13 @@ def check_skill(d: Path, policy: dict, rep: Report) -> str | None:
     if not sk.is_file():
         alt = next((f for f in d.iterdir() if f.is_file() and f.name.lower() == "skill.md"), None)
         if not alt:
+            # A grouping directory (holds nested skill subdirs, e.g. gitnexus/gitnexus-cli/
+            # or ui-styling/ui-styling/) is not itself a skill: don't flag it.
+            try:
+                if any((sub / "SKILL.md").is_file() for sub in d.iterdir() if sub.is_dir()):
+                    return None
+            except OSError:
+                pass
             rep.add("error", "SKILL_MISSING", d, "directory without SKILL.md")
             return None
         rep.add("error", "SKILL_MISSING", d, f"{alt.name} must be named SKILL.md (copied)", True)
@@ -4363,14 +4379,14 @@ def check_attribution(repo: Path, policy: dict, rep: Report, history: bool) -> N
             # the per-line scan. This keeps a 12k-file repo well under the 30s budget.
             if not any(pat.search(text) for pat in ATTRIBUTION_PATTERNS):
                 continue
-            bad = [i for i, line in enumerate(text.splitlines(), 1) if any(pat.search(line) for pat in ATTRIBUTION_PATTERNS)]
+            bad = [i for i, line in enumerate(text.splitlines(), 1) if _is_attribution(line)]
             if bad:
                 rel_parts = p.relative_to(repo).parts
                 agent_file = (rel_parts[0] == ".claude" or p.name in ("CLAUDE.md", "AGENTS.md", "CLAUDE.local.md"))
                 rep.add("error", "ATTR_TRACE", f"{p}:{bad[0]}", f"assistant attribution on {len(bad)} line(s)"
                         + (" (lines removed)" if agent_file else ""), agent_file)
                 if agent_file:
-                    kept = [l for l in text.splitlines(True) if not any(pat.search(l) for pat in ATTRIBUTION_PATTERNS)]
+                    kept = [l for l in text.splitlines(True) if not _is_attribution(l)]
                     rep.edit(p, text, "".join(kept))
     log(1, f"attribution scan: {scanned} file(s), {skipped} skipped (size)", 1)
     if not (repo / ".git").exists():
