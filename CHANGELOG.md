@@ -2,6 +2,23 @@
 
 All notable changes to `agent-config-lint`. Dates are ISO 8601.
 
+## 2026.09.27-15
+
+### Fixed
+- `-i` no longer crashes with `PermissionError` on read-only skills. Skills reached
+  through a symlink (a synced/managed store) or in a non-writable directory are
+  detected up front: the shorten-description section skips them (with a one-line
+  note) and the restructuring section no longer proposes a split/move that would
+  fail. The description write is also wrapped so any residual write error is
+  reported per item instead of aborting the whole review.
+- `skill-family` restructuring no longer fails with "Destination path already
+  exists" when a target directory is present; it falls back to a prefixed name.
+
+### Changed
+- Once "apply to all" (`A`) is chosen in the duplicates section, each remaining
+  group is applied with a single receipt line instead of reprinting the full
+  listing, so a scope with dozens of identical project-vs-user pairs stays readable.
+
 ## 2026.09.27-14
 
 ### Added

@@ -66,7 +66,7 @@ try:
 except ModuleNotFoundError:  # Python < 3.11: policy files unsupported, defaults apply
     tomllib = None
 
-VERSION = "2026.09.27-14"
+VERSION = "2026.09.27-15"
 DOCS = "https://code.claude.com/docs/en/"
 ISSUES = "https://github.com/anthropics/claude-code/issues/"
 
@@ -3329,6 +3329,26 @@ def _fr_plural(n: int, singular: str, plural: str | None = None) -> str:
     return f"{n} {word}"
 
 
+def _writable(path: Path) -> bool:
+    """True if this path (a file, or a dir to create inside) can be modified.
+    Symlinked / synced skills point at a read-only store; editing them raises
+    PermissionError, so the interactive review skips them instead of crashing."""
+    try:
+        # A skill reached through a symlink lives in a managed/synced store; treat it
+        # as read-only whatever the file mode says, and check any symlinked ancestor
+        # up to the skills root too (skills/<name> is often the link, not the file).
+        probe = path
+        for _ in range(6):
+            if probe.is_symlink():
+                return False
+            if probe.name in ("skills", "agents", "commands") or probe == probe.parent:
+                break
+            probe = probe.parent
+        return os.access(path.parent, os.W_OK)
+    except OSError:
+        return False
+
+
 def _ask(prompt: str, choices: str = "yN") -> str:
     """Read one answer. Case is preserved so a prompt can offer both a
     lowercase key and its uppercase "...for all" variant (e.g. s vs S, a vs A)
@@ -3465,7 +3485,19 @@ def compute_proposals(roots: list[Path], repos: list[Path], policy: dict) -> lis
             if len(lines) >= policy["restructure"]["procedure_min_lines"] and steps >= 6:
                 props.append({"kind": "procedure-to-skill", "path": c, "section": title, "gain": est("\n".join(lines)),
                               "title": f"move procedure '{title}' from {short_path(str(c))} into a skill"})
-    return sorted(props, key=lambda p: -p["gain"])
+
+    def _applicable(p: dict) -> bool:
+        # Drop proposals whose targets can't be written (symlinked / synced stores),
+        # so the interactive review never offers a move or edit that will fail.
+        if p["kind"] in ("split-skill", "command-to-skill", "rule-paths", "procedure-to-skill"):
+            return _writable(p["path"])
+        if p["kind"] == "skill-family":
+            return all(_writable(d) for d in p["dirs"])
+        if p["kind"] == "agent-pack":
+            return all(_writable(f) for f in p["files"])
+        return True
+
+    return sorted((p for p in props if _applicable(p)), key=lambda p: -p["gain"])
 
 
 def _local_marketplace(policy: dict) -> tuple[Path, str]:
@@ -3527,8 +3559,11 @@ def apply_proposal(p: dict, policy: dict, restore: list[str], trash_root: Path) 
             target = mk / "plugins" / plugin / "skills"
             target.mkdir(parents=True, exist_ok=True)
             for d in p["dirs"]:
-                shutil.move(str(d), str(target / d.name))
-                restore.append(f"mv '{target / d.name}' '{d}'")
+                dest = target / d.name
+                if dest.exists():
+                    dest = target / f"{slugify(d.parent.name)}-{d.name}"
+                shutil.move(str(d), str(dest))
+                restore.append(f"mv '{dest}' '{d}'")
             desc = f"{len(p['dirs'])} {p['prefix']} skills"
         _register_plugin(plugin, desc, policy, restore)
         return (f"plugin '{plugin}@{mname}' created, not loaded anywhere yet. In a project that needs it: /plugin -> "
@@ -3978,11 +4013,15 @@ def interactive(rep: Report, repos: list[Path], policy: dict, user_scope: bool) 
     props = compute_proposals(roots, repos, policy)
     limit = policy["tokens"]["skill_description_chars"]
     long_desc = []
+    long_desc_ro = 0  # read-only skills skipped (symlinked / synced stores)
     for r in roots:
         for sk in sorted(r.glob("skills/*/SKILL.md")):
             meta, _ = split_frontmatter(read_text(sk) or "")
             if len((meta or {}).get("description", "")) > limit and (meta or {}).get("disable-model-invocation", "").lower() not in ("true", "yes", "on", "1"):
-                long_desc.append(sk)
+                if _writable(sk):
+                    long_desc.append(sk)
+                else:
+                    long_desc_ro += 1
     try:
         udata = json.loads(read_text(cfg / "settings.json") or "{}")
     except json.JSONDecodeError:
@@ -4028,6 +4067,16 @@ def interactive(rep: Report, repos: list[Path], policy: dict, user_scope: bool) 
             except OSError:
                 continue
             label = {"DUP_EXACT": "copies identiques", "DUP_NAME": "même nom", "DUP_SIMILAR": "quasi-doublons"}[why]
+            # Once "apply to all" is on, don't reprint the full listing for every
+            # group (dozens of identical project-vs-user pairs); one receipt line each.
+            if auto_all and remove:
+                for k in remove:
+                    if Path(members[k]["path"]).exists():
+                        _trash(Path(members[k]["path"]), trash_root, restore)
+                        count("doublons retirés")
+                        print(f"  {t.grn}✓{t.r} [{n}/{len(dups)}] {label} · {members[0]['name']} → "
+                              f"{t.dim}retiré {t.short(str(members[k]['path']), t.width - 24)}{t.r}")
+                continue
             print(f"\n{t.b}[{n}/{len(dups)}] {label}{t.r} · {_fr_plural(len(members), members[0]['kind'])}")
             descs = [m["desc"] for m in members]
             pre, suf = _affixes(descs)
@@ -4162,6 +4211,8 @@ def interactive(rep: Report, repos: list[Path], policy: dict, user_scope: bool) 
         t.rule(f"DESCRIPTIONS TROP LONGUES ({len(long_desc)})")
         print(f"{t.dim}La description de chaque skill est relue à chaque tour. Version courte proposée ; le texte complet\n"
               f"reste dans metadata.full_description.{t.r}")
+        if long_desc_ro:
+            print(f"{t.dim}({_fr_plural(long_desc_ro, 'skill')} en lecture seule ignoré{'s' if long_desc_ro > 1 else ''} : liens vers un store synchronisé.){t.r}")
         for n, sk in enumerate(long_desc, 1):
             text = read_text(sk) or ""
             desc = (split_frontmatter(text)[0] or {}).get("description", "")
@@ -4179,10 +4230,14 @@ def interactive(rep: Report, repos: list[Path], policy: dict, user_scope: bool) 
             if ans == "q":
                 break
             if ans == "o":
-                backup([sk])
                 new = set_frontmatter(text, {"description": proposal})
                 new = move_to_metadata(set_frontmatter(new, {"full_description": desc}), ["full_description"])
-                sk.write_text(new, encoding="utf-8")
+                try:
+                    backup([sk])
+                    sk.write_text(new, encoding="utf-8")
+                except OSError as e:
+                    print(f"     {t.red}échec : {home_path(str(sk))} ({e}){t.r}")
+                    continue
                 count("descriptions raccourcies")
 
     # ---- model and MCP

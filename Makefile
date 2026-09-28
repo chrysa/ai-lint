@@ -15,7 +15,7 @@ lint:  ## Lint the linter and its tests with ruff
 fmt:  ## Format with ruff
 	$(PY) -m ruff format agent-config-lint.py tests
 
-selfcheck:  ## Run the tool on its own repo (no attribution, no secrets)
-	$(PY) agent-config-lint.py . --no-cli --no-history --no-scaffold --strict --lang en
+selfcheck:  ## Run the tool on its own repo; fail only on real traces/secrets in-repo
+	$(PY) tests/_selfcheck.py
 
 check: lint test  ## Lint then test
