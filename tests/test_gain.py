@@ -19,3 +19,17 @@ def test_details_report_shows_total(env, linter_module):
     proc = env.run(str(env.repos[0]), "--user", "--no-cli", "--no-history", "--details", "--lang", "en", expect_ok=True)
     assert "Potential savings:" in proc.stdout
     assert "tokens/session" in proc.stdout
+
+
+def test_token_budget_before_after(linter_module):
+    m = linter_module
+    after = {"total": 5000, "sums": {}, "counts": {}, "groups": []}
+    out = m.render_token_budget(after, color=False, before={"total": 8000})
+    assert "was ~8000" in out and "-3000" in out
+
+
+def test_token_budget_potential(linter_module):
+    m = linter_module
+    b = {"total": 5000, "sums": {}, "counts": {}, "groups": [], "potential": 1200}
+    out = m.render_token_budget(b, color=False)
+    assert "~1200 tokens/session reclaimable" in out

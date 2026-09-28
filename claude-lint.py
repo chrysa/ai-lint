@@ -66,7 +66,7 @@ try:
 except ModuleNotFoundError:  # Python < 3.11: policy files unsupported, defaults apply
     tomllib = None
 
-VERSION = "2026.09.28-20"
+VERSION = "2026.09.28-21"
 DOCS = "https://code.claude.com/docs/en/"
 ISSUES = "https://github.com/anthropics/claude-code/issues/"
 
@@ -3164,15 +3164,24 @@ def check_token_levers(repo: Path, policy: dict, rep: Report, stack: dict | None
         rep.add("info", "TOKEN_LSP", repo, "no code intelligence plugin enabled for this typed stack (see /plugin)")
 
 
-def render_token_budget(budget: dict, color: bool) -> str:
+def render_token_budget(budget: dict, color: bool, before: dict | None = None) -> str:
     if not budget:
         return ""
-    b, r0 = ("\033[1m", "\033[0m") if color else ("", "")
+    b, r0, g = ("\033[1m", "\033[0m", "\033[32m") if color else ("", "", "")
     sums, counts = budget["sums"], budget.get("counts", {})
     labels = {"instructions": "instruction files + imports", "rules": "unscoped rules",
               "listing": f"listing: {counts.get('skills', 0)} skills, {counts.get('subagents', 0)} subagents",
               "memory": "auto memory index", "mcp": "MCP servers (deferred, est.)"}
-    lines = [f"{b}TOKENS{r0}  ~{budget['total']} tokens loaded in every session (estimate, bytes/4)"]
+    # Before/after: when a --fix pass changed the budget, show the delta actually
+    # realised; otherwise show the potential gain still on the table.
+    head = f"{b}TOKENS{r0}  ~{budget['total']} tokens loaded in every session (estimate, bytes/4)"
+    if before and before.get("total") is not None:
+        delta = before["total"] - budget["total"]
+        if delta > 0:
+            head += f"  {g}(was ~{before['total']} before --fix: -{delta} tokens/session){r0}"
+        elif delta < 0:
+            head += f"  (was ~{before['total']} before: +{-delta})"
+    lines = [head]
     for k, label in labels.items():
         if sums.get(k):
             lines.append(f"  {label:40} ~{sums[k]}")
@@ -3180,6 +3189,9 @@ def render_token_budget(budget: dict, color: bool) -> str:
     if groups:
         lines.append("  biggest groups:")
         lines += [f"    {g_['group']:52} {g_['items']:>4} item(s)  ~{g_['tokens']}" for g_ in groups]
+    if budget.get("potential"):
+        lines.append(f"  {g}potential: ~{budget['potential']} tokens/session reclaimable"
+                     f"{r0} (act with --fix / -i; see --details)")
     lines.append("  habits: /clear between tasks, /context and /usage to check, /skill-doctor for unused skills,"
                  " Sonnet by default, subagents for verbose work")
     return "\n".join(lines)
@@ -4621,6 +4633,9 @@ def run_lint(repos: list[Path], policy: dict, args: argparse.Namespace, history:
         lint_repo(r, policy, rep, history, user_text)
         log(1, f"{r}: {len(rep.findings) - before} finding(s) in {time.perf_counter() - t0:.2f}s")
     progress(len(repos), len(repos), "done")
+    if isinstance(rep.budget, dict):
+        rep.budget["potential"] = (sum(_finding_gain(f) for f in rep.findings)
+                                   + sum(p["gain"] for p in rep.proposals))
     return rep
 
 
@@ -4730,17 +4745,18 @@ def _finding_gain(f: Finding) -> int:
     """Estimated tokens saved per session if this finding is acted on. Uses the
     figure already in the message when present, else a per-code estimate. Only the
     context-cost codes carry a gain; everything else returns 0."""
-    m = re.search(r"~?(\d+)\s*tokens?", f.message)
-    if m:
+    # Only always-loaded context counts. A token figure already in the message
+    # (e.g. an instruction file, an agent pack) is authoritative.
+    m = re.search(r"~(\d+)\s*tokens?", f.message)
+    if m and f.code in ("TOKEN_AGENT_PACK", "INSTR_LONG", "INSTR_TOO_LARGE", "TOKEN_IMPORTS"):
         return int(m.group(1))
-    if f.code in ("SKILL_LONG", "INSTR_LONG"):
-        m = re.search(r"(\d+)\s*lines?", f.message)  # a long file: ~half its lines leave the always-loaded path
-        return int(m.group(1)) * 8 // 4 if m else 0
-    if f.code == "TOKEN_SKILL_DESC":
+    if f.code == "TOKEN_SKILL_DESC":  # the listing description is re-sent every turn
         m = re.search(r"(\d+)\s*chars", f.message)
-        return (int(m.group(1)) - 400) // 4 if m else 0
-    if f.code in ("RULE_UNSCOPED", "DUP_EXACT", "DUP_NAME", "DUP_SIMILAR", "DUP_ACROSS_PROJECTS"):
-        return 60  # a small constant per unscoped rule / duplicate removed from the listing
+        return max(0, (int(m.group(1)) - 400) // 4) if m else 0
+    if f.code in ("RULE_UNSCOPED", "DUP_EXACT", "DUP_NAME", "DUP_SIMILAR", "DUP_ACROSS_PROJECTS", "DUP_FAMILY"):
+        return 60  # small per-item listing cost removed
+    # SKILL_LONG is deliberately 0: a skill body is loaded on demand, not every
+    # session, so splitting it does not reduce per-session tokens.
     return 0
 
 
@@ -4929,7 +4945,8 @@ def render_summary(rep: Report, fix: bool, color: bool, quiet: bool, fixed: list
         lines += [f"  {red}✘{r0} {short_path(p)}: {m}" for p, m in failures]
 
     lines.append(rule)
-    tb = render_token_budget(getattr(rep, "budget", None), color)
+    tb = render_token_budget(getattr(rep, "budget", None), color,
+                             getattr(FIRST_REPORT, "budget", None) if fix else None)
     if tb:
         lines += [tb, rule]
     rp = render_proposals(getattr(rep, "proposals", []), color)
