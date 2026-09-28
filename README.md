@@ -105,6 +105,8 @@ The full report ends with:
 | `--print-policy` | Print the default policy as TOML |
 | `--print-catalog` | Print the editable catalog (reference sets + per-check metadata) as YAML |
 | `--catalog FILE` | Load an edited catalog: extend the known keys/events/tools/fields, and override any check's severity (`error`/`warn`/`info`/`off`), `enabled`, or `→ fix` action |
+| `--plugin-dir DIR` | Extra directory of check plugins (repeatable). Also loaded from `<config dir>/plugins` and `<repo>/.claude-lint/plugins` |
+| `--list-plugins` | List discovered plugins and the checks they register, then exit |
 | `--dump-reference` | Print built-in reference data (keys, events, tools, fields) |
 | `--session-settings FILE` | Write settings for a guarded agent session |
 | `--guard` | PreToolUse hook mode (stdin JSON, exit 2 blocks) |
@@ -414,6 +416,32 @@ as small as the changes you want. The catalog needs PyYAML
 (`pip install 'PyYAML>=6'`, declared under `[project.optional-dependencies].catalog`
 in `pyproject.toml`); without it the linter still runs and
 the `--catalog` / `--print-catalog` options degrade gracefully.
+
+## Plugins (add your own checks)
+
+New checks can be added as plugins, without editing the engine. A plugin is a
+`.py` file dropped in a plugin directory; it defines `register(api)` and registers
+one or more checks:
+
+```python
+def register(api):
+    @api.check("MY_RULE", scope="project")   # or scope="user"
+    def _rule(ctx):
+        p = ctx.path("forbidden.txt")
+        if p.is_file():
+            ctx.add("warn", "MY_RULE", p, "forbidden.txt must not be committed",
+                    action_en="delete it or add it to .gitignore")
+```
+
+`ctx` gives `root`, `path(*parts)`, `read(path)`, `glob(pattern)` and `add(level,
+code, path, message, action_fr=…, action_en=…, fixable=…)`. Plugin findings flow
+into the normal report and obey the catalog (a plugin code can be disabled or
+re-ranked via `--catalog`, and its `→ fix` action shows in `--details`). A plugin
+that raises is reported and skipped — it never crashes a run.
+
+Discovery, in order: `<config dir>/plugins/`, `<repo>/.claude-lint/plugins/`, and
+any `--plugin-dir DIR` (repeatable). `--list-plugins` shows what loaded. A ready
+example is in [`examples/plugins/example_check.py`](examples/plugins/example_check.py).
 
 ## CI
 

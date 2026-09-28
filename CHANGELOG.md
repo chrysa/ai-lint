@@ -2,6 +2,20 @@
 
 All notable changes to `claude-lint`. Dates are ISO 8601.
 
+## 2026.09.28-27
+
+### Added
+- Plugin system: drop a `.py` file in a plugin directory to add checks without
+  touching the engine. A plugin defines `register(api)` and registers checks via
+  `@api.check(code, scope="project"|"user")`; each check gets a `CheckContext`
+  (root, path/read/glob, add). Findings flow into the normal report and obey the
+  catalog; a failing plugin is isolated, never fatal. Discovery from
+  `<config dir>/plugins`, `<repo>/.claude-lint/plugins` and `--plugin-dir`;
+  `--list-plugins` lists them. Example in examples/plugins/.
+
+### Performance
+- `read_text` caches by (path, mtime, size), so files re-read across the
+  attribution, skills, tokens and duplicate passes are read from disk once.
 ## 2026.09.28-26
 
 ### Added

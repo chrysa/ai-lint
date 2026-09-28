@@ -71,7 +71,7 @@ try:
 except ModuleNotFoundError:  # Python < 3.11: policy files unsupported, defaults apply
     tomllib = None
 
-VERSION = "2026.09.28-26"
+VERSION = "2026.09.28-27"
 DOCS = "https://code.claude.com/docs/en/"
 ISSUES = "https://github.com/anthropics/claude-code/issues/"
 
@@ -1251,11 +1251,26 @@ def load_policy(path: Path | None, repos: list[Path]) -> dict:
     return policy
 
 
+_READ_CACHE: dict = {}  # (path, mtime_ns, size) -> text; keyed on stat so a write misses
+
+
 def read_text(p: Path) -> str | None:
     try:
-        return p.read_text(encoding="utf-8")
+        st = p.stat()
+        key = (str(p), st.st_mtime_ns, st.st_size)
+    except OSError:
+        return None
+    hit = _READ_CACHE.get(key)
+    if hit is not None:
+        return hit
+    try:
+        text = p.read_text(encoding="utf-8")
     except (OSError, UnicodeDecodeError):
         return None
+    if len(_READ_CACHE) > 20000:  # bound memory on huge scans
+        _READ_CACHE.clear()
+    _READ_CACHE[key] = text
+    return text
 
 
 def dump_json(data: Any) -> str:
@@ -7403,6 +7418,7 @@ def lint_repo(repo: Path, policy: dict, rep: Report, history: bool, user_text: s
                 f"{len(dup)} lines repeated from user instructions",
             )
     check_attribution(repo, policy, rep, history)
+    run_plugin_checks("project", repo, policy, rep)
 
 
 def discover_repos(root: Path, max_depth: int = 3) -> list[Path]:
@@ -7432,6 +7448,8 @@ def discover_repos(root: Path, max_depth: int = 3) -> list[Path]:
 def run_lint(repos: list[Path], policy: dict, args: argparse.Namespace, history: bool) -> Report:
     rep = Report()
     user_text = lint_user(policy, rep, repos) if (args.user or args.user_only) else None
+    if args.user or args.user_only:
+        run_plugin_checks("user", config_dir(), policy, rep)
     check_rtk(policy, rep, repos, bool(args.user or args.user_only))
     check_llmtrim(rep, repos, bool(args.user or args.user_only))
     rep.budget = token_budget(
@@ -8335,6 +8353,115 @@ def session_settings(policy: dict) -> dict:
     }
 
 
+# --------------------------------------------------------------------------- #
+# Plugin system: drop a .py file in a plugins directory to add checks without
+# touching the engine. A plugin defines `register(api)` and calls
+# `api.check(name, scope=...)` as a decorator on a function `fn(ctx)`; the
+# function inspects `ctx.repo` / `ctx.path(...)` and reports via `ctx.add(...)`.
+# Findings flow into the same report and honour the catalog (severity/enable).
+# Discovery: <config dir>/plugins, <repo>/.claude-lint/plugins, and --plugin-dir.
+# --------------------------------------------------------------------------- #
+
+_PLUGIN_CHECKS: list = []  # list of (name, scope, fn); scope is "project" or "user"
+_PLUGINS_LOADED: list = []  # names of loaded plugins, for --list-plugins
+
+
+class CheckContext:
+    """What a plugin check receives. Thin, stable surface over the internals."""
+
+    def __init__(self, scope: str, root: Path, policy: dict, rep: Report) -> None:
+        self.scope = scope
+        self.root = Path(root)  # repo root (project) or config dir (user)
+        self.policy = policy
+        self._rep = rep
+
+    def path(self, *parts: str) -> Path:
+        return self.root.joinpath(*parts)
+
+    def read(self, p: Path) -> str | None:
+        return read_text(p)
+
+    def glob(self, pattern: str) -> list[Path]:
+        try:
+            return sorted(self.root.glob(pattern))
+        except OSError:
+            return []
+
+    def add(
+        self,
+        level: str,
+        code: str,
+        path,
+        message: str,
+        action_fr: str = "",
+        action_en: str = "",
+        fixable: bool = False,
+    ) -> None:
+        # A plugin action feeds the same "-> fix" line as built-in checks.
+        if action_fr or action_en:
+            BRIEF_FR.setdefault(code, ("other", "", action_fr or action_en))
+            BRIEF_EN.setdefault(code, ("other", "", action_en or action_fr))
+        self._rep.add(level, code, path, message, fixable)
+
+
+class PluginAPI:
+    """Passed to each plugin's register(); its .check decorator registers a check."""
+
+    def __init__(self, name: str) -> None:
+        self.name = name
+
+    def check(self, code: str, scope: str = "project"):
+        if scope not in ("project", "user"):
+            raise ValueError("scope must be 'project' or 'user'")
+
+        def deco(fn):
+            _PLUGIN_CHECKS.append((code, scope, fn))
+            return fn
+
+        return deco
+
+
+def plugin_dirs(extra: list[Path] | None = None) -> list[Path]:
+    dirs = [config_dir() / "plugins", Path.cwd() / ".claude-lint" / "plugins"]
+    dirs += list(extra or [])
+    return [d for d in dirs if d.is_dir()]
+
+
+def load_plugins(extra: list[Path] | None = None) -> None:
+    """Import every *.py in the plugin dirs and call its register(api). Failures
+    are isolated: a broken plugin is reported and skipped, never fatal."""
+    import importlib.util as _ilu
+
+    for d in plugin_dirs(extra):
+        for f in sorted(d.glob("*.py")):
+            if f.name.startswith("_"):
+                continue
+            try:
+                spec = _ilu.spec_from_file_location(f"claude_lint_plugin_{f.stem}", f)
+                if not spec or not spec.loader:
+                    continue
+                mod = _ilu.module_from_spec(spec)
+                spec.loader.exec_module(mod)
+                reg = getattr(mod, "register", None)
+                if callable(reg):
+                    reg(PluginAPI(f.stem))
+                    _PLUGINS_LOADED.append(f.stem)
+                else:
+                    log(1, f"plugin {f.name}: no register(api), skipped")
+            except Exception as e:  # noqa: BLE001 - never let a plugin crash the run
+                log(1, f"plugin {f.name}: failed to load ({e.__class__.__name__}: {e})")
+
+
+def run_plugin_checks(scope: str, root: Path, policy: dict, rep: Report) -> None:
+    for code, sc, fn in _PLUGIN_CHECKS:
+        if sc != scope:
+            continue
+        try:
+            fn(CheckContext(scope, root, policy, rep))
+        except Exception as e:  # noqa: BLE001 - isolate a misbehaving plugin check
+            log(1, f"plugin check {code}: error ({e.__class__.__name__}: {e})")
+
+
 def dump_reference() -> dict:
     return {
         "docs_snapshot": "2026-09",
@@ -8575,6 +8702,17 @@ def main(argv: list[str] | None = None) -> int:
         metavar="FILE",
         help="load an edited catalog YAML (extends reference, overrides checks)",
     )
+    ap.add_argument(
+        "--plugin-dir",
+        type=Path,
+        action="append",
+        metavar="DIR",
+        help="extra directory of check plugins (repeatable); also loaded from "
+        "<config dir>/plugins and <repo>/.claude-lint/plugins",
+    )
+    ap.add_argument(
+        "--list-plugins", action="store_true", help="list discovered check plugins and exit"
+    )
     # No arguments at all: show help (with defaults) instead of silently scanning cwd.
     if not (argv if argv is not None else sys.argv[1:]):
         ap.print_help()
@@ -8592,6 +8730,17 @@ def main(argv: list[str] | None = None) -> int:
     if args.catalog:
         load_catalog(args.catalog)
     LANG = args.lang or ("fr" if os.environ.get("LANG", "").lower().startswith("fr") else "en")
+    load_plugins(args.plugin_dir)
+    if args.list_plugins:
+        dirs = ", ".join(str(d) for d in plugin_dirs(args.plugin_dir)) or "(none)"
+        print(f"plugin dirs: {dirs}")
+        print(
+            f"loaded plugins ({len(_PLUGINS_LOADED)}): " + (", ".join(_PLUGINS_LOADED) or "(none)")
+        )
+        print(f"registered checks: {len(_PLUGIN_CHECKS)}")
+        for code, scope, _ in _PLUGIN_CHECKS:
+            print(f"  {scope:8} {code}")
+        return 0
 
     if args.print_policy:
         print(to_toml(DEFAULT_POLICY))
