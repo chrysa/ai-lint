@@ -2,6 +2,13 @@
 
 All notable changes to `claude-lint`. Dates are ISO 8601.
 
+## 2026.09.29-31
+
+### Changed
+- Factored out repeated file I/O: `load_json_file(path)` (read + parse + guard,
+  returns {}) and `frontmatter_of(path)` replace ~15 inlined
+  `json.loads(read_text(...))` / `split_frontmatter(read_text(...))` blocks,
+  removing many try/except JSONDecodeError repetitions. No behaviour change.
 ## 2026.09.29-30
 
 ### Added

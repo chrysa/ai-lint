@@ -71,7 +71,7 @@ try:
 except ModuleNotFoundError:  # Python < 3.11: policy files unsupported, defaults apply
     tomllib = None
 
-VERSION = "2026.09.29-30"
+VERSION = "2026.09.29-31"
 DOCS = "https://code.claude.com/docs/en/"
 ISSUES = "https://github.com/anthropics/claude-code/issues/"
 
@@ -1330,6 +1330,22 @@ def split_frontmatter(text: str) -> tuple[dict[str, str] | None, int]:
         if m:
             meta[m.group(1)] = m.group(2).strip().strip("'\"")
     return meta, offset
+
+
+def load_json_file(path: Path) -> dict:
+    """Read a JSON file and return a dict, or {} when it is missing or invalid.
+    Centralises the read_text + json.loads + JSONDecodeError guard used throughout."""
+    try:
+        data = json.loads(read_text(path) or "{}")
+    except json.JSONDecodeError:
+        return {}
+    return data if isinstance(data, dict) else {}
+
+
+def frontmatter_of(path: Path) -> dict[str, str]:
+    """The frontmatter of a Markdown file as a flat dict ({} when none/unreadable)."""
+    meta, _ = split_frontmatter(read_text(path) or "")
+    return meta or {}
 
 
 def frontmatter_block(text: str) -> str:
@@ -2986,7 +3002,7 @@ def check_agent_assets(root: Path, policy: dict, rep: Report, scope: str, projec
             cmd_name = ":".join(f.relative_to(commands).with_suffix("").parts)
             if cmd_name in names:
                 rep.add("warn", "COMMAND_SHADOWED", f, f"skill '{cmd_name}' has the same name and wins")
-            meta, _ = split_frontmatter(read_text(f) or "")
+            meta = frontmatter_of(f)
             if not (meta or {}).get("description"):
                 rep.add("info", "COMMAND_FRONTMATTER", f, "no description (first line is used)")
     check_rules(root, rep, project_root)
@@ -4786,7 +4802,7 @@ def _with_imports(path: Path, seen: set, depth: int = 0) -> list[tuple[Path, int
 def _unscoped_rules(root: Path, seen: set) -> list[tuple[Path, int]]:
     out = []
     for f in sorted((root / "rules").rglob("*.md")) if (root / "rules").is_dir() else []:
-        meta, _ = split_frontmatter(read_text(f) or "")
+        meta = frontmatter_of(f)
         if not meta or "paths" not in meta:
             out += _with_imports(f, seen)
     return out
@@ -4799,7 +4815,7 @@ def _skill_listing(roots: list[Path], rep: Report, policy: dict) -> list[tuple[P
         for sk in sorted(root.glob("skills/*/SKILL.md")):
             if "synced" in sk.parts:
                 continue
-            meta, _ = split_frontmatter(read_text(sk) or "")
+            meta = frontmatter_of(sk)
             meta = meta or {}
             if meta.get("disable-model-invocation", "").lower() in ("true", "yes", "on", "1"):
                 continue
@@ -4813,7 +4829,7 @@ def _skill_listing(roots: list[Path], rep: Report, policy: dict) -> list[tuple[P
                 )
             out.append((sk, (len(sk.parent.name) + min(len(desc), 1536) + 20) // 4))
         for ag in sorted(root.glob("agents/**/*.md")):
-            meta, _ = split_frontmatter(read_text(ag) or "")
+            meta = frontmatter_of(ag)
             out.append(
                 (
                     ag,
@@ -4870,16 +4886,10 @@ def token_budget(repo: Path | None, user: bool, policy: dict, rep: Report) -> di
             clipped = "\n".join(text.splitlines()[:200])[:25_000]
             parts["memory"].append((mem, est(clipped)))
         servers = {}
-        try:
-            servers.update((json.loads(read_text(repo / ".mcp.json") or "{}").get("mcpServers") or {}))
-        except json.JSONDecodeError:
-            pass
-        try:
-            cj = json.loads(read_text(Path.home() / ".claude.json") or "{}")
-            servers.update(cj.get("mcpServers") or {})
-            servers.update(((cj.get("projects") or {}).get(str(repo.resolve())) or {}).get("mcpServers") or {})
-        except json.JSONDecodeError:
-            pass
+        servers.update(load_json_file(repo / ".mcp.json").get("mcpServers") or {})
+        cj = load_json_file(Path.home() / ".claude.json")
+        servers.update(cj.get("mcpServers") or {})
+        servers.update(((cj.get("projects") or {}).get(str(repo.resolve())) or {}).get("mcpServers") or {})
         per = policy["tokens"]["mcp_server_estimate"]
         parts["mcp"] = [(Path(f"mcp:{n}"), per) for n in servers]
     parts["listing"] += _skill_listing(roots, rep, policy)
@@ -4927,10 +4937,7 @@ def token_budget(repo: Path | None, user: bool, policy: dict, rep: Report) -> di
 
 def check_token_levers(repo: Path, policy: dict, rep: Report, stack: dict | None = None) -> None:
     if policy["tokens"]["prefer_cli_over_mcp"]:
-        try:
-            servers = json.loads(read_text(repo / ".mcp.json") or "{}").get("mcpServers") or {}
-        except json.JSONDecodeError:
-            servers = {}
+        servers = load_json_file(repo / ".mcp.json").get("mcpServers") or {}
         for name, cli in (
             ("github", "gh"),
             ("sentry", "sentry-cli"),
@@ -4949,10 +4956,7 @@ def check_token_levers(repo: Path, policy: dict, rep: Report, stack: dict | None
         if servers:
             env_all = {}
             for f in (config_dir() / "settings.json", repo / ".claude" / "settings.json"):
-                try:
-                    env_all.update((json.loads(read_text(f) or "{}").get("env") or {}))
-                except json.JSONDecodeError:
-                    pass
+                env_all.update(load_json_file(f).get("env") or {})
             if "MAX_MCP_OUTPUT_TOKENS" not in env_all and "MAX_MCP_OUTPUT_TOKENS" not in os.environ:
                 rep.add(
                     "info",
@@ -4962,7 +4966,7 @@ def check_token_levers(repo: Path, policy: dict, rep: Report, stack: dict | None
                     "result can flood the context (default cap 25000, warns at 10000)",
                 )
     for sub in sorted((repo / ".claude" / "agents").glob("*.md")) if (repo / ".claude" / "agents").is_dir() else []:
-        meta, _ = split_frontmatter(read_text(sub) or "")
+        meta = frontmatter_of(sub)
         text = f"{sub.stem} {(meta or {}).get('description', '')}".lower()
         if re.search(r"\b(test|lint|log|triage|format)", text) and not (meta or {}).get("model"):
             rep.add(
@@ -4987,10 +4991,7 @@ def check_token_levers(repo: Path, policy: dict, rep: Report, stack: dict | None
     typed = stack["python"] or bool(stack["pm"])
     enabled = []
     for f in (config_dir() / "settings.json", repo / ".claude" / "settings.json"):
-        try:
-            enabled += list((json.loads(read_text(f) or "{}").get("enabledPlugins") or {}))
-        except json.JSONDecodeError:
-            pass
+        enabled += list(load_json_file(f).get("enabledPlugins") or {})
     if typed and not any(re.search(r"lsp|pyright|typescript|pylsp|basedpyright|vtsls|gopls", p, re.I) for p in enabled):
         rep.add(
             "info",
@@ -5558,10 +5559,7 @@ def _local_marketplace(policy: dict) -> tuple[Path, str]:
 def _register_plugin(plugin: str, desc: str, policy: dict, restore: list[str]) -> None:
     mk, name = _local_marketplace(policy)
     mf = mk / ".claude-plugin" / "marketplace.json"
-    try:
-        data = json.loads(read_text(mf) or "{}")
-    except json.JSONDecodeError:
-        data = {}
+    data = load_json_file(mf)
     data.setdefault("name", name)
     data.setdefault("owner", {"name": "local"})
     plugins = data.setdefault("plugins", [])
@@ -6379,7 +6377,7 @@ def interactive(rep: Report, repos: list[Path], policy: dict, user_scope: bool) 
     long_desc_ro = 0  # read-only skills skipped (symlinked / synced stores)
     for r in roots:
         for sk in sorted(r.glob("skills/*/SKILL.md")):
-            meta, _ = split_frontmatter(read_text(sk) or "")
+            meta = frontmatter_of(sk)
             if len((meta or {}).get("description", "")) > limit and (meta or {}).get(
                 "disable-model-invocation", ""
             ).lower() not in ("true", "yes", "on", "1"):
@@ -6387,10 +6385,7 @@ def interactive(rep: Report, repos: list[Path], policy: dict, user_scope: bool) 
                     long_desc.append(sk)
                 else:
                     long_desc_ro += 1
-    try:
-        udata = json.loads(read_text(cfg / "settings.json") or "{}")
-    except json.JSONDecodeError:
-        udata = {}
+    udata = load_json_file(cfg / "settings.json")
     misc = []
     if "opus" in str(udata.get("model", "")).lower():
         misc.append("model")
