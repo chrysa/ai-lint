@@ -1,4 +1,4 @@
-"""Test harness for agent-config-lint.
+"""Test harness for claude-lint.
 
 Builds a miniature reproduction of the real environment (user scope +
 project repos) inside temporary directories, with HOME and CLAUDE_CONFIG_DIR
@@ -18,7 +18,7 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parent.parent
-SCRIPT = ROOT / "agent-config-lint.py"
+SCRIPT = ROOT / "claude-lint.py"
 
 
 def _load_module():

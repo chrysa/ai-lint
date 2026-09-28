@@ -1,6 +1,13 @@
 # Changelog
 
-All notable changes to `agent-config-lint`. Dates are ISO 8601.
+All notable changes to `claude-lint`. Dates are ISO 8601.
+
+## 2026.09.28-17
+
+### Changed
+- Renamed the project and executable to `claude-lint` (`claude-lint.py`). The cache
+  directory is now `~/.cache/claude-lint/`; `--restore` still reads the former
+  `~/.cache/agent-config-lint/trash/` so pre-rename sessions stay restorable.
 
 ## 2026.09.27-16
 
@@ -38,7 +45,7 @@ All notable changes to `agent-config-lint`. Dates are ISO 8601.
   defaults (scope, mode, report language, scaffolding, token budget, MCP cap, rtk),
   plus usage examples.
 - Per-run log: each run appends one JSON line to
-  `~/.cache/agent-config-lint/logs/<date>.log` (timestamp, version, arguments,
+  `~/.cache/claude-lint/logs/<date>.log` (timestamp, version, arguments,
   repository count, elapsed time, finding counts by level and code, fixed/applied
   counts, exit code). Counts and codes only — never file contents or secrets.
   Best-effort: a logging failure never changes the run's result.
@@ -51,7 +58,7 @@ All notable changes to `agent-config-lint`. Dates are ISO 8601.
 - `RTK_MISSING` now spells out both ways forward: install rtk, or set
   `permissions.require_rtk = false` to skip rtk routing. `RTK_MISSING` and
   `LLMTRIM_MISSING` appear in the brief report's "broken" section.
-- The project format hook no longer reformats `agent-config-lint.py`; the single
+- The project format hook no longer reformats `claude-lint.py`; the single
   distribution file keeps its dense hand-authored layout (it is still linted).
 
 ## 2026.09.27-13

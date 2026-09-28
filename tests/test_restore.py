@@ -3,7 +3,7 @@ from __future__ import annotations
 
 
 def _trash_base(env):
-    return env.home / ".cache" / "agent-config-lint" / "trash"
+    return env.home / ".cache" / "claude-lint" / "trash"
 
 
 def test_missing_target_returns_1(env, linter_module, capsys):

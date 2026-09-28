@@ -1,4 +1,4 @@
-"""Each run appends a JSON record to ~/.cache/agent-config-lint/logs/<date>.log."""
+"""Each run appends a JSON record to ~/.cache/claude-lint/logs/<date>.log."""
 from __future__ import annotations
 
 import datetime as dt
@@ -6,7 +6,7 @@ import json
 
 
 def _log_file(env):
-    return env.home / ".cache" / "agent-config-lint" / "logs" / (dt.date.today().isoformat() + ".log")
+    return env.home / ".cache" / "claude-lint" / "logs" / (dt.date.today().isoformat() + ".log")
 
 
 def test_run_writes_log(env):

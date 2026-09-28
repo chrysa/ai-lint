@@ -6,14 +6,14 @@ disable-model-invocation: true
 
 # Guarded configuration audit
 
-The linter (`agent-config-lint.py`) does every deterministic repair. You handle what it
+The linter (`claude-lint.py`) does every deterministic repair. You handle what it
 cannot: judgment calls, and keeping its reference data in line with the docs.
 
 ## 0. Preconditions (check first, stop if not met)
 
 - The session must run with the guard: `claude --settings <file>` where the file was
-  produced by `agent-config-lint.py --session-settings <file>`. Check that a PreToolUse
-  hook calling `agent-config-lint.py --guard` is active (`/hooks`). If not, stop and tell
+  produced by `claude-lint.py --session-settings <file>`. Check that a PreToolUse
+  hook calling `claude-lint.py --guard` is active (`/hooks`). If not, stop and tell
   the user the exact two commands to start a guarded session.
 - The guard blocks any change that would loosen the configuration. A block is an answer,
   not an obstacle: never retry through another tool, another path, a script or a shell
@@ -22,15 +22,15 @@ cannot: judgment calls, and keeping its reference data in line with the docs.
 
 ## 1. Deterministic pass
 
-1. Run `agent-config-lint.py . --user -v` (read-only). Keep the whole output.
+1. Run `claude-lint.py . --user -v` (read-only). Keep the whole output.
 2. Show the user the SUMMARY section and ask for approval, then run it again with `--fix`.
 3. Everything listed under "NOT FIXED" becomes your worklist.
-4. Run `agent-config-lint.py . --user --generate` (preview only) and include in your plan
+4. Run `claude-lint.py . --user --generate` (preview only) and include in your plan
    what generation would add. Applying it (`--generate --fix`) is the user's action.
 
 ## 1b. rtk review (when rtk is used)
 
-1. Run `agent-config-lint.py . --user --rtk-report -v` and read the rtk findings and the
+1. Run `claude-lint.py . --user --rtk-report -v` and read the rtk findings and the
    `rtk gain` / `rtk discover` output.
 2. Propose, with the numbers: commands to add to `[hooks] exclude_commands` in the rtk
    `config.toml` when compressed output hid information the task needed (re-runs, raw
@@ -43,7 +43,7 @@ cannot: judgment calls, and keeping its reference data in line with the docs.
 
 List the DUP_* findings with your recommendation for each cluster (which item to keep and
 why: most recent, most complete, the one referenced elsewhere). Removal is done by the
-user with `agent-config-lint.py -i` (you cannot run it under the guard).
+user with `claude-lint.py -i` (you cannot run it under the guard).
 
 ## 1d. Restructuring
 
@@ -61,7 +61,7 @@ instruction content without approval; moving it is also a `behaviour change`.
 
 ## 2. Adapt to the current docs
 
-1. Run `agent-config-lint.py --dump-reference`.
+1. Run `claude-lint.py --dump-reference`.
 2. Fetch the current pages and compare them with the reference data and with the
    linter's findings:
    https://code.claude.com/docs/en/settings-reference.md, /permissions.md, /hooks.md,
@@ -98,7 +98,7 @@ Wait for the user's explicit go before editing.
 - Conventions: `AGENTS.md` is the neutral source and `CLAUDE.md` only imports it; if
   `doctrine/rules/` exists, instruction files are generated: report instead of editing.
   Everything written to disk is in English and never mentions an AI assistant.
-- After all edits, run `agent-config-lint.py . --user` and confirm you introduced no new
+- After all edits, run `claude-lint.py . --user` and confirm you introduced no new
   finding. If you did, revert your own change.
 
 ## 5. Final report (in French, always last, nothing after it)

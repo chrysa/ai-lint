@@ -1,4 +1,4 @@
-# agent-config-lint
+# claude-lint
 
 Validate, repair and harden everything Claude-related in a repository and on your
 machine: Claude Code settings, permissions, hooks, helpers (status line, API key helper),
@@ -12,7 +12,7 @@ Two layers:
 
 | Layer | What it does | Safety |
 |---|---|---|
-| `agent-config-lint.py` | Deterministic checks and repairs, CI-friendly | Only tightens; never adds an allow rule |
+| `claude-lint.py` | Deterministic checks and repairs, CI-friendly | Only tightens; never adds an allow rule |
 | `skills/config-audit` | Guarded agent session for judgment calls and doc drift | Every agent edit is checked by `--guard`; loosening is blocked |
 
 Single Python file, no dependencies. Python >= 3.9 (>= 3.11 to read a policy file).
@@ -20,7 +20,7 @@ Single Python file, no dependencies. Python >= 3.9 (>= 3.11 to read a policy fil
 ## Contents
 
 ```
-agent-config-lint.py          the linter / fixer / guard
+claude-lint.py          the linter / fixer / guard
 skills/config-audit/SKILL.md  guarded audit workflow (user-invoked only)
 agent-lint.example.toml       default policy, copy to <repo>/.agent-lint.toml to customize
 README.md
@@ -29,12 +29,12 @@ README.md
 ## Quick start
 
 ```sh
-./agent-config-lint.py . --user --generate         # preview everything it would generate
-./agent-config-lint.py . --user --generate --fix   # generate, then lint and repair the result
-./agent-config-lint.py .                 # read-only: findings, diff, summary
-./agent-config-lint.py . --fix           # apply repairs (backup in ~/.cache/agent-config-lint/)
-./agent-config-lint.py . --user --fix    # include user scope (~/.claude or $CLAUDE_CONFIG_DIR)
-./agent-config-lint.py ~/dev --fix       # every git repository under ~/dev (3 levels deep)
+./claude-lint.py . --user --generate         # preview everything it would generate
+./claude-lint.py . --user --generate --fix   # generate, then lint and repair the result
+./claude-lint.py .                 # read-only: findings, diff, summary
+./claude-lint.py . --fix           # apply repairs (backup in ~/.cache/claude-lint/)
+./claude-lint.py . --user --fix    # include user scope (~/.claude or $CLAUDE_CONFIG_DIR)
+./claude-lint.py ~/dev --fix       # every git repository under ~/dev (3 levels deep)
 ```
 
 By default a run prints a **brief report**, in priority order and plain language:
@@ -85,7 +85,7 @@ Exit codes: `0` clean, `1` errors (or warnings with `--strict`), `2` usage error
 
 ## Run log
 
-Every run appends one JSON line to `~/.cache/agent-config-lint/logs/<date>.log` (one file
+Every run appends one JSON line to `~/.cache/claude-lint/logs/<date>.log` (one file
 per day). Each record holds the timestamp, version, arguments, repository count, elapsed
 time, finding counts by level and by code, how many findings were fixed or applied, and the
 exit code — counts and codes only, never file contents or secrets. Logging is best-effort:
@@ -120,7 +120,7 @@ file before deciding. A final summary lists what was done and the undo script.
 
 They are reported in every run. With `-i`, each cluster is shown with kind, name, size,
 last modification date, path and description, and you choose what to remove. Nothing
-is deleted: removed items go to `~/.cache/agent-config-lint/trash/<timestamp>/`, parked
+is deleted: removed items go to `~/.cache/claude-lint/trash/<timestamp>/`, parked
 subagent packs to `<config dir>/parked/` (not loaded), and a `restore.sh` in the trash
 folder undoes every move of the session. The same session offers to park subagent packs
 (per `agents/<pack>/<group>` directory, with their token cost), shorten skill descriptions
@@ -134,7 +134,7 @@ the guard cannot start it.
 Every run ends with a **RESTRUCTURE** plan: changes of structure that make the setup load
 less and work better, ranked by the tokens they remove from every session. With `-i`
 each one is offered in turn and applied only if you accept; every change is reversible
-(`restore.sh` for moves, backups in `~/.cache/agent-config-lint/` for edits).
+(`restore.sh` for moves, backups in `~/.cache/claude-lint/` for edits).
 
 | Proposal | What `-i` does |
 |---|---|
@@ -318,11 +318,11 @@ instruction files) and to follow documentation changes:
 
 ```sh
 cp -r skills/config-audit <repo>/.claude/skills/      # or ~/.claude/skills/
-./agent-config-lint.py --session-settings /tmp/audit.json
+./claude-lint.py --session-settings /tmp/audit.json
 claude --settings /tmp/audit.json                     # then run /config-audit
 ```
 
-The session file (read-only) installs `agent-config-lint.py --guard` on every edit and
+The session file (read-only) installs `claude-lint.py --guard` on every edit and
 shell command, and denies commits, pushes and external actions. The guard blocks any
 edit that would:
 
@@ -364,7 +364,7 @@ change. Main knobs: `permissions.require_rtk`, `permissions.rtk_twin_deny`,
 ## CI
 
 ```sh
-python3 agent-config-lint.py . --strict --format json --no-cli --no-scaffold
+python3 claude-lint.py . --strict --format json --no-cli --no-scaffold
 ```
 
 ## Limits

@@ -14,7 +14,7 @@ def main() -> int:
         return 0
     # The linter itself ships as one deliberately dense single file; reflowing its
     # packed literals nearly doubles its length. Lint it, never auto-format it.
-    if os.path.basename(path) == "agent-config-lint.py":
+    if os.path.basename(path) == "claude-lint.py":
         return 0
     root = os.environ.get("CLAUDE_PROJECT_DIR", os.getcwd())
     ext = os.path.splitext(path)[1].lower()
