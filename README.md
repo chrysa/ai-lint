@@ -411,7 +411,8 @@ An overlaid catalog:
 
 Anything not mentioned in the file keeps its built-in default, so a catalog can be
 as small as the changes you want. The catalog needs PyYAML
-(`pip install -r requirements-optional.txt`); without it the linter still runs and
+(`pip install 'PyYAML>=6'`, declared under `[project.optional-dependencies].catalog`
+in `pyproject.toml`); without it the linter still runs and
 the `--catalog` / `--print-catalog` options degrade gracefully.
 
 ## CI

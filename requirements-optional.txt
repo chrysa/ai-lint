@@ -1,3 +1,0 @@
-# Optional: only needed for --print-catalog / --catalog (YAML). The linter runs
-# without it; catalog features degrade gracefully when absent.
-PyYAML>=6

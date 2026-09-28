@@ -1,3 +1,17 @@
+[project]
+name = "claude-lint"
+version = "2026.09.28-22"
+description = "Validate, repair and harden Claude Code configurations. Single file, no runtime dependencies."
+requires-python = ">=3.9"
+dependencies = []  # the linter runs with the standard library alone
+
+[project.optional-dependencies]
+# Only needed for the editable catalog (--print-catalog / --catalog). The linter
+# runs without it and those options degrade gracefully when it is absent.
+catalog = ["PyYAML>=6"]
+# Everything to run `make test` / `make lint` / `make selfcheck`.
+dev = ["pytest>=8", "ruff>=0.6", "PyYAML>=6"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 # Disable globally-installed pytest plugins that assume a Django app; this
