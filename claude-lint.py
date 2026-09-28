@@ -1814,7 +1814,8 @@ def check_skill(d: Path, policy: dict, rep: Report) -> str | None:
         rep.add("info", "SKILL_PORTABILITY", sk, f"description {len(desc)} chars (> {pol['portable_description_chars']})")
     body_lines = new.count("\n") + 1
     if body_lines > pol["max_lines"]:
-        rep.add("warn", "SKILL_LONG", sk, f"{body_lines} lines")
+        ro = "" if _writable(sk) else " (read-only: synced/symlinked store — edit it upstream)"
+        rep.add("warn", "SKILL_LONG", sk, f"{body_lines} lines{ro}")
     if meta.get("context") != "fork":
         stray = [k for k in ("agent", "background") if k in meta]
         if stray:
