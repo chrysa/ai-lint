@@ -71,7 +71,7 @@ try:
 except ModuleNotFoundError:  # Python < 3.11: policy files unsupported, defaults apply
     tomllib = None
 
-VERSION = "2026.09.29-32"
+VERSION = "2026.09.29-33"
 DOCS = "https://code.claude.com/docs/en/"
 ISSUES = "https://github.com/anthropics/claude-code/issues/"
 
@@ -3125,6 +3125,30 @@ PLUGIN_KNOWN_KEYS = {
 SEMVER_RE = re.compile(r"^\d+\.\d+\.\d+(?:-[\w.]+)?(?:\+[\w.]+)?$")
 KEBAB_RE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 ANTHROPIC_KEY_RE = re.compile(r"sk-ant-(?:api|admin|oat)\d{2}-[A-Za-z0-9_-]{20,}")
+# A match is a real leak only if it looks random. Doc examples and CI fixtures use
+# obvious placeholders (XXXX, sequential ABCDEFGHIJ / 1234567890, the words
+# example/fake/test/redacted) or carry an explicit `claude-secret-ok` allow marker.
+SECRET_PLACEHOLDER_RE = re.compile(
+    r"XXXX|ABCDEFGHIJ|0123456789|1234567890|example|fake|dummy|redact|placeholder|your[-_]?key|test[-_]?key",
+    re.I,
+)
+
+
+def _looks_like_placeholder(line: str, match: str) -> bool:
+    if "claude-secret-ok" in line:  # explicit reviewer allow marker on the line
+        return True
+    return bool(SECRET_PLACEHOLDER_RE.search(match) or SECRET_PLACEHOLDER_RE.search(line))
+
+
+def find_real_key(text: str) -> str | None:
+    """The first Anthropic-key match that is not a placeholder / allow-marked, or None."""
+    for line in text.splitlines():
+        for m in ANTHROPIC_KEY_RE.finditer(line):
+            if not _looks_like_placeholder(line, m.group(0)):
+                return m.group(0)
+    return None
+
+
 HELPER_STRING_KEYS = ("apiKeyHelper", "awsAuthRefresh", "awsCredentialExport", "otelHeadersHelper")
 HELPER_OBJECT_KEYS = ("statusLine", "subagentStatusLine", "fileSuggestion")
 
@@ -3630,7 +3654,7 @@ def check_repo_secrets(repo: Path, rep: Report) -> None:
             except OSError:
                 continue
             text = read_text(p)
-            if text and ANTHROPIC_KEY_RE.search(text):
+            if text and find_real_key(text):
                 rel = str(p.relative_to(repo))
                 tracked = (repo / ".git").exists() and is_tracked(repo, rel)
                 ignored = (repo / ".git").exists() and is_ignored(repo, rel)
@@ -3654,7 +3678,7 @@ def check_user_extras(rep: Report) -> None:
         ".config/fish/config.fish",
     ):
         text = read_text(home / rc)
-        if text and ANTHROPIC_KEY_RE.search(text):
+        if text and find_real_key(text):
             rep.add(
                 "warn",
                 "API_KEY_LEAK",

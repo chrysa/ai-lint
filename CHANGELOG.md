@@ -2,6 +2,14 @@
 
 All notable changes to `claude-lint`. Dates are ISO 8601.
 
+## 2026.09.29-33
+
+### Fixed
+- `API_KEY_LEAK` no longer flags doc/CI placeholder keys (`XXXX`, sequential
+  `ABCDEFGHIJ`/`1234567890`, `example`/`fake`/`test-key`/`your-key`) or lines
+  carrying a `claude-secret-ok` allow marker. A key is reported only when it
+  looks random. New helper `find_real_key`; repo and shell-rc scans use it.
+
 ## 2026.09.29-32
 
 ### Added
