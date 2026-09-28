@@ -2,6 +2,12 @@
 
 All notable changes to `claude-lint`. Dates are ISO 8601.
 
+## 2026.09.29-30
+
+### Added
+- Token lever `TOKEN_MCP_OUTPUT`: when a repo configures MCP servers but sets no
+  `MAX_MCP_OUTPUT_TOKENS`, warn that one large tool result can flood the context
+  (default cap 25000, warns at 10000) and suggest setting a lower cap.
 ## 2026.09.29-29
 
 ### Changed

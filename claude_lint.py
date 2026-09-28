@@ -71,7 +71,7 @@ try:
 except ModuleNotFoundError:  # Python < 3.11: policy files unsupported, defaults apply
     tomllib = None
 
-VERSION = "2026.09.29-29"
+VERSION = "2026.09.29-30"
 DOCS = "https://code.claude.com/docs/en/"
 ISSUES = "https://github.com/anthropics/claude-code/issues/"
 
@@ -4750,6 +4750,11 @@ HINTS.update(
             "Code intelligence plugins replace grep + multiple file reads with one symbol lookup.",
             DOCS + "costs#install-code-intelligence-plugins-for-typed-languages",
         ),
+        "TOKEN_MCP_OUTPUT": (
+            "A single MCP tool result is capped at MAX_MCP_OUTPUT_TOKENS (default 25000); "
+            "set it lower to stop one call from crowding out the session.",
+            DOCS + "mcp",
+        ),
         "TOKEN_IMPORTS": (
             "Imported files load at launch too: splitting into @imports organizes, it does not save tokens.",
             DOCS + "memory#my-claude-md-is-too-large",
@@ -4938,6 +4943,23 @@ def check_token_levers(repo: Path, policy: dict, rep: Report, stack: dict | None
                     "MCP_PREFER_CLI",
                     repo / ".mcp.json",
                     f"{cli} is installed: the '{name}' MCP server adds a tool listing the CLI doesn't",
+                )
+        # MCP tool results can flood context (default cap 25k tokens, warns at 10k).
+        # With servers configured and no MAX_MCP_OUTPUT_TOKENS anywhere, suggest a cap.
+        if servers:
+            env_all = {}
+            for f in (config_dir() / "settings.json", repo / ".claude" / "settings.json"):
+                try:
+                    env_all.update((json.loads(read_text(f) or "{}").get("env") or {}))
+                except json.JSONDecodeError:
+                    pass
+            if "MAX_MCP_OUTPUT_TOKENS" not in env_all and "MAX_MCP_OUTPUT_TOKENS" not in os.environ:
+                rep.add(
+                    "info",
+                    "TOKEN_MCP_OUTPUT",
+                    repo / ".mcp.json",
+                    f"{len(servers)} MCP server(s) and no MAX_MCP_OUTPUT_TOKENS: a large tool "
+                    "result can flood the context (default cap 25000, warns at 10000)",
                 )
     for sub in sorted((repo / ".claude" / "agents").glob("*.md")) if (repo / ".claude" / "agents").is_dir() else []:
         meta, _ = split_frontmatter(read_text(sub) or "")
@@ -5822,6 +5844,11 @@ BRIEF_FR = {
         "Opus par défaut pour toutes les sessions",
         "-i propose Sonnet par défaut (/model opus au besoin)",
     ),
+    "TOKEN_MCP_OUTPUT": (
+        "tokens",
+        "serveurs MCP sans plafond de sortie",
+        "définir env.MAX_MCP_OUTPUT_TOKENS (défaut 25000) pour borner un résultat",
+    ),
     "MCP_PREFER_CLI": (
         "tokens",
         "serveur MCP alors que la CLI équivalente est installée",
@@ -5944,6 +5971,11 @@ BRIEF_EN = {
         "tokens",
         "Opus as the default for every session",
         "-i offers Sonnet by default (/model opus when needed)",
+    ),
+    "TOKEN_MCP_OUTPUT": (
+        "tokens",
+        "MCP servers without an output cap",
+        "set env.MAX_MCP_OUTPUT_TOKENS (default 25000) to bound one tool result",
     ),
     "MCP_PREFER_CLI": (
         "tokens",

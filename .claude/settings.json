@@ -100,7 +100,9 @@
       "Bash(rtk gh issue list *)",
       "Bash(rtk gh run list *)",
       "Bash(rtk gh run view *)",
-      "Bash(rtk make typecheck)"
+      "Bash(rtk make typecheck)",
+      "Bash(rtk make build)",
+      "Bash(rtk make format)"
     ]
   },
   "hooks": {
