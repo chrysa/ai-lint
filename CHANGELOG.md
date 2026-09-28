@@ -2,6 +2,16 @@
 
 All notable changes to `claude-lint`. Dates are ISO 8601.
 
+## 2026.09.28-18
+
+### Added
+- Every finding in `--details` now shows a `→ fix` / `→ solution` line proposing a
+  concrete action, without needing `-v`. The action comes from the brief table for
+  headline codes and the built-in hint for the long tail; a test asserts every
+  emitted code resolves to an action.
+- `SKILL_LONG` on a read-only (synced/symlinked) skill now says so, so it reads as
+  fix-upstream rather than a repeatable local action.
+
 ## 2026.09.28-17
 
 ### Added

@@ -66,7 +66,7 @@ try:
 except ModuleNotFoundError:  # Python < 3.11: policy files unsupported, defaults apply
     tomllib = None
 
-VERSION = "2026.09.28-17"
+VERSION = "2026.09.28-18"
 DOCS = "https://code.claude.com/docs/en/"
 ISSUES = "https://github.com/anthropics/claude-code/issues/"
 
@@ -4692,6 +4692,16 @@ FIRST_REPORT: Report | None = None
 INTERACTIVE_RAN = False
 
 
+def _action_for(code: str) -> str:
+    """A concise, solution-oriented action for a finding code, in the active
+    language: the brief table's advice when the code has one, else the HINTS
+    'why/how' sentence. Empty when neither is known."""
+    entry = brief_table().get(code)
+    if entry:
+        return entry[2]
+    return HINTS[code][0] if code in HINTS else ""
+
+
 def _finding_gain(f: Finding) -> int:
     """Estimated tokens saved per session if this finding is acted on. Uses the
     figure already in the message when present, else a per-code estimate. Only the
@@ -4735,11 +4745,13 @@ def render_text(rep: Report, fix: bool, color: bool, quiet: bool, fixed: list[Fi
                 gain = sum(_finding_gain(x) for x in items) if kind == "group" else _finding_gain(f)
                 gtxt = f"{dim} · ~{gain} tokens/session{r0}" if gain else ""
                 out.append(f"{tag} {f.code:24} {short_path(f.path)}\n      {f.message}{' [fixable]' if f.fixable else ''}{gtxt}")
+            action = _action_for(f.code)
+            if action:
+                out.append(f"{g}      {_L('→ solution', '→ fix')} : {r0}{action}")
             if VERBOSITY >= 1 and f.code in HINTS:
                 why, ref = HINTS[f.code]
-                out.append(f"{dim}      why/how: {why}{r0}")
-                if ref:
-                    out.append(f"{dim}      ref: {ref}{r0}")
+                if not _action_for(f.code) or ref:
+                    out.append(f"{dim}      ref: {HINTS[f.code][1]}{r0}")
         total_gain = sum(_finding_gain(f) for f in rep.findings)
         props_gain = sum(p["gain"] for p in getattr(rep, "proposals", []))
         if total_gain or props_gain:
