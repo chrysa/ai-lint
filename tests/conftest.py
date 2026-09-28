@@ -9,7 +9,6 @@ Everything written here is disposable and lives under pytest's tmp_path.
 
 from __future__ import annotations
 
-import importlib.util
 import json
 import os
 import subprocess
@@ -23,15 +22,13 @@ SCRIPT = ROOT / "claude-lint.py"
 
 
 def _load_module():
-    """Import the single-file linter as a module for white-box tests."""
-    spec = importlib.util.spec_from_file_location("agent_config_lint", SCRIPT)
-    assert spec and spec.loader
-    mod = importlib.util.module_from_spec(spec)
-    # Register before exec: Python 3.14 dataclasses resolves string annotations
-    # via sys.modules[cls.__module__], which must exist during class creation.
-    sys.modules[spec.name] = mod
-    spec.loader.exec_module(mod)
-    return mod
+    """Import the linter module for white-box tests (now a normal importable name,
+    so coverage and mypy see it directly)."""
+    if str(ROOT) not in sys.path:
+        sys.path.insert(0, str(ROOT))
+    import claude_lint
+
+    return claude_lint
 
 
 @pytest.fixture(scope="session")

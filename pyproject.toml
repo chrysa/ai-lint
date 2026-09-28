@@ -13,13 +13,26 @@ catalog = ["PyYAML>=6"]
 dev = ["pytest>=8", "ruff>=0.6", "PyYAML>=6"]
 
 [tool.coverage.run]
-# The tool is a single hyphenated file loaded via importlib in the tests; measure
-# it by path so coverage attaches to the right source.
-source = ["claude-lint.py"]
-branch = false
+# claude_lint.py is imported normally, so coverage attaches to it. In-process
+# (white-box) tests contribute; subprocess CLI runs are not counted here.
+source = ["claude_lint"]
+branch = true
 
 [tool.coverage.report]
 show_missing = true
+
+[tool.mypy]
+files = ["claude_lint.py", "claude-lint.py"]
+python_version = "3.9"
+# Type-checking catches real bugs here (arg-type, index, return types). Full
+# `strict` on this dense single file is deferred: the bare-generic and
+# untyped-def noise it raises is stylistic, not correctness. These checks are the
+# bug-catching subset; annotations are added incrementally.
+warn_return_any = true
+warn_unused_ignores = true
+ignore_missing_imports = true
+allow_redefinition = true
+disable_error_code = ["type-arg", "no-untyped-def", "no-untyped-call", "var-annotated"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

@@ -2,6 +2,19 @@
 
 All notable changes to `claude-lint`. Dates are ISO 8601.
 
+## 2026.09.28-24
+
+### Changed
+- The implementation now lives in an importable module `claude_lint.py`; `claude-lint.py`
+  is a thin CLI wrapper. This lets coverage and mypy see the real code (previously the
+  hyphenated filename made it invisible to both). Behaviour and the `./claude-lint.py`
+  invocation are unchanged.
+- Added a mypy config (bug-catching subset; full strict deferred) and coverage config
+  (`make typecheck`, `make cov`), plus a `claude_lint` shim removed in favour of the rename.
+
+### Fixed
+- `check_attribution` no longer risks a None membership test on an unreadable
+  commit-msg hook (`hook_text` is always a string).
 ## 2026.09.28-23
 
 ### Changed
