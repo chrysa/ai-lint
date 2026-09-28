@@ -59,6 +59,11 @@ session (tokens), duplicates, then a one-line count of the rest and the next ste
 `--details` (or `--all`) prints the full per-file report described below; `-v` only
 adds progress logs on stderr.
 
+In `--details`, every finding is printed with a `→ fix` (`→ solution` in French)
+line proposing a concrete action — the fix to apply, or where to apply it when the
+target is read-only — so the report is a to-do list, not just a list of problems.
+`-v` additionally prints the documentation reference for each.
+
 The full report ends with:
 
 - **SUMMARY**: what was fixed or generated (or would be, in read-only mode) and what needs
