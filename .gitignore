@@ -3,3 +3,7 @@ __pycache__/
 .pytest_cache/
 .ruff_cache/
 CLAUDE.local.md
+.coverage
+.coverage.*
+coverage.json
+htmlcov/

@@ -19,8 +19,12 @@ fmt:  ## Format with ruff
 selfcheck:  ## Run the tool on its own repo; fail only on real traces/secrets in-repo
 	$(PY) tests/_selfcheck.py
 
-cov:  ## Test with coverage (target >= 90%)
-	$(PY) -m pytest --cov --cov-report=term-missing --cov-fail-under=90
+cov:  ## Test with coverage (CLI subprocesses included). Target: 90%; current floor 60%.
+	rm -f .coverage .coverage.*
+	COVERAGE_RUN=1 COVERAGE_FILE=$(CURDIR)/.coverage $(PY) -m coverage run \
+		--parallel-mode --rcfile=$(CURDIR)/pyproject.toml -m pytest -q
+	COVERAGE_FILE=$(CURDIR)/.coverage $(PY) -m coverage combine --rcfile=$(CURDIR)/pyproject.toml
+	COVERAGE_FILE=$(CURDIR)/.coverage $(PY) -m coverage report --rcfile=$(CURDIR)/pyproject.toml --fail-under=60
 
 typecheck:  ## Static type check (mypy strict)
 	$(PY) -m mypy

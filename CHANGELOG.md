@@ -2,6 +2,14 @@
 
 All notable changes to `claude-lint`. Dates are ISO 8601.
 
+## 2026.09.28-26
+
+### Added
+- Coverage now measures the CLI subprocesses the tests launch (coverage
+  parallel-mode + `coverage combine`), so `make cov` reports real end-to-end
+  coverage (~61%). A guard test suite covers the --guard PreToolUse checks
+  (attribution, config-write-via-shell, loosening edits, exit codes). CI runs
+  mypy and `make cov` (floor 60%); the 90% target is tracked as remaining work.
 ## 2026.09.28-25
 
 ### Fixed

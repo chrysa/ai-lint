@@ -213,8 +213,24 @@ def env(tmp_path, monkeypatch):
     e.repos = repos
 
     def run(*args: str, expect_ok: bool = False):
+        # Under coverage, launch the CLI through `coverage run --parallel` so the
+        # subprocess is measured too; the outer `coverage combine` merges the data.
+        if os.environ.get("COVERAGE_RUN"):
+            cmd = [
+                sys.executable,
+                "-m",
+                "coverage",
+                "run",
+                "--parallel-mode",
+                "--rcfile",
+                str(ROOT / "pyproject.toml"),
+                str(SCRIPT),
+                *args,
+            ]
+        else:
+            cmd = [sys.executable, str(SCRIPT), *args]
         proc = subprocess.run(
-            [sys.executable, str(SCRIPT), *args],
+            cmd,
             capture_output=True,
             text=True,
             env={

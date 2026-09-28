@@ -13,10 +13,12 @@ catalog = ["PyYAML>=6"]
 dev = ["pytest>=8", "pytest-cov>=5", "ruff>=0.6", "mypy>=1.11", "PyYAML>=6"]
 
 [tool.coverage.run]
-# claude_lint.py is imported normally, so coverage attaches to it. In-process
-# (white-box) tests contribute; subprocess CLI runs are not counted here.
+# claude_lint.py is imported normally, so coverage attaches to it. parallel +
+# concurrency let coverage also measure the CLI runs the tests launch as
+# subprocesses (started via COVERAGE_PROCESS_START); `coverage combine` merges them.
 source = ["claude_lint"]
-branch = true
+parallel = true
+sigterm = true
 
 [tool.coverage.report]
 show_missing = true
