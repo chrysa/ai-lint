@@ -71,7 +71,7 @@ try:
 except ModuleNotFoundError:  # Python < 3.11: policy files unsupported, defaults apply
     tomllib = None
 
-VERSION = "2026.09.28-27"
+VERSION = "2026.09.29-28"
 DOCS = "https://code.claude.com/docs/en/"
 ISSUES = "https://github.com/anthropics/claude-code/issues/"
 
@@ -615,7 +615,20 @@ ATTR_NEGATION = re.compile(
 
 
 def _is_attribution(line: str) -> bool:
-    return any(p.search(line) for p in ATTRIBUTION_PATTERNS) and not ATTR_NEGATION.search(line)
+    for p in ATTRIBUTION_PATTERNS:
+        m = p.search(line)
+        if not m:
+            continue
+        if ATTR_NEGATION.search(line):
+            return False
+        # A match inside an inline-code span (`...Co-Authored-By...`) is quoting the
+        # trailer as an example in prose/plans, not committing it. A real trailer
+        # sits on its own line, unquoted.
+        before, after = line[: m.start()], line[m.end() :]
+        if before.count("`") % 2 == 1 and "`" in after:
+            return False
+        return True
+    return False
 
 
 SECRET_VALUE_PATTERNS = [

@@ -2,6 +2,13 @@
 
 All notable changes to `claude-lint`. Dates are ISO 8601.
 
+## 2026.09.29-28
+
+### Fixed
+- `ATTR_TRACE` no longer flags a Co-Authored-By / Generated-with string quoted in
+  an inline-code span (e.g. a plan that says append `Co-Authored-By: ...`). A real
+  trailer sits unquoted on its own line and is still caught. Clears a dozen
+  recurring false positives in archived plan docs.
 ## 2026.09.28-27
 
 ### Added

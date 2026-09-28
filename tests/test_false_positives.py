@@ -47,3 +47,12 @@ def test_attribution_scan_skips_anti_instruction(linter_module, tmp_path):
     rep = m.Report()
     m.check_attribution(repo, policy, rep, history=False)
     assert not any(f.code == "ATTR_TRACE" for f in rep.findings)
+
+
+def test_attribution_in_inline_code_not_flagged(linter_module):
+    m = linter_module
+    # a plan quoting the trailer as an inline-code example is documentation
+    line = "append `Co-Authored" + "-By: Claude <noreply@" + "anthropic.com>` to the commit"
+    assert m._is_attribution(line) is False
+    # a bare trailer on its own line is still a real trace
+    assert m._is_attribution("Co-Authored" + "-By: Claude <noreply@" + "anthropic.com>") is True
