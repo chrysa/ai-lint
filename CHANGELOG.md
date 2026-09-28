@@ -2,6 +2,13 @@
 
 All notable changes to `claude-lint`. Dates are ISO 8601.
 
+## 2026.09.28-19
+
+### Added
+- Progress bar on stderr during the repository scan, shown by default. It appears
+  only on an interactive stderr at the default verbosity; `-v` (per-repo logs),
+  `-q`, `--format json`, a pipe and CI stay silent, and it never touches stdout.
+
 ## 2026.09.28-18
 
 ### Added

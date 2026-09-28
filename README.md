@@ -56,8 +56,10 @@ Optional companions it uses when present: the `claude` CLI (`--no-cli` to skip),
 By default a run prints a **brief report**, in priority order and plain language:
 security and portfolio rules, what is configured but broken, what weighs on every
 session (tokens), duplicates, then a one-line count of the rest and the next steps.
-`--details` (or `--all`) prints the full per-file report described below; `-v` only
-adds progress logs on stderr.
+`--details` (or `--all`) prints the full per-file report described below. During the
+scan a progress bar is shown on stderr by default (interactive terminal only; `-v`
+replaces it with per-repository logs, and `-q`, `--format json`, a pipe or CI stay
+silent). Output on stdout is never affected.
 
 In `--details`, every finding is printed with a `→ fix` (`→ solution` in French)
 line proposing a concrete action — the fix to apply, or where to apply it when the

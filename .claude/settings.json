@@ -91,7 +91,15 @@
       "Bash(rtk python -m pytest *)",
       "Bash(rtk ruff check *)",
       "Bash(rtk ruff format *)",
-      "Bash(rtk mypy *)"
+      "Bash(rtk mypy *)",
+      "Bash(rtk gh pr view *)",
+      "Bash(rtk gh pr list *)",
+      "Bash(rtk gh pr diff *)",
+      "Bash(rtk gh pr checks *)",
+      "Bash(rtk gh issue view *)",
+      "Bash(rtk gh issue list *)",
+      "Bash(rtk gh run list *)",
+      "Bash(rtk gh run view *)"
     ]
   },
   "hooks": {

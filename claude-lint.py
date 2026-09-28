@@ -66,7 +66,7 @@ try:
 except ModuleNotFoundError:  # Python < 3.11: policy files unsupported, defaults apply
     tomllib = None
 
-VERSION = "2026.09.28-18"
+VERSION = "2026.09.28-19"
 DOCS = "https://code.claude.com/docs/en/"
 ISSUES = "https://github.com/anthropics/claude-code/issues/"
 
@@ -454,6 +454,23 @@ def log(level: int, msg: str, indent: int = 0) -> None:
     if VERBOSITY >= level:
         line = f"{'  ' * indent}{ {1: '·', 2: '»', 3: 'debug'}.get(level, '·') } {msg}"
         print(f"\033[2m{line}\033[0m" if _COLOR_ERR else line, file=sys.stderr)
+
+
+# Progress bar on stderr for the repo scan: only on an interactive stderr, at the
+# default verbosity (a -v run prints per-repo lines instead, and -q / a pipe / CI
+# stay silent). It writes to stderr so stdout (the report, JSON) is never polluted.
+PROGRESS = False  # set in main() once flags are known
+
+
+def progress(done: int, total: int, label: str = "") -> None:
+    if not PROGRESS or total <= 0:
+        return
+    width = 24
+    filled = int(width * done / total)
+    bar = "█" * filled + "░" * (width - filled)
+    end = "\n" if done >= total else ""
+    lbl = (label[:40] + "…") if len(label) > 41 else label
+    print(f"\r\033[2m  scan [{bar}] {done}/{total} {lbl}\033[0m\033[K{end}", end=end or "", file=sys.stderr, flush=True)
 
 
 @dataclass
@@ -4593,10 +4610,12 @@ def run_lint(repos: list[Path], policy: dict, args: argparse.Namespace, history:
                 generate_project(r, policy, rep)
             else:
                 log(1, f"{r}: not a git repository, nothing generated")
-    for r in repos:
+    for n, r in enumerate(repos, 1):
+        progress(n - 1, len(repos), r.name)
         t0, before = time.perf_counter(), len(rep.findings)
         lint_repo(r, policy, rep, history, user_text)
         log(1, f"{r}: {len(rep.findings) - before} finding(s) in {time.perf_counter() - t0:.2f}s")
+    progress(len(repos), len(repos), "done")
     return rep
 
 
@@ -5319,10 +5338,13 @@ def main(argv: list[str] | None = None) -> int:
         ap.print_help()
         return 0
     args = ap.parse_args(argv)
-    global VERBOSITY, SCAFFOLD, CLI_VERSION, SHOW_ALL, FIRST_REPORT, LANG
+    global VERBOSITY, SCAFFOLD, CLI_VERSION, SHOW_ALL, FIRST_REPORT, LANG, PROGRESS
     if args.restore is not None:
         return restore_trash(args.restore or None)
     VERBOSITY, SCAFFOLD, SHOW_ALL = args.verbose, not args.no_scaffold, args.all
+    # Progress bar by default: interactive stderr, no -v (which logs per repo),
+    # no -q, text output only. Keeps pipes, JSON and CI silent.
+    PROGRESS = sys.stderr.isatty() and args.verbose == 0 and not args.quiet and args.format == "text"
     LANG = args.lang or ("fr" if os.environ.get("LANG", "").lower().startswith("fr") else "en")
 
     if args.print_policy:
