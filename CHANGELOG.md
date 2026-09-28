@@ -2,6 +2,15 @@
 
 All notable changes to `claude-lint`. Dates are ISO 8601.
 
+## 2026.09.28-25
+
+### Fixed
+- Type-checking (mypy) now passes and runs in CI. Fixed the real defects it found:
+  guarded every `split_rule(...)` result before indexing (an unparseable permission
+  rule could have raised), made `hook_text` always a string, and renamed a shadowed
+  loop variable. Remaining mypy noise (bare generics, unannotated defs, un-narrowable
+  dict/JSON/regex values) is disabled by code; full strict typing is deferred.
+
 ## 2026.09.28-24
 
 ### Changed

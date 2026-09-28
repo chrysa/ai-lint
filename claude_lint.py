@@ -71,7 +71,7 @@ try:
 except ModuleNotFoundError:  # Python < 3.11: policy files unsupported, defaults apply
     tomllib = None
 
-VERSION = "2026.09.28-24"
+VERSION = "2026.09.28-25"
 DOCS = "https://code.claude.com/docs/en/"
 ISSUES = "https://github.com/anthropics/claude-code/issues/"
 
@@ -1528,7 +1528,7 @@ def rtk_twin(rule: str, exempt: list[str]) -> str | None:
 
 def dedupe(seq: list[str]) -> list[str]:
     seen: set[str] = set()
-    return [x for x in seq if not (x in seen or seen.add(x))]
+    return [x for x in seq if not (x in seen or seen.add(x))]  # type: ignore[func-returns-value]
 
 
 def repair_rule(
@@ -1725,8 +1725,10 @@ def optimize_permissions(
         cmd = command_of(r)
         if cmd is None:
             continue
-        _, kind = trailing_wildcard(split_rule(r)[1] or "")
-        via_rtk = (split_rule(r)[1] or "").startswith("rtk ")
+        parsed = split_rule(r)
+        spec = (parsed[1] if parsed else None) or ""
+        _, kind = trailing_wildcard(spec)
+        via_rtk = spec.startswith("rtk ")
         runners = [x for x in pol["exec_runners"] if not (via_rtk and x == "env")]
         if via_rtk:
             runners += ["proxy", "test", "err", "summary"]  # rtk wrappers that run any command
@@ -1765,8 +1767,9 @@ def optimize_permissions(
     if pol["require_rtk"]:
         unwrapped = []
         for r in allow:
-            spec = (split_rule(r) or ("", None))[1] or ""
-            if split_rule(r)[0] == "Bash" and spec.startswith("rtk "):
+            parsed = split_rule(r) or ("", None)
+            spec = parsed[1] or ""
+            if parsed[0] == "Bash" and spec.startswith("rtk "):
                 inner = trailing_wildcard(spec[4:])[0]
                 if (
                     inner.split()
@@ -1810,7 +1813,7 @@ def optimize_permissions(
             for r in allow
             if (c := command_of(r))
             and c.split()[0] in READONLY_BUILTINS
-            and not (split_rule(r)[1] or "").startswith("rtk ")
+            and not ((split_rule(r) or ("", None))[1] or "").startswith("rtk ")
         ]
         if redundant:
             rep.add(
@@ -5924,12 +5927,12 @@ def apply_proposal(p: dict, policy: dict, restore: list[str], trash_root: Path) 
         sk.write_text(new, encoding="utf-8")
         return f"SKILL.md now {new.count(chr(10)) + 1} lines, {len(moved)} section(s) in references/ (backup in ~/.cache)"
     if kind == "command-to-skill":
-        f: Path = p["path"]
-        dest = p["root"] / "skills" / f.stem / "SKILL.md"
+        cmd_file: Path = p["path"]
+        dest = p["root"] / "skills" / cmd_file.stem / "SKILL.md"
         dest.parent.mkdir(parents=True, exist_ok=True)
-        shutil.move(str(f), str(dest))
-        restore.append(f"mv '{dest}' '{f}'; rmdir '{dest.parent}'")
-        return f"/{f.stem} is now a skill (same command name)"
+        shutil.move(str(cmd_file), str(dest))
+        restore.append(f"mv '{dest}' '{cmd_file}'; rmdir '{dest.parent}'")
+        return f"/{cmd_file.stem} is now a skill (same command name)"
     if kind == "rule-paths":
         f = p["path"]
         text = read_text(f) or ""
