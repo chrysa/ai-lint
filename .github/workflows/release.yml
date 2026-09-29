@@ -1,0 +1,68 @@
+name: Release
+
+# On every push to main, compute the version (GitVersion — never typed),
+# generate release notes (git-cliff from Conventional Commits), tag the commit
+# and cut a GitHub release. One commit on main = one release (shared-standards
+# CI-045 / CI-048).
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write  # create tags and releases
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # GitVersion needs the full history and tags
+
+      - name: Install GitVersion
+        uses: gittools/actions/gitversion/setup@v3.1.11
+        with:
+          versionSpec: "6.x"
+
+      - name: Compute version
+        id: gitversion
+        uses: gittools/actions/gitversion/execute@v3.1.11
+
+      - name: Skip if the tag already exists
+        id: guard
+        env:
+          TAG: v${{ steps.gitversion.outputs.semVer }}
+        run: |
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Generate release notes (git-cliff)
+        if: steps.guard.outputs.exists == 'false'
+        uses: taiki-e/install-action@v2
+        with:
+          tool: git-cliff
+
+      - name: Build notes and tag
+        if: steps.guard.outputs.exists == 'false'
+        env:
+          TAG: v${{ steps.gitversion.outputs.semVer }}
+        run: |
+          git cliff --tag "$TAG" --unreleased --strip all --output RELEASE_NOTES.md
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "$TAG" -m "Release $TAG"
+          git push origin "$TAG"
+
+      - name: Create GitHub release
+        if: steps.guard.outputs.exists == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: v${{ steps.gitversion.outputs.semVer }}
+        run: gh release create "$TAG" --title "$TAG" --notes-file RELEASE_NOTES.md

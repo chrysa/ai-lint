@@ -26,9 +26,9 @@ def _load_module():
     so coverage and mypy see it directly)."""
     if str(ROOT) not in sys.path:
         sys.path.insert(0, str(ROOT))
-    import ai_lint
+    from ai_lint import _engine
 
-    return ai_lint
+    return _engine
 
 
 @pytest.fixture(scope="session")

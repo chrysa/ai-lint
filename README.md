@@ -49,7 +49,7 @@ Anthropic API keys. Instruction files for **other agent tools** are checked too 
 | `ai-lint.py` | Deterministic checks and repairs, CI-friendly | Only tightens; never adds an allow rule |
 | `skills/config-audit` | Guarded agent session for judgment calls and doc drift | Every agent edit is checked by `--guard`; loosening is blocked |
 
-Pure Python standard library (the engine is `ai_lint.py`, the CLI is the thin
+Pure Python standard library (the engine is `ai_lint/_engine.py`, the CLI is the thin
 `ai-lint.py` wrapper). Python >= 3.9; >= 3.11 only to read a policy file; PyYAML only for
 the optional editable catalogue.
 
@@ -57,7 +57,7 @@ the optional editable catalogue.
 
 ```
 ai-lint.py                    CLI entry point (thin wrapper)
-ai_lint.py                    the engine: all checks, repairs, generation, guard
+ai_lint/                      engine package (empty __init__; _engine.py = the logic)
 skills/config-audit/SKILL.md  guarded audit workflow (user-invoked only)
 ai-lint.example.toml          default policy, copy to <repo>/.ai-lint.toml to customize
 examples/plugins/             sample custom-check plugin
@@ -76,7 +76,7 @@ README.md · CHANGELOG.md
 ## Install
 
 No install needed and no runtime dependencies (Python >= 3.9). Clone the repo (the CLI
-`ai-lint.py` imports the engine `ai_lint.py` next to it) and run it:
+`ai-lint.py` imports the engine from the `ai_lint` package) and run it:
 
 ```sh
 git clone https://github.com/chrysa/ai-lint && cd ai-lint

@@ -24,7 +24,7 @@ sigterm = true
 show_missing = true
 
 [tool.mypy]
-files = ["ai_lint.py", "ai-lint.py"]
+files = ["ai_lint", "ai-lint.py"]
 python_version = "3.10"
 # Type-checking catches real bugs here (arg-type, index, return types). Full
 # `strict` on this dense single file is deferred: the bare-generic and

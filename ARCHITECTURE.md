@@ -7,14 +7,14 @@ How ai-lint is built, so a change lands in the right place. User-facing behaviou
 
 - **`ai-lint.py`** — thin CLI wrapper: `from ai_lint import main`. Kept as a hyphenated,
   directly runnable entry point.
-- **`ai_lint.py`** — the whole engine in one module (~8900 lines): checks, repairs,
+- **`ai_lint/_engine.py`** — the whole engine in one module (~8900 lines): checks, repairs,
   generation, guard, catalogue, plugins, rendering. It is importable (tests, mypy and
   coverage attach to it); the hyphenated name could not be imported, hence the split.
 - No runtime dependencies (standard library only). PyYAML is optional and used **only** by
   the editable catalogue (`--catalog` / `--print-catalog`); everything degrades gracefully
   without it.
 
-## Module map (`ai_lint.py`)
+## Module map (`ai_lint/_engine.py`)
 
 Navigate by the `# ----` section banners:
 

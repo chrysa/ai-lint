@@ -4,19 +4,30 @@ Why the project is the way it is — the rationale an agent would otherwise re-d
 undo) each session. History of *what* changed is in [CHANGELOG.md](CHANGELOG.md); this file
 records *why*. Newest first. Each entry: decision, why, and what would reverse it.
 
-## D-011 · Single-module engine, not a `src/` package (shared-standards deviation)
-The engine stays one module (`ai_lint.py`) rather than a split `src/ai_lint/`
-package. **Why:** the shared-standards `src/` layout and "domain modeled by
-classes, one class per module" rules target **distributed libraries** with a
-public API published to PyPI. ai-lint is a **repo-local CLI** (see D-003), not a
-library: no public import surface, no semver API contract. A single audited
-module keeps the tool copy-and-run and dependency-free, and the guard/checks are
-naturally procedural, not a class domain. The engine/CLI split (D-004) already
-gives importability for tooling. **Reverse:** if ai-lint is ever published as an
-installable library with a public API, adopt the `src/` layout then. Other
-shared-standards points are met: all tool config lives in `pyproject.toml`
-`[tool.*]` (no external ruff/mypy/pytest config), Conventional Commits, invariant
-`make` targets, Ruff line-length 120, caches git-ignored.
+## D-012 · Computed version + release-on-main (git-cliff + GitVersion)
+The version is **computed, never typed** (shared-standards CI-045): `VERSION` is
+derived at runtime from package metadata, else `git describe`, else a dev
+placeholder. A push to `main` runs the Release workflow — GitVersion computes the
+semver, git-cliff builds the notes from Conventional Commits, and the commit is
+tagged `vX.Y.Z` with a matching GitHub release (one commit on main = one release,
+CI-048). **Why:** hand-typed version strings drift and conflict on merge; the
+graph is the single source of truth. **How to apply:** never edit a version by
+hand; land Conventional Commits and let main cut the release. `cliff.toml` and
+`GitVersion.yml` are copied from shared-standards.
+
+## D-011 · Engine as a package with an empty `__init__` (not `src/`)
+The engine is a package `ai_lint/` (`_engine.py` for now), with an **empty
+`__init__.py`**; callers import `ai_lint._engine`. **Why:** the package layout
+satisfies "code split into modules" and lets `_engine` be broken into finer
+modules later (issue #3) without changing the import surface. `src/` layout is a
+shared-standards rule for **distributed libraries** with a public API; ai-lint is
+a repo-local CLI (D-003) run from a clone, so a **root package** keeps
+`import ai_lint._engine` working with no install and no `sys.path` hacks. The
+empty `__init__` follows the request/standard to keep package inits free of
+logic. **Reverse:** if published as an installable library, move to `src/` and add
+a public API in `__init__`. Other shared-standards points are met: all tool config
+in `pyproject.toml` `[tool.*]`, Conventional Commits, invariant `make` targets,
+Ruff line-length 120, caches git-ignored.
 
 ## D-010 · Renamed `claude-lint` → `ai-lint`
 The tool checks configs for several agent tools, not just Claude Code. **Why:** the name
