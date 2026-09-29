@@ -4,16 +4,18 @@ Why the project is the way it is — the rationale an agent would otherwise re-d
 undo) each session. History of *what* changed is in [CHANGELOG.md](CHANGELOG.md); this file
 records *why*. Newest first. Each entry: decision, why, and what would reverse it.
 
-## D-012 · Computed version + release-on-main (git-cliff + GitVersion)
+## D-012 · Computed version + release-on-main (git-cliff)
 The version is **computed, never typed** (shared-standards CI-045): `VERSION` is
 derived at runtime from package metadata, else `git describe`, else a dev
-placeholder. A push to `main` runs the Release workflow — GitVersion computes the
-semver, git-cliff builds the notes from Conventional Commits, and the commit is
-tagged `vX.Y.Z` with a matching GitHub release (one commit on main = one release,
-CI-048). **Why:** hand-typed version strings drift and conflict on merge; the
-graph is the single source of truth. **How to apply:** never edit a version by
-hand; land Conventional Commits and let main cut the release. `cliff.toml` and
-`GitVersion.yml` are copied from shared-standards.
+placeholder. A push to `main` runs the Release workflow: git-cliff computes the
+next semver from the Conventional Commits since the last tag (`--bumped-version`),
+builds the notes, and the commit is tagged `vX.Y.Z` with a matching GitHub release
+(one commit on main = one release, CI-048). It no-ops when nothing new landed.
+**Why:** hand-typed version strings drift and conflict on merge; the commit graph
+is the single source of truth. git-cliff alone (no GitVersion/.NET) keeps the
+release job simple and works from zero tags. **How to apply:** never edit a
+version by hand; land Conventional Commits and let main cut the release.
+`cliff.toml` is copied from shared-standards.
 
 ## D-011 · Engine as a package with an empty `__init__` (not `src/`)
 The engine is a package `ai_lint/` (`_engine.py` for now), with an **empty
