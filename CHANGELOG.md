@@ -2,6 +2,19 @@
 
 All notable changes to `ai-lint`. Dates are ISO 8601.
 
+## 2026.09.29-38
+
+### Added
+- Style levers for always-loaded instructions (CLAUDE.md, AGENTS.md and the
+  other rendered files), all info-level and toggleable with
+  `[instructions] style_checks`:
+  - `INSTR_PROSE`: a run of prose lines that would read faster (and cost fewer
+    tokens) as bullet points; prose inside fenced code blocks is ignored.
+    Tune with `prose_block_lines` / `prose_line_min_chars`.
+  - `INSTR_FILLER`: polite / hedging wording ("please", "you should", "make
+    sure to", "in order to"...) to drop for direct imperatives. Edit the list
+    with `[instructions] filler_phrases`.
+
 ## 2026.09.29-37
 
 ### Changed

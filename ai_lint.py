@@ -71,7 +71,7 @@ try:
 except ModuleNotFoundError:  # Python < 3.11: policy files unsupported, defaults apply
     tomllib = None
 
-VERSION = "2026.09.29-37"
+VERSION = "2026.09.29-38"
 DOCS = "https://code.claude.com/docs/en/"
 ISSUES = "https://github.com/anthropics/claude-code/issues/"
 
@@ -103,6 +103,24 @@ DEFAULT_POLICY: dict[str, Any] = {
         ],
         "claude_md_import": True,  # keep CLAUDE.md = "@AGENTS.md" for CLIs < 2.1.277 / Bedrock
         "min_duplicate_line_len": 30,
+        # Style levers for always-loaded instructions: an agent parses terse,
+        # imperative, list-shaped text faster and cheaper than prose. All info-level.
+        "style_checks": True,  # master switch for the style suggestions below
+        "prose_block_lines": 4,  # a run of >= N non-list prose lines is flagged (bullet it)
+        "prose_line_min_chars": 60,  # only count lines this long as prose (skip short ones)
+        "filler_phrases": [  # polite / filler wording to drop for the imperative
+            "please",
+            "you should",
+            "you must",
+            "make sure to",
+            "be sure to",
+            "note that",
+            "keep in mind",
+            "in order to",
+            "it is important to",
+            "as a reminder",
+            "feel free to",
+        ],
     },
     "permissions": {
         "require_rtk": True,  # route Bash allow rules through rtk
@@ -1029,6 +1047,14 @@ HINTS: dict[str, tuple[str, str]] = {  # code -> (why/how, reference)
         DOCS + "memory#write-effective-instructions",
     ),
     "INSTR_DUPLICATED": ("Same lines in user and project instructions are paid twice.", ""),
+    "INSTR_PROSE": (
+        "An agent parses a bulleted rule faster than a paragraph, and bullets cost fewer tokens.",
+        DOCS + "memory#write-effective-instructions",
+    ),
+    "INSTR_FILLER": (
+        "Politeness and hedging add tokens without changing behaviour; write direct imperatives.",
+        DOCS + "memory#write-effective-instructions",
+    ),
     "AGENTS_IGNORED": (
         "With a CLAUDE.md present, AGENTS.md is not read by default; import it.",
         DOCS + "memory#agents-md",
@@ -2607,6 +2633,42 @@ def check_imports(
             check_imports(target, sub, rep, policy, root, depth + 1, seen)
 
 
+def check_instruction_style(path: Path, effective: str, pol: dict, rep: Report) -> None:
+    """Suggest terser, list-shaped, imperative wording for always-loaded
+    instructions. All info-level: style, never correctness."""
+    if not pol.get("style_checks", True):
+        return
+    body = strip_code(effective)  # do not lint prose inside fenced code blocks
+    # Prose blocks: a run of long, non-list, non-heading, non-table lines that
+    # would read faster as bullet points.
+    run = 0
+    min_lines = pol.get("prose_block_lines", 4)
+    min_chars = pol.get("prose_line_min_chars", 60)
+    flagged_prose = False
+    for line in body.splitlines():
+        s = line.strip()
+        is_prose = bool(s) and len(s) >= min_chars and not re.match(r"^([-*+]|\d+[.)]|#{1,6}\s|\||>)", s)
+        run = run + 1 if is_prose else 0
+        if run >= min_lines and not flagged_prose:
+            rep.add(
+                "info",
+                "INSTR_PROSE",
+                path,
+                f"{run}+ prose lines in a row: bullet points read faster and cost fewer tokens",
+            )
+            flagged_prose = True
+    # Filler / polite wording: drop it for the imperative.
+    low = body.lower()
+    hits = [w for w in pol.get("filler_phrases", []) if re.search(rf"\b{re.escape(w)}\b", low)]
+    if hits:
+        rep.add(
+            "info",
+            "INSTR_FILLER",
+            path,
+            f"filler wording ({', '.join(sorted(set(hits))[:4])}...): write direct imperatives",
+        )
+
+
 def check_instruction_file(path: Path, scope: str, policy: dict, rep: Report, root: Path | None) -> str | None:
     try:
         size = path.stat().st_size
@@ -2633,6 +2695,7 @@ def check_instruction_file(path: Path, scope: str, policy: dict, rep: Report, ro
         )
     elif lines > pol["project_warn_lines"] or tokens > pol["warn_tokens"]:
         rep.add("warn", "INSTR_LONG", path, f"{lines} lines (~{tokens} tokens)")
+    check_instruction_style(path, effective, pol, rep)
     check_imports(path, text, rep, policy, root)
     return text
 
@@ -6022,6 +6085,8 @@ BRIEF_FR = {
         "fichiers d'instructions de plus de 200 lignes",
         "-i : sortir les procédures dans des skills",
     ),
+    "INSTR_PROSE": ("tokens", "paragraphes en prose", "remplacer par des puces"),
+    "INSTR_FILLER": ("tokens", "formules de politesse / remplissage", "écrire des impératifs directs"),
     "RULE_UNSCOPED": (
         "tokens",
         "règles chargées partout faute de 'paths:'",
@@ -6157,6 +6222,8 @@ BRIEF_EN = {
     ),
     "SKILL_LONG": ("tokens", "skills over 500 lines", "-i: split into SKILL.md + references/"),
     "INSTR_LONG": ("tokens", "instruction files over 200 lines", "-i: move procedures into skills"),
+    "INSTR_PROSE": ("tokens", "prose paragraphs", "replace with bullet points"),
+    "INSTR_FILLER": ("tokens", "polite / filler wording", "write direct imperatives"),
     "RULE_UNSCOPED": (
         "tokens",
         "rules loaded everywhere for lack of 'paths:'",

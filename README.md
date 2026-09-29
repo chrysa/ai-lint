@@ -268,6 +268,9 @@ scope, auto-memory `MEMORY.md` over 200 lines / 25 KB. Instruction files for oth
 tools are checked the same way — `.github/copilot-instructions.md` (Copilot),
 `.cursorrules` (Cursor), `.windsurfrules` (Windsurf) and `GEMINI.md` (Gemini CLI); Codex /
 ChatGPT read `AGENTS.md` directly. Adjust the list in `[instructions] rendered_files`.
+Style levers (info-level, `[instructions] style_checks`): `INSTR_PROSE` suggests bullet
+points for prose blocks, `INSTR_FILLER` flags polite/hedging wording ("please", "make sure
+to"...) to replace with direct imperatives.
 
 **Rules** (`.claude/rules`): `paths` only (`globs`/`applyTo` renamed), invalid patterns,
 frontmatter not on line 1, symlinks outside the project.
