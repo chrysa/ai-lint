@@ -2,14 +2,17 @@
 
 All notable changes to `ai-lint`. Dates are ISO 8601.
 
-## Unreleased
+## 2026.09.29-41
 
 ### Changed
-- Project-framing docs for maintainers and agents: rewrote `CLAUDE.md` into an
-  operational contract (mission, non-negotiables, workflow, sensitive zones,
-  quality gate, uncertainty behaviour) and added `ARCHITECTURE.md`,
-  `docs/FIXER_POLICY.md`, `DECISIONS.md` and `TESTING.md`. Docs only; no runtime
-  change. Content that the README already covers was not duplicated.
+- More verbose repository discovery. Instead of a raw comma-separated
+  `repositories: ...` line, a readable block summarises what was searched and
+  found: per target, whether it is a git repo / a tree (with repo count, depth
+  and how many directories were pruned) / a plain directory, and the discovered
+  repos (capped to 10 unless `-v`). Shown when more than one repo is in play or
+  at `-v`; a single plain repo stays quiet.
+- `--rtk-report` labels each section (`rtk gain`, `rtk discover`) and says when
+  a section has nothing to report, instead of dumping unlabelled output.
 
 ## 2026.09.29-40
 

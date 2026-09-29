@@ -71,7 +71,7 @@ try:
 except ModuleNotFoundError:  # Python < 3.11: policy files unsupported, defaults apply
     tomllib = None
 
-VERSION = "2026.09.29-40"
+VERSION = "2026.09.29-41"
 DOCS = "https://code.claude.com/docs/en/"
 ISSUES = "https://github.com/anthropics/claude-code/issues/"
 
@@ -4281,14 +4281,49 @@ def check_llmtrim(rep: Report, repos: list[Path], user_scope: bool) -> None:
         )
 
 
+def render_discovery(color: bool) -> str:
+    """A readable summary of what was searched and found, from DISCOVERY. Shown
+    when more than one repo is in play or at -v; empty for a single plain repo."""
+    if not DISCOVERY:
+        return ""
+    total = sum(len(d["repos"]) for d in DISCOVERY)
+    single = len(DISCOVERY) == 1 and DISCOVERY[0]["kind"] == "git-repo"
+    if single and VERBOSITY == 0:
+        return ""
+    b, dim, r0 = ("\033[1m", "\033[2m", "\033[0m") if color else ("", "", "")
+    lines = [f"{b}Discovered {total} repository(ies) from {len(DISCOVERY)} target(s){r0}"]
+    for d in DISCOVERY:
+        root = short_path(str(d["root"]))
+        if d["kind"] == "git-repo":
+            lines.append(f"  {root} {dim}(git repo){r0}")
+        elif d["kind"] == "no-git":
+            lines.append(f"  {root} {dim}(no git repo below; scanned as-is){r0}")
+        else:
+            note = f"{len(d['repos'])} repo(s), depth <= {d.get('max_depth', 3)}, {d['pruned']} dir(s) pruned"
+            lines.append(f"  {root} {dim}({note}){r0}")
+            show = d["repos"] if VERBOSITY >= 1 else d["repos"][:10]
+            lines += [f"    - {short_path(str(r))}" for r in show]
+            if len(d["repos"]) > len(show):
+                lines.append(f"    {dim}... and {len(d['repos']) - len(show)} more (-v to list all){r0}")
+    return "\n".join(lines)
+
+
 def rtk_report() -> str:
     if not RTK["path"] or not RTK["genuine"]:
         return ""
+    # Label each section so the discover output reads as a block, not raw dump.
+    sections = (
+        (["rtk", "gain"], "Token savings so far (rtk gain)"),
+        (["rtk", "discover", "--since", "7"], "Commands rtk learned to rewrite in the last 7 days (rtk discover)"),
+    )
     parts = []
-    for args in (["rtk", "gain"], ["rtk", "discover", "--since", "7"]):
+    for args, title in sections:
         res = _run(args, timeout=30)
-        if res and (res.stdout or "").strip():
-            parts.append(f"$ {' '.join(args)}\n{res.stdout.rstrip()}")
+        body = (res.stdout or "").strip() if res else ""
+        if body:
+            parts.append(f"-- {title}\n$ {' '.join(args)}\n{body}")
+        else:
+            parts.append(f"-- {title}\n(nothing to report)")
     return "\n\n".join(parts)
 
 
@@ -7434,12 +7469,19 @@ def lint_repo(repo: Path, policy: dict, rep: Report, history: bool, user_text: s
     run_plugin_checks("project", repo, policy, rep)
 
 
+# Per-target discovery record, filled by discover_repos and rendered verbosely so
+# the user sees exactly what was searched and what was skipped.
+DISCOVERY: list[dict] = []
+
+
 def discover_repos(root: Path, max_depth: int = 3) -> list[Path]:
     if (root / ".git").exists():
+        DISCOVERY.append({"root": root, "kind": "git-repo", "repos": [root], "pruned": 0})
         return [root]
     found: list[Path] = []
     skip = {"node_modules", ".venv", "venv", ".cache", "Library", "dist", "build"}
     base = len(root.parts)
+    pruned = 0
     for dirpath, dirnames, _ in os.walk(root):
         p = Path(dirpath)
         if p != root and (p / ".git").exists():
@@ -7447,10 +7489,22 @@ def discover_repos(root: Path, max_depth: int = 3) -> list[Path]:
             dirnames[:] = []
             continue
         depth = len(p.parts) - base
-        dirnames[:] = [d for d in dirnames if d not in skip and not d.startswith(".")] if depth < max_depth else []
+        if depth < max_depth:
+            keep = [d for d in dirnames if d not in skip and not d.startswith(".")]
+            pruned += len(dirnames) - len(keep)
+            dirnames[:] = keep
+        else:
+            pruned += len(dirnames)
+            dirnames[:] = []
     if found:
-        log(1, f"{root} is not a git repository: {len(found)} repositories found below it")
-        return sorted(found)
+        repos = sorted(found)
+        DISCOVERY.append({"root": root, "kind": "tree", "repos": repos, "pruned": pruned, "max_depth": max_depth})
+        log(1, f"{root} is not a git repository: {len(repos)} repositories found below it (depth <= {max_depth})")
+        for r in repos:
+            log(1, f"  discovered {r}", 1)
+        return repos
+    DISCOVERY.append({"root": root, "kind": "no-git", "repos": [root], "pruned": pruned})
+    log(1, f"{root}: no git repository found; scanning the directory itself")
     return [root]
 
 
@@ -8787,6 +8841,7 @@ def main(argv: list[str] | None = None) -> int:
         if not r.is_dir():
             print(f"not a directory: {r}", file=sys.stderr)
             return 2
+    DISCOVERY.clear()
     repos = [repo for t in targets for repo in discover_repos(t)]
     policy = load_policy(args.policy, repos)
     history = not args.no_history
@@ -8828,6 +8883,10 @@ def main(argv: list[str] | None = None) -> int:
         INTERACTIVE_RAN = True
         if interactive(rep, repos, policy, bool(args.user or args.user_only)):
             rep = run_lint(repos, policy, args, history)
+    if args.format == "text":
+        disc = render_discovery(sys.stdout.isatty())
+        if disc:
+            print(disc + "\n")
     if args.format == "text" and not (args.details or args.all):
         print(render_brief(rep, fixed, args.fix, len(repos), sys.stdout.isatty()))
         for bk in sorted(set(backups)):
@@ -8884,8 +8943,6 @@ def main(argv: list[str] | None = None) -> int:
             )
         )
     else:
-        if repos and (len(repos) > 1 or VERBOSITY):
-            print("repositories: " + ", ".join(str(r) for r in repos))
         print(render_text(rep, args.fix, sys.stdout.isatty(), args.quiet, fixed, applied, failures, backups))
         if args.rtk_report:
             report = rtk_report()
