@@ -71,7 +71,7 @@ try:
 except ModuleNotFoundError:  # Python < 3.11: policy files unsupported, defaults apply
     tomllib = None
 
-VERSION = "2026.09.29-42"
+VERSION = "2026.09.29-43"
 DOCS = "https://code.claude.com/docs/en/"
 ISSUES = "https://github.com/anthropics/claude-code/issues/"
 
@@ -2339,7 +2339,11 @@ def check_settings(path: Path, base: Path, scope: str, policy: dict, rep: Report
                 f"unrecognised key {k!r} (schema may be newer)",
             )
         if scope == "project" and k in PROJECT_DEAD_KEYS:
-            rep.add("warn", "SETTINGS_DEAD_KEY", path, f"{k}: {PROJECT_DEAD_KEYS[k]}")
+            # A key a project settings file cannot set (managed-settings only) is
+            # dead here: removing it changes nothing at runtime and only ever
+            # tightens, so it is safe to auto-fix.
+            rep.add("warn", "SETTINGS_DEAD_KEY", path, f"{k}: {PROJECT_DEAD_KEYS[k]} (removed)", True)
+            new.pop(k, None)
     plugin_cfg = (
         (data.get("pluginConfigs") or {}).get("agents-md@builtin")
         if isinstance(data.get("pluginConfigs"), dict)

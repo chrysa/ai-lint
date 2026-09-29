@@ -2,6 +2,14 @@
 
 All notable changes to `ai-lint`. Dates are ISO 8601.
 
+## 2026.09.29-43
+
+### Changed
+- `SETTINGS_DEAD_KEY`: a managed-settings-only key found in a project settings
+  file (e.g. `forceLoginOrgUUID`) is now removed by `--fix`. It does nothing in
+  project scope, so removing it only tightens and lets repeated runs converge
+  instead of warning on it every time. User-scope settings are untouched.
+
 ## 2026.09.29-42
 
 ### Fixed
