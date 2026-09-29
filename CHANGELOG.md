@@ -2,6 +2,19 @@
 
 All notable changes to `ai-lint`. Dates are ISO 8601.
 
+## 2026.09.29-46
+
+### Changed
+- Build/dev tooling aligned with shared-standards and the Forge-Stack base
+  makefile: `Makefile` restructured (auto-doc help, out-of-tree caches, `.reports`
+  dir, `ci` / `ci-lint` / `ci-test` targets, `type-check` alias), a
+  `.pre-commit-config.yaml` mirroring the CI gate (std hooks, ruff, mypy typed
+  against `pyproject`, local selfcheck + no-AI-attribution guard), and CI rewritten
+  to a pre-commit job plus a test matrix on Python 3.13 and 3.14 running `make ci`.
+- Fixed a latent typing bug the stricter mypy hook exposed (`trig_key: str | None`
+  appended to a `list[str]`). `.gitignore` now covers `.mypy_cache` and `.benchmarks`.
+- Documented the single-module deviation from the `src/` layout (DECISIONS D-011).
+
 ## 2026.09.29-45
 
 ### Changed
