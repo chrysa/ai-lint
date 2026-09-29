@@ -7060,10 +7060,10 @@ def interactive(rep: Report, repos: list[Path], policy: dict, user_scope: bool) 
 def restore_trash(target: str | None) -> int:
     """Move every file of a trash session back where it came from (never overwrites).
     Returns 1 when the requested session is missing or nothing could be restored."""
-    # Also read trash written under the tool's former name, so sessions from before
-    # the rename stay restorable.
-    bases = [Path(os.path.expanduser(p)) for p in ("~/.cache/ai-lint/trash", "~/.cache/agent-config-lint/trash")]
-    sessions = sorted(d for b in bases if b.is_dir() for d in b.iterdir() if d.is_dir())
+    # A trash session written by an older, differently-named build is still
+    # restorable by passing its folder explicitly (--restore <dir>).
+    base = Path(os.path.expanduser("~/.cache/ai-lint/trash"))
+    sessions = sorted(d for d in base.iterdir() if d.is_dir()) if base.is_dir() else []
     if target:
         root = Path(target).expanduser()
         if not root.is_dir():
