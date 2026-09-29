@@ -71,7 +71,37 @@ try:
 except ModuleNotFoundError:  # Python < 3.11: policy files unsupported, defaults apply
     tomllib = None
 
-VERSION = "2026.09.29-46"
+
+def _detect_version() -> str:
+    """The version is computed, never typed (shared-standards CI-045): prefer the
+    installed package metadata, else the git tag, else a dev placeholder."""
+    try:
+        from importlib.metadata import PackageNotFoundError, version
+
+        try:
+            return version("ai-lint")
+        except PackageNotFoundError:
+            pass
+    except ImportError:
+        pass
+    try:
+        import subprocess
+
+        out = subprocess.run(
+            ["git", "-C", str(Path(__file__).resolve().parent), "describe", "--tags", "--always", "--dirty"],
+            capture_output=True,
+            text=True,
+            timeout=2,
+        )
+        tag = (out.stdout or "").strip().lstrip("v")
+        if tag:
+            return tag
+    except (OSError, ValueError):
+        pass
+    return "0.0.0-dev"
+
+
+VERSION = _detect_version()
 DOCS = "https://code.claude.com/docs/en/"
 ISSUES = "https://github.com/anthropics/claude-code/issues/"
 

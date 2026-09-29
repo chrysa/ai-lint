@@ -26,10 +26,10 @@ repos:
       - id: ruff
         name: ruff (lint)
         args: ["--fix"]
-        files: ^(ai_lint\.py|ai-lint\.py|tests/)
+        files: ^(ai_lint/|ai-lint\.py|tests/)
       - id: ruff-format
         name: ruff (format)
-        files: ^(ai_lint\.py|ai-lint\.py|tests/)
+        files: ^(ai_lint/|ai-lint\.py|tests/)
 
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: v1.14.1

@@ -6,7 +6,7 @@
 # caches kept out of the source tree.
 
 PY ?= python3
-SOURCE := ai_lint.py ai-lint.py
+SOURCE := ai_lint ai-lint.py
 TESTS := tests
 REPORTS_DIR := .reports
 
@@ -18,7 +18,7 @@ export MYPY_CACHE_DIR := /tmp/ai-lint-mypy-cache
 
 .PHONY: help install lint format typecheck type-check test cov \
         docker-test build clean selfcheck check ci ci-lint ci-test \
-        pre-commit pre-commit-install pre-commit-update
+        pre-commit pre-commit-install pre-commit-update changelog
 
 help:  ## Show this help
 	@grep -hE '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) \
@@ -57,7 +57,7 @@ selfcheck:  ## Run ai-lint on its own repo; fail only on real traces/secrets in-
 	@$(PY) tests/_selfcheck.py
 
 build:  ## Validate the script parses and runs (no build step: dependency-free)
-	@$(PY) -c "import ast; ast.parse(open('ai_lint.py').read()); print('ai_lint.py OK')"
+	@$(PY) -c "import ast; ast.parse(open('ai_lint/_engine.py').read()); print('ai_lint/_engine.py OK')"
 	@$(PY) ai-lint.py --version
 
 docker-test:  ## Run the test suite in a container (CI parity)
@@ -79,6 +79,9 @@ check: lint typecheck test  ## Lint, type-check, then test
 ci-lint: lint typecheck  ## CI: static checks only
 ci-test: test selfcheck  ## CI: tests + self-check
 ci: lint typecheck test selfcheck  ## Full CI gate
+
+changelog:  ## Regenerate CHANGELOG.md from Conventional Commits (git-cliff)
+	@git cliff --output CHANGELOG.md
 
 clean:  ## Remove caches and coverage artefacts
 	@rm -rf .coverage .coverage.* $(REPORTS_DIR) htmlcov coverage.json

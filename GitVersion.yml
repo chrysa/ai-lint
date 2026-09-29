@@ -1,0 +1,26 @@
+branches:
+  chore:
+    increment: Patch
+    mode: ContinuousDeployment
+    regex: ^chore/
+    tag: alpha
+  feature:
+    increment: Minor
+    mode: ContinuousDeployment
+    regex: ^feat/
+    tag: alpha
+  fix:
+    increment: Patch
+    mode: ContinuousDeployment
+    regex: ^fix/
+    tag: beta
+  main:
+    increment: Patch
+    mode: ContinuousDelivery
+    regex: ^main$
+    tag: ''
+increment: Inherit
+major-version-bump-message: ^(feat|fix|refactor)(\(.+\))?!:.+
+minor-version-bump-message: ^feat(\(.+\))?:.+
+mode: ContinuousDeployment
+patch-version-bump-message: ^(fix|refactor|perf|docs|chore)(\(.+\))?:.+
