@@ -2,6 +2,16 @@
 
 All notable changes to `ai-lint`. Dates are ISO 8601.
 
+## 2026.09.29-42
+
+### Fixed
+- `SECURITY_GITIGNORE` on an existing `.gitignore` is now applied by `--fix`.
+  It was registered in `new_files`, which `apply()` skips when the path already
+  exists, so the append was silently dropped and the warning recurred on every
+  run (the "same output every time" symptom, ×61 across repos). It is now a
+  proper `rep.edit` (appending ignore lines only tightens), so `--fix` writes it
+  and repeated runs converge.
+
 ## 2026.09.29-41
 
 ### Changed

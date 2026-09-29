@@ -71,7 +71,7 @@ try:
 except ModuleNotFoundError:  # Python < 3.11: policy files unsupported, defaults apply
     tomllib = None
 
-VERSION = "2026.09.29-41"
+VERSION = "2026.09.29-42"
 DOCS = "https://code.claude.com/docs/en/"
 ISSUES = "https://github.com/anthropics/claude-code/issues/"
 
@@ -7280,8 +7280,12 @@ def scaffold_security(repo: Path, policy: dict, rep: Report) -> None:
         if missing:
             block = SECRETS_GITIGNORE_HEADER + "\n" + "\n".join(missing) + "\n"
             if gi.exists():
+                # Append the missing block to the existing file. Use rep.edit (not
+                # new_files, which apply() skips for an existing path) so --fix
+                # actually writes it. Appending ignore lines only ever tightens.
+                new = (current.rstrip("\n") + "\n\n" + block) if current.strip() else block
                 rep.add("warn", "SECURITY_GITIGNORE", gi, f"secrets not git-ignored: {', '.join(missing)}", True)
-                rep.new_files[gi] = ((current.rstrip("\n") + "\n\n" + block) if current.strip() else block, 0o644)
+                rep.edit(gi, current, new)
             else:
                 gen_new_file(gi, block, rep, "secrets .gitignore", 0o644)
 
