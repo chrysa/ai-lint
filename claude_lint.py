@@ -71,7 +71,7 @@ try:
 except ModuleNotFoundError:  # Python < 3.11: policy files unsupported, defaults apply
     tomllib = None
 
-VERSION = "2026.09.29-33"
+VERSION = "2026.09.29-34"
 DOCS = "https://code.claude.com/docs/en/"
 ISSUES = "https://github.com/anthropics/claude-code/issues/"
 
@@ -7904,6 +7904,22 @@ def protected_path(p: Path) -> str | None:
     return None
 
 
+def _guard_json(old: str, new: str, label: str) -> tuple[dict, dict] | str:
+    """Parse the pre/post contents of a guarded JSON file. The old text is
+    read leniently (a malformed file on disk must not block a repair); the new
+    text must be strict JSON, else a guard block reason is returned. Non-object
+    JSON is normalised to an empty dict so callers can treat both as mappings."""
+    try:
+        o = lenient_json(old)[0] if old.strip() else {}
+    except json.JSONDecodeError:
+        o = {}
+    try:
+        n = json.loads(new)
+    except json.JSONDecodeError as e:
+        return f"guard: {label} must stay strict JSON ({e})"
+    return (o if isinstance(o, dict) else {}), (n if isinstance(n, dict) else {})
+
+
 def guard_check(data: dict) -> str | None:
     """Return a block reason, or None to let the normal permission flow decide."""
     tool = data.get("tool_name", "")
@@ -7955,55 +7971,46 @@ def guard_check(data: dict) -> str | None:
     name = path.name
     violations: list[str] = []
     if name in ("settings.json", "settings.local.json") or re.search(r"settings.*\.json$", name):
-        try:
-            o = lenient_json(old)[0] if old.strip() else {}
-        except json.JSONDecodeError:
-            o = {}
-        try:
-            n = json.loads(new)
-        except json.JSONDecodeError as e:
-            return f"guard: settings must stay strict JSON ({e})"
-        violations = settings_violations(o if isinstance(o, dict) else {}, n if isinstance(n, dict) else {})
+        parsed = _guard_json(old, new, "settings")
+        if isinstance(parsed, str):
+            return parsed
+        o, n = parsed
+        violations = settings_violations(o, n)
     elif name == ".mcp.json":
-        try:
-            o = lenient_json(old)[0] if old.strip() else {}
-            n = json.loads(new)
-        except json.JSONDecodeError as e:
-            return f"guard: .mcp.json must stay strict JSON ({e})"
+        parsed = _guard_json(old, new, ".mcp.json")
+        if isinstance(parsed, str):
+            return parsed
+        o, n = parsed
         violations = mcp_violations(o, n)
     elif name == "claude_desktop_config.json":
-        try:
-            o = lenient_json(old)[0] if old.strip() else {}
-            n = json.loads(new)
-        except json.JSONDecodeError as e:
-            return f"guard: Desktop config must stay strict JSON ({e})"
+        parsed = _guard_json(old, new, "Desktop config")
+        if isinstance(parsed, str):
+            return parsed
+        o, n = parsed
         violations = mcp_violations(o, n)
     elif name == "plugin.json" and path.parent.name == ".claude-plugin":
-        try:
-            o = lenient_json(old)[0] if old.strip() else {}
-            n = json.loads(new)
-        except json.JSONDecodeError as e:
-            return f"guard: plugin.json must stay strict JSON ({e})"
+        parsed = _guard_json(old, new, "plugin.json")
+        if isinstance(parsed, str):
+            return parsed
+        o, n = parsed
         violations = [
             f"plugin {k} added or changed (executes code)"
             for k in ("hooks", "mcpServers", "lspServers", "monitors", "channels", "userConfig")
             if n.get(k) not in (None, o.get(k))
         ]
     elif name == "marketplace.json" and path.parent.name == ".claude-plugin":
-        try:
-            o = lenient_json(old)[0] if old.strip() else {}
-            n = json.loads(new)
-        except json.JSONDecodeError as e:
-            return f"guard: marketplace.json must stay strict JSON ({e})"
+        parsed = _guard_json(old, new, "marketplace.json")
+        if isinstance(parsed, str):
+            return parsed
+        o, n = parsed
         on = {p.get("name") for p in o.get("plugins") or [] if isinstance(p, dict)}
         nn = {p.get("name") for p in n.get("plugins") or [] if isinstance(p, dict)}
         violations = [f"new marketplace plugin {x!r}" for x in sorted(nn - on)]
     elif name == "hooks.json" and path.parent.name == "hooks":
-        try:
-            o = lenient_json(old)[0] if old.strip() else {}
-            n = json.loads(new)
-        except json.JSONDecodeError as e:
-            return f"guard: hooks.json must stay strict JSON ({e})"
+        parsed = _guard_json(old, new, "hooks.json")
+        if isinstance(parsed, str):
+            return parsed
+        o, n = parsed
         violations = settings_violations({"hooks": o.get("hooks")}, {"hooks": n.get("hooks")})
     elif path.suffix in (".yml", ".yaml") and "/.github/workflows/" in str(path) and "claude-code" in new:
         risky = [

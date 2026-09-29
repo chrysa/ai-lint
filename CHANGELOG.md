@@ -2,6 +2,15 @@
 
 All notable changes to `claude-lint`. Dates are ISO 8601.
 
+## 2026.09.29-34
+
+### Changed
+- Simplified `guard_check`: the six near-identical JSON parse/validate blocks
+  (settings, .mcp.json, desktop config, plugin.json, marketplace.json,
+  hooks.json) now share one `_guard_json(old, new, label)` helper that reads the
+  old text leniently, requires strict JSON for the new text, and normalises
+  non-object JSON to a dict. No behaviour change.
+
 ## 2026.09.29-33
 
 ### Fixed
