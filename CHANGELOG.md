@@ -2,6 +2,16 @@
 
 All notable changes to `claude-lint`. Dates are ISO 8601.
 
+## 2026.09.29-36
+
+### Added
+- Recognise instruction files for other agent tools as always-loaded
+  instructions: `.cursorrules` (Cursor), `.windsurfrules` (Windsurf) and
+  `GEMINI.md` (Gemini CLI) join `.github/copilot-instructions.md` in
+  `instructions.rendered_files`, so they are linted (size, imports, attribution,
+  duplication) and, with a doctrine source, expected to be regenerated. Codex /
+  ChatGPT read `AGENTS.md` directly and need no separate file.
+
 ## 2026.09.29-35
 
 ### Added

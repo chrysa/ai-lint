@@ -264,7 +264,10 @@ command/args split, deprecated SSE, inline secrets replaced by `${VAR}`, server 
 `@imports` (missing, deeper than four hops, external), `AGENTS.md` loading rules
 (`CLAUDE.md` must import it; `CLAUDE.local.md` silently disables it), `CLAUDE.local.md`
 gitignored, generated renders when `doctrine/rules/` exists, lines duplicated from user
-scope, auto-memory `MEMORY.md` over 200 lines / 25 KB.
+scope, auto-memory `MEMORY.md` over 200 lines / 25 KB. Instruction files for other agent
+tools are checked the same way — `.github/copilot-instructions.md` (Copilot),
+`.cursorrules` (Cursor), `.windsurfrules` (Windsurf) and `GEMINI.md` (Gemini CLI); Codex /
+ChatGPT read `AGENTS.md` directly. Adjust the list in `[instructions] rendered_files`.
 
 **Rules** (`.claude/rules`): `paths` only (`globs`/`applyTo` renamed), invalid patterns,
 frontmatter not on line 1, symlinks outside the project.

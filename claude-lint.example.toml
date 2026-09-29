@@ -5,7 +5,7 @@ warn_tokens = 5000
 max_import_depth = 4
 doctrine_dir = "doctrine/rules"
 generated_marker = "GENERATED"
-rendered_files = ["CLAUDE.md", "AGENTS.md", ".github/copilot-instructions.md"]
+rendered_files = ["CLAUDE.md", "AGENTS.md", ".github/copilot-instructions.md", ".cursorrules", ".windsurfrules", "GEMINI.md"]
 claude_md_import = true
 min_duplicate_line_len = 30
 

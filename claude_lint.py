@@ -71,7 +71,7 @@ try:
 except ModuleNotFoundError:  # Python < 3.11: policy files unsupported, defaults apply
     tomllib = None
 
-VERSION = "2026.09.29-35"
+VERSION = "2026.09.29-36"
 DOCS = "https://code.claude.com/docs/en/"
 ISSUES = "https://github.com/anthropics/claude-code/issues/"
 
@@ -87,7 +87,20 @@ DEFAULT_POLICY: dict[str, Any] = {
         "max_import_depth": 4,  # documented maximum: four hops
         "doctrine_dir": "doctrine/rules",
         "generated_marker": "GENERATED",
-        "rendered_files": ["CLAUDE.md", "AGENTS.md", ".github/copilot-instructions.md"],
+        # Instruction files that mirror AGENTS.md for other agent tools. Index 0
+        # (CLAUDE.md) and 1 (AGENTS.md) are the Claude Code / neutral pair; the
+        # rest are extra renders, linted as always-loaded instructions and, when a
+        # doctrine source exists, expected to be regenerated (RENDER_HAND_EDITED).
+        # Covers GitHub Copilot, Cursor (legacy), Windsurf, and Gemini CLI. Codex /
+        # ChatGPT read AGENTS.md directly, so they need no separate file.
+        "rendered_files": [
+            "CLAUDE.md",
+            "AGENTS.md",
+            ".github/copilot-instructions.md",
+            ".cursorrules",
+            ".windsurfrules",
+            "GEMINI.md",
+        ],
         "claude_md_import": True,  # keep CLAUDE.md = "@AGENTS.md" for CLIs < 2.1.277 / Bedrock
         "min_duplicate_line_len": 30,
     },
