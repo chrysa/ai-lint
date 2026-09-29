@@ -65,6 +65,14 @@ tests/                        pytest suite (make test)
 README.md · CHANGELOG.md
 ```
 
+### Project docs (for maintainers and agents)
+
+- [CLAUDE.md](CLAUDE.md) — operational contract for an agent working on this repo.
+- [ARCHITECTURE.md](ARCHITECTURE.md) — engine map and data flow.
+- [docs/FIXER_POLICY.md](docs/FIXER_POLICY.md) — the "only ever tighten" safety contract.
+- [DECISIONS.md](DECISIONS.md) — why the project is the way it is.
+- [TESTING.md](TESTING.md) — test strategy and what "green" means.
+
 ## Install
 
 No install needed and no runtime dependencies (Python >= 3.9). Clone the repo (the CLI
