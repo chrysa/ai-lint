@@ -1,5 +1,92 @@
 @AGENTS.md
 
+<!-- Operational contract for an agent working on THIS repo (ai-lint itself).
+     Not the tool's user docs — that is README.md. HTML comments cost no context. -->
+
+## Mission
+
+ai-lint validates, repairs and guards AI coding-agent configuration. It reports what is
+insecure, wasteful or broken, and repairs what it can **without ever loosening** the
+config. Keep it: correct against the docs, safe by construction, cheap to run, dependency-free.
+
+## Non-negotiable rules
+
+- **Never loosen.** No code path may add an `allow` rule, widen a matcher, remove a
+  `deny`, or enable a disabled control. `--fix` only tightens, repairs syntax, or scaffolds
+  guard files. See [docs/FIXER_POLICY.md](docs/FIXER_POLICY.md).
+- **Fail closed.** The guard (`--guard`) blocks on any error or ambiguity. New guard logic
+  defaults to blocking, not allowing.
+- **No secrets, ever** — not in code, tests, fixtures, logs or commits. `API_KEY_LEAK`
+  must keep ignoring obvious placeholders and `claude-secret-ok` lines only.
+- **No assistant/AI attribution** in commits, PRs, files or docs.
+- **English on disk.** French only in user-facing strings via the `_loc(fr, en)` table.
+- **Conventional Commits.** Ask before any external action (push, release, repo rename).
+
+## Priorities (in order)
+
+1. Security correctness (never loosen; catch real leaks; guard fails closed).
+2. Faithfulness to the official docs (snapshot in `ai_lint.py`, `# Reference data`).
+3. Token-cost signal (the budget estimate and levers stay honest).
+4. Low false-positive rate (a noisy linter gets ignored).
+5. Speed and zero runtime deps.
+
+## Commands
+
+- `make check` — lint + typecheck + test (run before declaring done).
+- `make test` / `make lint` / `make typecheck` / `make format`.
+- `make selfcheck` — run ai-lint on its own repo; must end `traces in repo: 0`.
+- `python3 ai-lint.py <repo> [--fix|-i|--generate|--diff|-v]` — manual run.
+
+## Workflow to change this repo
+
+1. Understand the check/behaviour: `ai_lint.py` is one ~8900-line engine; use the section
+   map in [ARCHITECTURE.md](ARCHITECTURE.md) to locate code before editing.
+2. Every bug fix or new check ships **with a test** in `tests/`.
+3. Run `make check` and `make selfcheck` — both green.
+4. Bump `VERSION` in `ai_lint.py`, add a `CHANGELOG.md` entry, update `README.md` if
+   user-facing, regenerate `ai-lint.example.toml` with `python3 ai-lint.py --print-policy`
+   if the policy changed.
+5. Commit (Conventional Commits), then ask before pushing.
+
+## Sensitive zones (extra care)
+
+- **Permission logic** (`# Reference data`, permission checks, `settings_violations`,
+  `rtk_twin`) — the core "never loosen" surface.
+- **`guard_check` / `run_guard`** — a wrong "allow" here defeats the guard. Fail closed.
+- **`API_KEY_LEAK` / secret scan** — a false negative ships a leaked key.
+- **`apply()` + the re-scan fix loop** — writes files; a bug corrupts user config. Backups
+  go to `~/.cache/ai-lint/`.
+- **Docs snapshot** (`# Reference data`) — only change with a doc reference; note the date.
+
+## Security policy
+
+The tool's own guarantee is the code's contract: repairs tighten or stay neutral. When a
+change *could* loosen (e.g. a new "auto-fix" that rewrites permissions), report it and
+leave it for the human under "not fixed". Details and the exact fixable set:
+[docs/FIXER_POLICY.md](docs/FIXER_POLICY.md).
+
+## Quality gate before delivery
+
+- `make check` green (ruff, mypy, pytest).
+- `make selfcheck` → `traces in repo: 0`.
+- New behaviour covered by a test; no lowered coverage floor.
+- No new runtime dependency (stdlib only; PyYAML stays optional, catalogue-only).
+- No secret, no attribution, English on disk.
+
+## Documentation rules
+
+- User-facing → `README.md`. Decisions/rationale → [DECISIONS.md](DECISIONS.md).
+  Structure → [ARCHITECTURE.md](ARCHITECTURE.md). Test strategy → [TESTING.md](TESTING.md).
+- Keep docs operational: decisions and facts an agent can act on, not filler.
+- When behaviour changes, update the doc in the same commit.
+
+## When uncertain
+
+- A change might loosen config, weaken the guard, or hide a real leak → **don't**; report
+  it and ask.
+- A doc rule is ambiguous → keep the current, more conservative behaviour and flag it.
+- Scope unclear or an external action is implied → ask the human before proceeding.
+
 ## Compact instructions
 
 When compacting, keep: the task goal, decisions taken, files changed, failing test names

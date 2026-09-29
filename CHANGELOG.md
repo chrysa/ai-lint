@@ -2,6 +2,15 @@
 
 All notable changes to `ai-lint`. Dates are ISO 8601.
 
+## Unreleased
+
+### Changed
+- Project-framing docs for maintainers and agents: rewrote `CLAUDE.md` into an
+  operational contract (mission, non-negotiables, workflow, sensitive zones,
+  quality gate, uncertainty behaviour) and added `ARCHITECTURE.md`,
+  `docs/FIXER_POLICY.md`, `DECISIONS.md` and `TESTING.md`. Docs only; no runtime
+  change. Content that the README already covers was not duplicated.
+
 ## 2026.09.29-40
 
 ### Changed
