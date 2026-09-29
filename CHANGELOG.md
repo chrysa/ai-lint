@@ -2,6 +2,15 @@
 
 All notable changes to `ai-lint`. Dates are ISO 8601.
 
+## 2026.09.29-40
+
+### Changed
+- Documentation: rewrote the README intro to explain the project's purpose —
+  what it is, why it exists (security / token-cost / correctness), and who it is
+  for (individuals and teams via a shared policy, `--guard`, and CI). Fixed stale
+  claims (multi-tool coverage, engine + CLI split, PyYAML optional) and the
+  install steps. Filled the AGENTS.md overview and command list.
+
 ## 2026.09.29-39
 
 ### Added

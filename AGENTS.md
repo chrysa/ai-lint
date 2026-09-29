@@ -5,13 +5,20 @@
 
 ## Overview
 
-<!-- One paragraph: what this project is, who uses it, current maturity. -->
+ai-lint is a linter, fixer and guard for AI coding-agent configuration (Claude Code and
+other tools). It validates and repairs settings, permissions, hooks, MCP, skills,
+subagents, rules and instruction files; flags security, token-cost and correctness
+issues; and only ever tightens config (never adds an allow rule). Engine: `ai_lint.py`;
+CLI wrapper: `ai-lint.py`. Standard library only (PyYAML optional for the catalogue).
 
 ## Commands
 
-- `make test`
-- `make lint`
-- `make fmt`
+- `make test` — pytest suite
+- `make lint` — ruff check + format --check
+- `make format` — ruff format
+- `make typecheck` — mypy
+- `make check` — lint + typecheck + test
+- `make selfcheck` — run ai-lint on its own repo
 
 ## Conventions
 

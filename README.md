@@ -1,41 +1,84 @@
 # ai-lint
 
-Validate, repair and harden everything Claude-related in a repository and on your
-machine: Claude Code settings, permissions, hooks, helpers (status line, API key helper),
-MCP servers, instruction files, rules, skills, subagents, commands, output styles,
-plugins and marketplaces, keybindings, Claude Desktop MCP configuration, managed
-settings, GitHub Actions workflows running the Claude action, misplaced or misnamed
-files, and leaked Anthropic API keys. Rules follow the official documentation
-(snapshot 2026-09) and known upstream issues.
+**A linter, fixer and guard for AI coding-agent configuration.** It reads the config
+that agents load into every session — instructions, permissions, hooks, MCP servers,
+skills, subagents — reports what is broken, insecure or wasteful, and repairs what it
+safely can.
 
-Two layers:
+## Why it exists
+
+Agent config is code that runs on every request, but nothing checks it. In practice it
+drifts into three problems ai-lint is built to catch:
+
+- **Security.** A permission rule that silently allows too much, a `deny` that a typo
+  disabled, a committed API key, a hook pointing at a missing script, secrets that were
+  never git-ignored. ai-lint only ever *tightens* — it never adds an allow rule — and can
+  scaffold the missing guard files (a `PreCompact` hook, a secrets `.gitignore` block).
+- **Tokens / cost.** Everything in your instruction files, rules, skill and subagent
+  listings, and MCP servers is re-sent on **every** request. ai-lint estimates that
+  per-session weight, names the biggest contributors, and suggests concrete cuts
+  (bullet points over prose, scoped rules, a lighter default model, fewer always-listed
+  packs).
+- **Correctness / drift.** Deprecated keys, invalid hook or rule shapes, unknown settings,
+  duplicate skills loaded twice, instruction files that diverge from `AGENTS.md`, config
+  in the wrong scope. Rules follow the official docs (snapshot 2026-09) and known upstream
+  issues.
+
+## Who it is for
+
+- Anyone running Claude Code / an AI agent who wants their config **secure and cheap** —
+  run it read-only, or `--fix` to repair.
+- **Teams**: share one `.ai-lint.toml` policy so every repo is checked the same way; run
+  `--guard` as a hook so an agent cannot loosen the config behind your back; wire it into
+  **CI** to fail on regressions.
+
+## What it covers
+
+It validates and repairs Claude Code settings, permissions, hooks, helpers (status line,
+API key helper), MCP servers, instruction files, rules, skills, subagents, commands,
+output styles, plugins and marketplaces, keybindings, Claude Desktop MCP config, managed
+settings, GitHub Actions running the Claude action, misplaced/misnamed files, and leaked
+Anthropic API keys. Instruction files for **other agent tools** are checked too —
+`.github/copilot-instructions.md` (Copilot), `.cursorrules` (Cursor), `.windsurfrules`
+(Windsurf), `GEMINI.md` (Gemini CLI); Codex / ChatGPT read `AGENTS.md` directly.
+
+## Two layers
 
 | Layer | What it does | Safety |
 |---|---|---|
 | `ai-lint.py` | Deterministic checks and repairs, CI-friendly | Only tightens; never adds an allow rule |
 | `skills/config-audit` | Guarded agent session for judgment calls and doc drift | Every agent edit is checked by `--guard`; loosening is blocked |
 
-Single Python file, no dependencies. Python >= 3.9 (>= 3.11 to read a policy file).
+Pure Python standard library (the engine is `ai_lint.py`, the CLI is the thin
+`ai-lint.py` wrapper). Python >= 3.9; >= 3.11 only to read a policy file; PyYAML only for
+the optional editable catalogue.
 
 ## Contents
 
 ```
-ai-lint.py          the linter / fixer / guard
+ai-lint.py                    CLI entry point (thin wrapper)
+ai_lint.py                    the engine: all checks, repairs, generation, guard
 skills/config-audit/SKILL.md  guarded audit workflow (user-invoked only)
-ai-lint.example.toml       default policy, copy to <repo>/.ai-lint.toml to customize
-README.md
+ai-lint.example.toml          default policy, copy to <repo>/.ai-lint.toml to customize
+examples/plugins/             sample custom-check plugin
+tests/                        pytest suite (make test)
+README.md · CHANGELOG.md
 ```
 
 ## Install
 
-`ai-lint.py` is a single file with no dependencies (Python >= 3.9). Copy it
-anywhere on your `PATH` and make it executable:
+No install needed and no runtime dependencies (Python >= 3.9). Clone the repo (the CLI
+`ai-lint.py` imports the engine `ai_lint.py` next to it) and run it:
 
 ```sh
-curl -O https://raw.githubusercontent.com/chrysa/ai-lint/main/ai-lint.py
-chmod +x ai-lint.py && ./ai-lint.py --help
-# or drop it on your PATH:
-install -m 0755 ai-lint.py ~/.local/bin/ai-lint
+git clone https://github.com/chrysa/ai-lint && cd ai-lint
+./ai-lint.py --help
+```
+
+For a shorter invocation from anywhere, add an alias:
+
+```sh
+alias ai-lint='python3 /path/to/ai-lint/ai-lint.py'
 ```
 
 Running it with no arguments prints the help, including the effective defaults.
