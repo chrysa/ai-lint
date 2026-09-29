@@ -71,7 +71,7 @@ try:
 except ModuleNotFoundError:  # Python < 3.11: policy files unsupported, defaults apply
     tomllib = None
 
-VERSION = "2026.09.29-43"
+VERSION = "2026.09.29-44"
 DOCS = "https://code.claude.com/docs/en/"
 ISSUES = "https://github.com/anthropics/claude-code/issues/"
 
@@ -1466,8 +1466,10 @@ def set_frontmatter(text: str, updates: dict[str, str], renames: dict[str, str] 
 
 
 def strip_code(text: str) -> str:
-    """Remove fenced blocks and inline code spans (imports inside them are literal)."""
-    text = re.sub(r"(?ms)^(```|~~~).*?^\1", "", text)
+    """Remove fenced blocks and inline code spans (imports inside them are literal).
+    Fences may be indented (e.g. nested in a numbered list), so allow leading
+    whitespace on the opening and closing lines."""
+    text = re.sub(r"(?ms)^[ \t]*(```+|~~~+)[^\n]*\n.*?^[ \t]*\1[ \t]*$", "", text)
     return re.sub(r"`[^`\n]*`", "", text)
 
 

@@ -2,6 +2,16 @@
 
 All notable changes to `ai-lint`. Dates are ISO 8601.
 
+## 2026.09.29-44
+
+### Fixed
+- `IMPORT_MISSING` false positive on code inside an **indented** fenced block
+  (e.g. a ```` ```typescript ```` example nested in a numbered list): `strip_code`
+  only matched fences at column 0, so a code-example `import ... from '@/services'`
+  was mistaken for a CLAUDE.md `@import`. Fences may now be indented, and the
+  closing fence is matched at the same indent. Real `@imports` outside code are
+  still flagged.
+
 ## 2026.09.29-43
 
 ### Changed

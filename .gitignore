@@ -7,3 +7,12 @@ CLAUDE.local.md
 .coverage.*
 coverage.json
 htmlcov/
+
+# ai-lint: keep secrets and local config out of git
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets/
+.claude/settings.local.json
