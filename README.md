@@ -100,6 +100,7 @@ The full report ends with:
 | `-i`, `--interactive` | Review one by one, in a terminal: duplicates to remove, subagent packs to park, long skill descriptions to shorten, non-agent files in `agents/`, Opus as default model, user MCP commands to run. Every move is reversible (`restore.sh`) |
 | `--restore [DIR]` | Move back everything removed by the last `-i` session (or the given trash folder); never overwrites an existing file |
 | `--details` | Full per-file report instead of the brief one |
+| `--diff` | Print a unified diff of every file `--fix` / `-i` / `--generate` changed (at `-v`, a one-line summary per changed file is shown instead: new/edited, line delta, JSON keys added/removed/changed) |
 | `--lang en\|fr` | Language of the brief report. Defaults to French when `$LANG` starts with `fr`, English otherwise. The interactive review is always French |
 | `--all` | List every finding (repeated findings are grouped by default, above 5 of the same kind) |
 | `--min-level error\|warn\|info` | Hide findings below this level (e.g. `--min-level warn` drops the info noise) |

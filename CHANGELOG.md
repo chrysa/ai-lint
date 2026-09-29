@@ -2,6 +2,16 @@
 
 All notable changes to `ai-lint`. Dates are ISO 8601.
 
+## 2026.09.29-39
+
+### Added
+- More verbose reporting of the changes `--fix` / `-i` / `--generate` make:
+  - at `-v`, each changed file gets a one-line summary (new file / edited,
+    line delta, and for JSON the top-level keys added / removed / changed);
+  - `--diff` prints the full unified diff of every changed file.
+  The change log is accumulated across fix passes, so it survives the re-scan a
+  fix pass runs. Quiet (`-q`) stays terse.
+
 ## 2026.09.29-38
 
 ### Added

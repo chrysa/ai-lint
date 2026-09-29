@@ -71,7 +71,7 @@ try:
 except ModuleNotFoundError:  # Python < 3.11: policy files unsupported, defaults apply
     tomllib = None
 
-VERSION = "2026.09.29-38"
+VERSION = "2026.09.29-39"
 DOCS = "https://code.claude.com/docs/en/"
 ISSUES = "https://github.com/anthropics/claude-code/issues/"
 
@@ -1196,6 +1196,10 @@ HINTS: dict[str, tuple[str, str]] = {  # code -> (why/how, reference)
 # --------------------------------------------------------------------------- #
 
 VERBOSITY = 0
+SHOW_DIFF = False  # --diff: print a unified diff of every changed file
+# Every (path, before, after) actually written, accumulated across --fix passes
+# (each pass re-scans with a fresh Report, so this must outlive the report).
+CHANGE_LOG: list[tuple[str, str, str]] = []
 SCAFFOLD = True
 CLI_VERSION: tuple[int, ...] | None = None
 LANG = "fr"  # brief-report language: "fr" or "en" (set from --lang / $LANG)
@@ -6350,6 +6354,15 @@ def render_brief(rep: Report, fixed: list[Finding], fix: bool, repos_count: int,
             if fixed
             else _loc("Rien à corriger automatiquement.", "Nothing to fix automatically.")
         )
+        # -v / --diff: say what changed in each file, not just the count.
+        if CHANGE_LOG and (VERBOSITY >= 1 or SHOW_DIFF):
+            for spath, before, after in CHANGE_LOG:
+                path = Path(spath)
+                out.append(f"  {dim}{short_path(spath)}{r0}")
+                if SHOW_DIFF:
+                    out += [f"    {dl}" for dl in _unified_diff(path, before, after)]
+                else:
+                    out += [f"    {dim}{d}{r0}" for d in _change_details(path, before, after)]
     budget = getattr(rep, "budget", None) or {}
     by_code: dict[str, list[Finding]] = {}
     for f in rep.findings:
@@ -7547,12 +7560,13 @@ def apply(rep: Report) -> tuple[Path | None, list[str], list[tuple[str, str]]]:
             applied.append(f"chmod+x {p}")
         except OSError as e:
             failures.append((str(p), f"chmod failed: {e}"))
-    for p, (_, new) in rep.edits.items():
+    for p, (old, new) in rep.edits.items():
         try:
             p.write_text(new, encoding="utf-8")
             if read_text(p) != new:
                 raise OSError("content not persisted (read-only mount or generated file?)")
             applied.append(f"updated {p}")
+            CHANGE_LOG.append((str(p), old, new))
             log(1, f"wrote {p}", 1)
         except OSError as e:
             failures.append((str(p), f"write failed: {e}"))
@@ -7565,6 +7579,7 @@ def apply(rep: Report) -> tuple[Path | None, list[str], list[tuple[str, str]]]:
             p.write_text(content, encoding="utf-8")
             p.chmod(mode | stat.S_IRUSR)
             applied.append(f"created {p}")
+            CHANGE_LOG.append((str(p), "", content))
             log(1, f"created {p}", 1)
         except OSError as e:
             failures.append((str(p), f"create failed: {e}"))
@@ -7618,6 +7633,44 @@ def _finding_gain(f: Finding) -> int:
     return 0
 
 
+def _change_details(path: Path, old: str, new: str) -> list[str]:
+    """Short human summary of what changed: line delta, and for JSON the
+    top-level keys added/removed/changed."""
+    old_lines, new_lines = old.splitlines(), new.splitlines()
+    added = len([l for l in new_lines if l not in old_lines])
+    removed = len([l for l in old_lines if l not in new_lines])
+    kind = "new file" if not old else "edited"
+    out = [f"{kind}, {len(new_lines)} lines (+{added} / -{removed})"]
+    if path.suffix == ".json" or path.name.endswith(".json"):
+        try:
+            o = json.loads(old) if old.strip() else {}
+            n = json.loads(new) if new.strip() else {}
+        except json.JSONDecodeError:
+            return out
+        if isinstance(o, dict) and isinstance(n, dict):
+            add = sorted(set(n) - set(o))
+            rem = sorted(set(o) - set(n))
+            chg = sorted(k for k in set(o) & set(n) if o[k] != n[k])
+            for label, keys in (("added", add), ("removed", rem), ("changed", chg)):
+                if keys:
+                    out.append(f"{label} key(s): {', '.join(keys)}")
+    return out
+
+
+def _unified_diff(path: Path, old: str, new: str) -> list[str]:
+    rel = short_path(str(path))
+    return list(
+        difflib.unified_diff(
+            old.splitlines(),
+            new.splitlines(),
+            fromfile=f"a/{rel}",
+            tofile=f"b/{rel}",
+            lineterm="",
+            n=2,
+        )
+    )
+
+
 def render_text(
     rep: Report,
     fix: bool,
@@ -7636,6 +7689,17 @@ def render_text(
             verb, _, rest = a.partition(" ")
             parts = [short_path(x) for x in rest.split(" -> ")]
             out.append(f"  {verb} {' -> '.join(parts)}")
+            # -v: one line per change describing what changed inside the file.
+            # --diff: the full unified diff. Sourced from CHANGE_LOG, which
+            # survives the re-scan a --fix pass runs.
+            target = str(Path(rest.split(" -> ")[-1]).resolve())
+            for spath, before, after in CHANGE_LOG:
+                if str(Path(spath).resolve()) != target:
+                    continue
+                if SHOW_DIFF:
+                    out += [f"      {dl}" for dl in _unified_diff(Path(spath), before, after)]
+                elif VERBOSITY >= 1:
+                    out += [f"{dim}      {d}{r0}" for d in _change_details(Path(spath), before, after)]
     # Detailed findings: always in read-only mode; with --fix only at -v (the summary lists them).
     if not fix or VERBOSITY >= 1:
         if fix and rep.findings:
@@ -8597,6 +8661,9 @@ def main(argv: list[str] | None = None) -> int:
         help="move back everything removed by the last -i session (or the given trash folder)",
     )
     ap.add_argument("--details", action="store_true", help="full per-file report instead of the brief one")
+    ap.add_argument(
+        "--diff", action="store_true", help="print a unified diff of every file --fix / -i / --generate changed"
+    )
     ap.add_argument("--all", action="store_true", help="list every finding instead of grouping repeated ones")
     ap.add_argument(
         "--min-level",
@@ -8659,10 +8726,12 @@ def main(argv: list[str] | None = None) -> int:
         ap.print_help()
         return 0
     args = ap.parse_args(argv)
-    global VERBOSITY, SCAFFOLD, CLI_VERSION, SHOW_ALL, FIRST_REPORT, LANG, PROGRESS, MIN_LEVEL
+    global VERBOSITY, SCAFFOLD, CLI_VERSION, SHOW_ALL, FIRST_REPORT, LANG, PROGRESS, MIN_LEVEL, SHOW_DIFF
     if args.restore is not None:
         return restore_trash(args.restore or None)
     VERBOSITY, SCAFFOLD, SHOW_ALL = args.verbose, not args.no_scaffold, args.all
+    SHOW_DIFF = args.diff
+    CHANGE_LOG.clear()
     MIN_LEVEL = args.min_level
     # Progress bar by default: interactive stderr, no -v (which logs per repo),
     # no -q, text output only. Keeps pipes, JSON and CI silent.
