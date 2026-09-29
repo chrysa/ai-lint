@@ -2,14 +2,35 @@
 
 All notable changes to `ai-lint`. Dates are ISO 8601.
 
-## Unreleased
+## 2026.09.29-43
 
 ### Changed
-- Project-framing docs for maintainers and agents: rewrote `CLAUDE.md` into an
-  operational contract (mission, non-negotiables, workflow, sensitive zones,
-  quality gate, uncertainty behaviour) and added `ARCHITECTURE.md`,
-  `docs/FIXER_POLICY.md`, `DECISIONS.md` and `TESTING.md`. Docs only; no runtime
-  change. Content that the README already covers was not duplicated.
+- `SETTINGS_DEAD_KEY`: a managed-settings-only key found in a project settings
+  file (e.g. `forceLoginOrgUUID`) is now removed by `--fix`. It does nothing in
+  project scope, so removing it only tightens and lets repeated runs converge
+  instead of warning on it every time. User-scope settings are untouched.
+
+## 2026.09.29-42
+
+### Fixed
+- `SECURITY_GITIGNORE` on an existing `.gitignore` is now applied by `--fix`.
+  It was registered in `new_files`, which `apply()` skips when the path already
+  exists, so the append was silently dropped and the warning recurred on every
+  run (the "same output every time" symptom, ×61 across repos). It is now a
+  proper `rep.edit` (appending ignore lines only tightens), so `--fix` writes it
+  and repeated runs converge.
+
+## 2026.09.29-41
+
+### Changed
+- More verbose repository discovery. Instead of a raw comma-separated
+  `repositories: ...` line, a readable block summarises what was searched and
+  found: per target, whether it is a git repo / a tree (with repo count, depth
+  and how many directories were pruned) / a plain directory, and the discovered
+  repos (capped to 10 unless `-v`). Shown when more than one repo is in play or
+  at `-v`; a single plain repo stays quiet.
+- `--rtk-report` labels each section (`rtk gain`, `rtk discover`) and says when
+  a section has nothing to report, instead of dumping unlabelled output.
 
 ## 2026.09.29-40
 
