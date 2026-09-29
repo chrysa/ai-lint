@@ -1,7 +1,11 @@
 #!/usr/bin/env python3
 """PostToolUse formatter: formats the edited file with the project's own tools. Never blocks."""
 
-import json, os, shutil, subprocess, sys
+import json
+import os
+import shutil
+import subprocess
+import sys
 
 
 def main() -> int:

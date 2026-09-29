@@ -71,7 +71,7 @@ try:
 except ModuleNotFoundError:  # Python < 3.11: policy files unsupported, defaults apply
     tomllib = None
 
-VERSION = "2026.09.29-45"
+VERSION = "2026.09.29-46"
 DOCS = "https://code.claude.com/docs/en/"
 ISSUES = "https://github.com/anthropics/claude-code/issues/"
 
@@ -2975,7 +2975,7 @@ def check_skill(d: Path, policy: dict, rep: Report) -> str | None:
         pending_when = None
     unknown = [k for k in meta if k not in SKILL_FIELDS]
     move_meta: list[str] = []
-    if pending_when:
+    if pending_when and trig_key:
         unknown = [k for k in unknown if k not in ("trigger", "triggers")] + [trig_key]
     if unknown:
         movable = [k for k in unknown if k not in ("trigger", "triggers") or pending_when]

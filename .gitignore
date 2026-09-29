@@ -2,6 +2,8 @@ __pycache__/
 *.pyc
 .pytest_cache/
 .ruff_cache/
+.mypy_cache/
+.benchmarks/
 CLAUDE.local.md
 .coverage
 .coverage.*

@@ -4,6 +4,20 @@ Why the project is the way it is — the rationale an agent would otherwise re-d
 undo) each session. History of *what* changed is in [CHANGELOG.md](CHANGELOG.md); this file
 records *why*. Newest first. Each entry: decision, why, and what would reverse it.
 
+## D-011 · Single-module engine, not a `src/` package (shared-standards deviation)
+The engine stays one module (`ai_lint.py`) rather than a split `src/ai_lint/`
+package. **Why:** the shared-standards `src/` layout and "domain modeled by
+classes, one class per module" rules target **distributed libraries** with a
+public API published to PyPI. ai-lint is a **repo-local CLI** (see D-003), not a
+library: no public import surface, no semver API contract. A single audited
+module keeps the tool copy-and-run and dependency-free, and the guard/checks are
+naturally procedural, not a class domain. The engine/CLI split (D-004) already
+gives importability for tooling. **Reverse:** if ai-lint is ever published as an
+installable library with a public API, adopt the `src/` layout then. Other
+shared-standards points are met: all tool config lives in `pyproject.toml`
+`[tool.*]` (no external ruff/mypy/pytest config), Conventional Commits, invariant
+`make` targets, Ruff line-length 120, caches git-ignored.
+
 ## D-010 · Renamed `claude-lint` → `ai-lint`
 The tool checks configs for several agent tools, not just Claude Code. **Why:** the name
 implied Claude-only and misled. **Reverse:** would only make sense if multi-tool support
