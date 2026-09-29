@@ -1,4 +1,4 @@
-# claude-lint
+# ai-lint
 
 Validate, repair and harden everything Claude-related in a repository and on your
 machine: Claude Code settings, permissions, hooks, helpers (status line, API key helper),
@@ -12,7 +12,7 @@ Two layers:
 
 | Layer | What it does | Safety |
 |---|---|---|
-| `claude-lint.py` | Deterministic checks and repairs, CI-friendly | Only tightens; never adds an allow rule |
+| `ai-lint.py` | Deterministic checks and repairs, CI-friendly | Only tightens; never adds an allow rule |
 | `skills/config-audit` | Guarded agent session for judgment calls and doc drift | Every agent edit is checked by `--guard`; loosening is blocked |
 
 Single Python file, no dependencies. Python >= 3.9 (>= 3.11 to read a policy file).
@@ -20,22 +20,22 @@ Single Python file, no dependencies. Python >= 3.9 (>= 3.11 to read a policy fil
 ## Contents
 
 ```
-claude-lint.py          the linter / fixer / guard
+ai-lint.py          the linter / fixer / guard
 skills/config-audit/SKILL.md  guarded audit workflow (user-invoked only)
-claude-lint.example.toml       default policy, copy to <repo>/.claude-lint.toml to customize
+ai-lint.example.toml       default policy, copy to <repo>/.ai-lint.toml to customize
 README.md
 ```
 
 ## Install
 
-`claude-lint.py` is a single file with no dependencies (Python >= 3.9). Copy it
+`ai-lint.py` is a single file with no dependencies (Python >= 3.9). Copy it
 anywhere on your `PATH` and make it executable:
 
 ```sh
-curl -O https://raw.githubusercontent.com/chrysa/claude-lint/main/claude-lint.py
-chmod +x claude-lint.py && ./claude-lint.py --help
+curl -O https://raw.githubusercontent.com/chrysa/ai-lint/main/ai-lint.py
+chmod +x ai-lint.py && ./ai-lint.py --help
 # or drop it on your PATH:
-install -m 0755 claude-lint.py ~/.local/bin/claude-lint
+install -m 0755 ai-lint.py ~/.local/bin/ai-lint
 ```
 
 Running it with no arguments prints the help, including the effective defaults.
@@ -45,12 +45,12 @@ Optional companions it uses when present: the `claude` CLI (`--no-cli` to skip),
 ## Quick start
 
 ```sh
-./claude-lint.py . --user --generate         # preview everything it would generate
-./claude-lint.py . --user --generate --fix   # generate, then lint and repair the result
-./claude-lint.py .                 # read-only: findings, diff, summary
-./claude-lint.py . --fix           # apply repairs (backup in ~/.cache/claude-lint/)
-./claude-lint.py . --user --fix    # include user scope (~/.claude or $CLAUDE_CONFIG_DIR)
-./claude-lint.py ~/dev --fix       # every git repository under ~/dev (3 levels deep)
+./ai-lint.py . --user --generate         # preview everything it would generate
+./ai-lint.py . --user --generate --fix   # generate, then lint and repair the result
+./ai-lint.py .                 # read-only: findings, diff, summary
+./ai-lint.py . --fix           # apply repairs (backup in ~/.cache/ai-lint/)
+./ai-lint.py . --user --fix    # include user scope (~/.claude or $CLAUDE_CONFIG_DIR)
+./ai-lint.py ~/dev --fix       # every git repository under ~/dev (3 levels deep)
 ```
 
 By default a run prints a **brief report**, in priority order and plain language:
@@ -91,7 +91,7 @@ The full report ends with:
 | `--no-scaffold` | Do not create missing files |
 | `--format json` | Machine-readable output (`findings`, `fixed`, `not_fixed`, `would_fix`, `hints`) |
 | `--strict` | Exit 1 on warnings too (CI) |
-| `--policy FILE` | Policy file (default `<repo>/.claude-lint.toml`) |
+| `--policy FILE` | Policy file (default `<repo>/.ai-lint.toml`) |
 | `--no-history` | Skip the git history scan for attribution |
 | `--no-cli` | Do not call the `claude` / `rtk` CLIs (static fallbacks are used) |
 | `--rtk-report` | Append `rtk gain` and `rtk discover --since 7` output |
@@ -106,7 +106,7 @@ The full report ends with:
 | `--print-policy` | Print the default policy as TOML |
 | `--print-catalog` | Print the editable catalog (reference sets + per-check metadata) as YAML |
 | `--catalog FILE` | Load an edited catalog: extend the known keys/events/tools/fields, and override any check's severity (`error`/`warn`/`info`/`off`), `enabled`, or `→ fix` action |
-| `--plugin-dir DIR` | Extra directory of check plugins (repeatable). Also loaded from `<config dir>/plugins` and `<repo>/.claude-lint/plugins` |
+| `--plugin-dir DIR` | Extra directory of check plugins (repeatable). Also loaded from `<config dir>/plugins` and `<repo>/.ai-lint/plugins` |
 | `--list-plugins` | List discovered plugins and the checks they register, then exit |
 | `--dump-reference` | Print built-in reference data (keys, events, tools, fields) |
 | `--session-settings FILE` | Write settings for a guarded agent session |
@@ -116,7 +116,7 @@ Exit codes: `0` clean, `1` errors (or warnings with `--strict`), `2` usage error
 
 ## Run log
 
-Every run appends one JSON line to `~/.cache/claude-lint/logs/<date>.log` (one file
+Every run appends one JSON line to `~/.cache/ai-lint/logs/<date>.log` (one file
 per day). Each record holds the timestamp, version, arguments, repository count, elapsed
 time, finding counts by level and by code, how many findings were fixed or applied, and the
 exit code — counts and codes only, never file contents or secrets. Logging is best-effort:
@@ -151,7 +151,7 @@ file before deciding. A final summary lists what was done and the undo script.
 
 They are reported in every run. With `-i`, each cluster is shown with kind, name, size,
 last modification date, path and description, and you choose what to remove. Nothing
-is deleted: removed items go to `~/.cache/claude-lint/trash/<timestamp>/`, parked
+is deleted: removed items go to `~/.cache/ai-lint/trash/<timestamp>/`, parked
 subagent packs to `<config dir>/parked/` (not loaded), and a `restore.sh` in the trash
 folder undoes every move of the session. The same session offers to park subagent packs
 (per `agents/<pack>/<group>` directory, with their token cost), shorten skill descriptions
@@ -165,7 +165,7 @@ the guard cannot start it.
 Every run ends with a **RESTRUCTURE** plan: changes of structure that make the setup load
 less and work better, ranked by the tokens they remove from every session. With `-i`
 each one is offered in turn and applied only if you accept; every change is reversible
-(`restore.sh` for moves, backups in `~/.cache/claude-lint/` for edits).
+(`restore.sh` for moves, backups in `~/.cache/ai-lint/` for edits).
 
 | Proposal | What `-i` does |
 |---|---|
@@ -228,7 +228,7 @@ already follows every rule below.
 | rtk `config.toml` (`--user`) | `[hooks] exclude_commands`, `[retriever] mode = "sqlite"` |
 | user MCP servers (`--user`) | printed as `claude mcp add --scope user ...` commands (Notion by default): `~/.claude.json` is written by the CLI only |
 
-Tune it in `.claude-lint.toml`, table `[generate]`: which skills, agents and MCP servers,
+Tune it in `.ai-lint.toml`, table `[generate]`: which skills, agents and MCP servers,
 `extra_allow` / `extra_ask` / `extra_deny`, safe and gated Makefile targets,
 `rtk_exclude_commands`, and on/off switches per artifact.
 
@@ -353,11 +353,11 @@ instruction files) and to follow documentation changes:
 
 ```sh
 cp -r skills/config-audit <repo>/.claude/skills/      # or ~/.claude/skills/
-./claude-lint.py --session-settings /tmp/audit.json
+./ai-lint.py --session-settings /tmp/audit.json
 claude --settings /tmp/audit.json                     # then run /config-audit
 ```
 
-The session file (read-only) installs `claude-lint.py --guard` on every edit and
+The session file (read-only) installs `ai-lint.py --guard` on every edit and
 shell command, and denies commits, pushes and external actions. The guard blocks any
 edit that would:
 
@@ -374,7 +374,7 @@ edit that would:
   or remove its `permissions:` block;
 - touch `~/.claude.json`, managed settings, synced skills, installed plugins, git hooks,
   the linter or the session file;
-- change `.claude-lint.toml` outside the `[reference]` table;
+- change `.ai-lint.toml` outside the `[reference]` table;
 - run `--generate --fix`, `--session-settings` or `--policy` (a `--generate` preview is allowed);
 - write configuration files through the shell instead of Edit/Write.
 
@@ -385,12 +385,12 @@ the plan and ends with a report in two sections: fixed / not fixed.
 
 The agent compares `--dump-reference` with the current documentation and records new
 settings keys, hook events, tools and fields in the `[reference]` table of
-`.claude-lint.toml`. The linter then recognises them without code changes. Changes that
+`.ai-lint.toml`. The linter then recognises them without code changes. Changes that
 need new logic are reported, not worked around.
 
 ## Policy
 
-Copy `claude-lint.example.toml` to `<repo>/.claude-lint.toml` and keep only what you
+Copy `ai-lint.example.toml` to `<repo>/.ai-lint.toml` and keep only what you
 change. Main knobs: `permissions.require_rtk`, `permissions.rtk_twin_deny`,
 `permissions.rule_style` (`keep` / `space` / `colon`), `permissions.external_action_prefixes`,
 `permissions.required_deny` (rtk also reads its own `exclude_commands`), `skills.portable`, `skills.gate_side_effects`,
@@ -433,9 +433,9 @@ and the metadata of every check (severity, category, `→ fix` action, doc ref) 
 exposed as one editable YAML catalog. Export it, edit it, and feed it back:
 
 ```sh
-claude-lint.py --print-catalog > claude-lint.catalog.yaml   # the built-in catalog
+ai-lint.py --print-catalog > ai-lint.catalog.yaml   # the built-in catalog
 # edit it, then:
-claude-lint.py . --catalog claude-lint.catalog.yaml
+ai-lint.py . --catalog ai-lint.catalog.yaml
 ```
 
 An overlaid catalog:
@@ -474,14 +474,14 @@ into the normal report and obey the catalog (a plugin code can be disabled or
 re-ranked via `--catalog`, and its `→ fix` action shows in `--details`). A plugin
 that raises is reported and skipped — it never crashes a run.
 
-Discovery, in order: `<config dir>/plugins/`, `<repo>/.claude-lint/plugins/`, and
+Discovery, in order: `<config dir>/plugins/`, `<repo>/.ai-lint/plugins/`, and
 any `--plugin-dir DIR` (repeatable). `--list-plugins` shows what loaded. A ready
 example is in [`examples/plugins/example_check.py`](examples/plugins/example_check.py).
 
 ## CI
 
 ```sh
-python3 claude-lint.py . --strict --format json --no-cli --no-scaffold
+python3 ai-lint.py . --strict --format json --no-cli --no-scaffold
 ```
 
 ## Limits

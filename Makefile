@@ -12,11 +12,11 @@ install:  ## Install dev dependencies (from pyproject optional-deps)
 	$(PY) -m pip install --upgrade pytest pytest-cov ruff mypy PyYAML
 
 lint:  ## Ruff check + format verification (max 120 chars)
-	$(PY) -m ruff check claude_lint.py claude-lint.py tests
-	$(PY) -m ruff format --check claude_lint.py claude-lint.py tests
+	$(PY) -m ruff check ai_lint.py ai-lint.py tests
+	$(PY) -m ruff format --check ai_lint.py ai-lint.py tests
 
 format:  ## Format with ruff
-	$(PY) -m ruff format claude_lint.py claude-lint.py tests
+	$(PY) -m ruff format ai_lint.py ai-lint.py tests
 
 typecheck:  ## Static type check (mypy)
 	$(PY) -m mypy
@@ -37,8 +37,8 @@ docker-test:  ## Run the test suite in a container (shared-standards CI entry po
 		"pip install -q pytest pytest-cov PyYAML && python -m pytest -q"
 
 build:  ## Build the distributable (the single-file script needs no build; validate it)
-	$(PY) -c "import ast; ast.parse(open('claude_lint.py').read()); print('claude_lint.py OK')"
-	$(PY) claude-lint.py --version
+	$(PY) -c "import ast; ast.parse(open('ai_lint.py').read()); print('ai_lint.py OK')"
+	$(PY) ai-lint.py --version
 
 selfcheck:  ## Run the tool on its own repo; fail only on real traces/secrets in-repo
 	$(PY) tests/_selfcheck.py

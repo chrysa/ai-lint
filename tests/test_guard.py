@@ -11,16 +11,16 @@ def g(m, **data):
 
 
 def test_bash_linter_allowed(linter_module):
-    assert g(linter_module, tool_name="Bash", tool_input={"command": "python3 claude-lint.py . --fix"}) is None
+    assert g(linter_module, tool_name="Bash", tool_input={"command": "python3 ai-lint.py . --fix"}) is None
 
 
 def test_bash_generate_fix_blocked(linter_module):
-    r = g(linter_module, tool_name="Bash", tool_input={"command": "claude-lint.py . --generate --fix"})
+    r = g(linter_module, tool_name="Bash", tool_input={"command": "ai-lint.py . --generate --fix"})
     assert r and "generate" in r.lower()
 
 
 def test_bash_interactive_blocked(linter_module):
-    assert g(linter_module, tool_name="Bash", tool_input={"command": "claude-lint.py ~ --user -i"})
+    assert g(linter_module, tool_name="Bash", tool_input={"command": "ai-lint.py ~ --user -i"})
 
 
 def test_bash_attribution_blocked(linter_module):
@@ -90,7 +90,7 @@ def test_unrelated_tool_ignored(linter_module):
 
 
 def test_run_guard_blocks_with_exit_2(linter_module, monkeypatch, capsys):
-    payload = json.dumps({"tool_name": "Bash", "tool_input": {"command": "claude-lint.py . --generate --fix"}})
+    payload = json.dumps({"tool_name": "Bash", "tool_input": {"command": "ai-lint.py . --generate --fix"}})
     monkeypatch.setattr(linter_module.sys, "stdin", __import__("io").StringIO(payload))
     rc = linter_module.run_guard()
     assert rc == 2

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""claude-lint: validate, repair and optimize coding-agent configurations.
+"""ai-lint: validate, repair and optimize coding-agent configurations.
 
 Single file, no third-party dependencies. Python >= 3.9 (>= 3.11 for policy files).
 
@@ -15,27 +15,27 @@ Scopes checked:
            .claude/rules, skills, agents, commands, git hooks, git history
 
 Usage:
-  claude-lint.py [PATH ...] [--user|--user-only] [--fix] [--no-scaffold]
+  ai-lint.py [PATH ...] [--user|--user-only] [--fix] [--no-scaffold]
                        [--format text|json] [--policy FILE] [--strict]
                        [--no-history] [--no-cli] [-v|-vv|-vvv|-q]
-  claude-lint.py --print-policy
+  ai-lint.py --print-policy
 
 PATH may be a repository or a folder of repositories (searched 3 levels deep).
 Default mode is read-only: findings + the unified diff --fix would apply.
 --fix applies safe repairs in passes until stable, re-lints, and reports what was
-fixed versus what needs manual action. Originals go to ~/.cache/claude-lint/.
+fixed versus what needs manual action. Originals go to ~/.cache/ai-lint/.
 
 Verbosity (stderr; --format json stays clean on stdout):
   -q  errors + summary   -v  progress, why/how hints, doc references
   -vv every transformation   -vvv debug (files scanned, git calls, resolved policy)
 
 Guarded audit session (for an AI agent doing the judgment calls):
-  claude-lint.py --session-settings FILE   write a --settings file that installs --guard
+  ai-lint.py --session-settings FILE   write a --settings file that installs --guard
   claude --settings FILE                         agent edits are now checked by --guard:
       no widening of allow rules, no removal of deny/ask rules or hooks, no bypass modes,
       no new MCP servers/env/helpers, no attribution, protected files untouchable,
-      .claude-lint.toml editable only in [reference]. Fails closed.
-  claude-lint.py --dump-reference          built-in reference data, to diff against docs
+      .ai-lint.toml editable only in [reference]. Fails closed.
+  ai-lint.py --dump-reference          built-in reference data, to diff against docs
 
 Exit codes: 0 clean, 1 errors (or warnings with --strict), 2 usage error / guard block.
 """
@@ -71,7 +71,7 @@ try:
 except ModuleNotFoundError:  # Python < 3.11: policy files unsupported, defaults apply
     tomllib = None
 
-VERSION = "2026.09.29-36"
+VERSION = "2026.09.29-37"
 DOCS = "https://code.claude.com/docs/en/"
 ISSUES = "https://github.com/anthropics/claude-code/issues/"
 
@@ -668,21 +668,21 @@ SECRET_KEY_RE = re.compile(r"(TOKEN|SECRET|PASSWORD|PASSWD|API_?KEY|PRIVATE_KEY|
 
 COMMIT_MSG_HOOK = """#!/usr/bin/env sh
 # Strip AI-assistant attribution trailers from commit messages.
-# Installed by claude-lint. Deterministic and agent-agnostic.
+# Installed by ai-lint. Deterministic and agent-agnostic.
 sed -i -E \\
   -e '/^Co-Authored-By:.*(claude|anthropic)/Id' \\
   -e '/Generated with \\[?Claude Code/Id' \\
   "$1"
 sed -i -e :a -e '/^\\n*$/{$d;N;ba' -e '}' "$1"
 """
-HOOK_SIGNATURE = "claude-lint"
+HOOK_SIGNATURE = "ai-lint"
 
 # Portable, tool-agnostic PreCompact hook. No project-specific coupling: it writes
 # a small session snapshot (git state + working dir) so context survives a compact.
 # Referenced by settings that declare a PreCompact hook but ship no script.
 PRE_COMPACT_HOOK = """#!/usr/bin/env bash
 # PreCompact hook — snapshot session state before context compaction.
-# Portable scaffold written by claude-lint. Safe to edit or extend.
+# Portable scaffold written by ai-lint. Safe to edit or extend.
 set -uo pipefail
 SNAP_DIR="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/pre-compact-snapshots"
 mkdir -p "$SNAP_DIR"
@@ -712,7 +712,7 @@ SECRETS_GITIGNORE = [
     "secrets/",
     ".claude/settings.local.json",
 ]
-SECRETS_GITIGNORE_HEADER = "# claude-lint: keep secrets and local config out of git"
+SECRETS_GITIGNORE_HEADER = "# ai-lint: keep secrets and local config out of git"
 
 AGENTS_SKELETON = """# {name}
 
@@ -1274,8 +1274,10 @@ def deep_merge(base: dict, override: dict) -> dict:
 
 
 def load_policy(path: Path | None, repos: list[Path]) -> dict:
-    # Prefer .claude-lint.toml; accept the former .agent-lint.toml name too.
-    candidates = [path] if path else [r / n for r in repos for n in (".claude-lint.toml", ".agent-lint.toml")]
+    # Prefer .ai-lint.toml; accept the former .claude-lint.toml / .agent-lint.toml names too.
+    candidates = (
+        [path] if path else [r / n for r in repos for n in (".ai-lint.toml", ".claude-lint.toml", ".agent-lint.toml")]
+    )
     policy, source = copy.deepcopy(DEFAULT_POLICY), "built-in defaults"
     for c in candidates:
         if c and c.is_file():
@@ -5888,7 +5890,7 @@ def apply_proposal(p: dict, policy: dict, restore: list[str], trash_root: Path) 
         )
         out = [l for t, ls in secs for l in (ls if t != title else [f"## {title}", "", f"Follow the /{slug} skill."])]
         c.write_text("\n".join(out) + "\n", encoding="utf-8")
-        restore.append(f"rm -r '{skill.parent}'  # and restore {c.name} from ~/.cache/claude-lint")
+        restore.append(f"rm -r '{skill.parent}'  # and restore {c.name} from ~/.cache/ai-lint")
         return f"section moved to skill /{slug}; review its description"
     return "unsupported"
 
@@ -6264,7 +6266,7 @@ def render_brief(rep: Report, fixed: list[Finding], fix: bool, repos_count: int,
     b, dim, r0 = ("\033[1m", "\033[2m", "\033[0m") if color else ("", "", "")
     red, yel, grn = ("\033[31m", "\033[33m", "\033[32m") if color else ("", "", "")
     out = [
-        f"{b}claude-lint {VERSION}{r0} - "
+        f"{b}ai-lint {VERSION}{r0} - "
         + _loc(f"{repos_count} dépôt(s) analysé(s)", f"{repos_count} repository(ies) scanned")
         + (
             _loc(" + configuration utilisateur", " + user configuration")
@@ -6560,7 +6562,7 @@ def interactive(rep: Report, repos: list[Path], policy: dict, user_scope: bool) 
     cfg = config_dir()
     roots = ([cfg] if user_scope else []) + [r / ".claude" for r in repos]
     stamp = dt.datetime.now().strftime("%Y%m%dT%H%M%S")
-    trash_root = Path(os.path.expanduser(f"~/.cache/claude-lint/trash/{stamp}"))
+    trash_root = Path(os.path.expanduser(f"~/.cache/ai-lint/trash/{stamp}"))
     restore = RestoreLog(trash_root / "restore.sh")
     done: dict[str, int] = {}
 
@@ -6900,7 +6902,7 @@ def interactive(rep: Report, repos: list[Path], policy: dict, user_scope: bool) 
     else:
         print("  aucune modification")
     if restore:
-        print(f"\n  Pour tout annuler : {t.cyan}{home_path(str(restore.script))}{t.r}  (ou : claude-lint.py --restore)")
+        print(f"\n  Pour tout annuler : {t.cyan}{home_path(str(restore.script))}{t.r}  (ou : ai-lint.py --restore)")
     return sum(v for k, v in done.items() if "gardés" not in k)
 
 
@@ -6909,7 +6911,7 @@ def restore_trash(target: str | None) -> int:
     Returns 1 when the requested session is missing or nothing could be restored."""
     # Also read trash written under the tool's former name, so sessions from before
     # the rename stay restorable.
-    bases = [Path(os.path.expanduser(p)) for p in ("~/.cache/claude-lint/trash", "~/.cache/agent-config-lint/trash")]
+    bases = [Path(os.path.expanduser(p)) for p in ("~/.cache/ai-lint/trash", "~/.cache/agent-config-lint/trash")]
     sessions = sorted(d for b in bases if b.is_dir() for d in b.iterdir() if d.is_dir())
     if target:
         root = Path(target).expanduser()
@@ -7407,7 +7409,7 @@ def run_lint(repos: list[Path], policy: dict, args: argparse.Namespace, history:
 
 
 def log_dir() -> Path:
-    return Path(os.path.expanduser("~/.cache/claude-lint/logs"))
+    return Path(os.path.expanduser("~/.cache/ai-lint/logs"))
 
 
 def write_run_log(
@@ -7419,7 +7421,7 @@ def write_run_log(
     elapsed: float,
     code: int,
 ) -> None:
-    """Append one JSON line per run to ~/.cache/claude-lint/logs/<date>.log.
+    """Append one JSON line per run to ~/.cache/ai-lint/logs/<date>.log.
     Best-effort: a logging failure never affects the run's exit code, and no file
     contents or secrets are recorded, only counts and finding codes."""
     try:
@@ -7447,7 +7449,7 @@ def write_run_log(
 
 
 def backup(paths: list[Path]) -> Path:
-    root = Path(os.path.expanduser(f"~/.cache/claude-lint/{dt.datetime.now():%Y%m%dT%H%M%S%f}"))
+    root = Path(os.path.expanduser(f"~/.cache/ai-lint/{dt.datetime.now():%Y%m%dT%H%M%S%f}"))
     for p in paths:
         if p.exists():
             dest = root / str(p.resolve()).lstrip("/")
@@ -7774,13 +7776,13 @@ def render_summary(
     lines = ["", rule]
     if fix:
         lines.append(
-            f"{b}SUMMARY{r0}  (claude-lint {VERSION})  {len(fixed)} issue(s) fixed, "
+            f"{b}SUMMARY{r0}  (ai-lint {VERSION})  {len(fixed)} issue(s) fixed, "
             f"{len(applied)} change(s) written" + (f", {len(failures)} write failure(s)" if failures else "")
         )
         done = fixed
         title_done, mark_done = "FIXED OR GENERATED", f"{g}✔{r0}"
     else:
-        lines.append(f"{b}SUMMARY{r0}  read-only run: nothing was modified  (claude-lint {VERSION})")
+        lines.append(f"{b}SUMMARY{r0}  read-only run: nothing was modified  (ai-lint {VERSION})")
         done = [f for f in rep.findings if f.fixable]
         title_done, mark_done = "WOULD BE FIXED OR GENERATED by --fix", f"{g}○{r0}"
     manual = [f for f in visible_findings(rep.findings) if not f.fixable or fix]
@@ -7866,7 +7868,7 @@ def to_toml(d: dict, prefix: str = "") -> str:
 GUARD_MARKER = "--guard"
 CONFIG_HINT = re.compile(
     r"(settings(\.local)?\.json|\.mcp\.json|\.claude\.json|/\.claude/|\.claude/|"
-    r"\.agent-lint\.toml|\.git/hooks|claude-lint|SKILL\.md|CLAUDE(\.local)?\.md|AGENTS\.md)"
+    r"\.agent-lint\.toml|\.git/hooks|ai-lint|SKILL\.md|CLAUDE(\.local)?\.md|AGENTS\.md)"
 )
 BASH_WRITE_HINT = re.compile(
     r"(>|\btee\b|\bsed\s+-i|\bperl\s+-[a-z]*i|\bmv\b|\bcp\b|\brm\b|\bln\b|\bchmod\b|"
@@ -7999,7 +8001,7 @@ def frontmatter_violations(old: str, new: str) -> list[str]:
 
 def lint_toml_violations(old: str, new: str) -> list[str]:
     if tomllib is None:
-        return ["cannot verify .claude-lint.toml without Python 3.11"]
+        return ["cannot verify .ai-lint.toml without Python 3.11"]
     try:
         o = tomllib.loads(old) if old.strip() else {}
         n = tomllib.loads(new)
@@ -8060,7 +8062,7 @@ def guard_check(data: dict) -> str | None:
     cwd = Path(data.get("cwd") or os.getcwd())
     if tool in ("Bash", "PowerShell", "Monitor"):
         cmd = str(ti.get("command", ""))
-        if re.fullmatch(r"\s*(rtk\s+)?(python3?\s+)?\S*claude-lint\.py(\s+[\w\-./=~:]+)*\s*", cmd):
+        if re.fullmatch(r"\s*(rtk\s+)?(python3?\s+)?\S*ai-lint\.py(\s+[\w\-./=~:]+)*\s*", cmd):
             if re.search(r"--session-settings\b|--policy\b|\s-i\b|--interactive\b", cmd) or (
                 re.search(r"--generate\b", cmd) and re.search(r"--fix\b", cmd)
             ):
@@ -8069,7 +8071,7 @@ def guard_check(data: dict) -> str | None:
         if CONFIG_HINT.search(cmd) and BASH_WRITE_HINT.search(cmd):
             return (
                 "guard: agent configuration files may only be changed with Edit/Write "
-                "(so the change can be inspected), or by running claude-lint.py"
+                "(so the change can be inspected), or by running ai-lint.py"
             )
         for pat in ATTRIBUTION_PATTERNS:
             if pat.search(cmd):
@@ -8160,7 +8162,7 @@ def guard_check(data: dict) -> str | None:
         violations = [msg for pat, msg in risky if re.search(pat, new) and not re.search(pat, old)]
         if re.search(r"(?m)^\s*permissions\s*:", old) and not re.search(r"(?m)^\s*permissions\s*:", new):
             violations.append("workflow permissions block removed")
-    elif name in (".claude-lint.toml", ".agent-lint.toml"):
+    elif name in (".ai-lint.toml", ".claude-lint.toml", ".agent-lint.toml"):
         violations = lint_toml_violations(old, new)
     elif name.endswith(".md") and (
         "/.claude/skills/" in str(path) or "/.claude/agents/" in str(path) or "/.claude/commands/" in str(path)
@@ -8240,7 +8242,7 @@ def session_settings(policy: dict) -> dict:
 # `api.check(name, scope=...)` as a decorator on a function `fn(ctx)`; the
 # function inspects `ctx.repo` / `ctx.path(...)` and reports via `ctx.add(...)`.
 # Findings flow into the same report and honour the catalog (severity/enable).
-# Discovery: <config dir>/plugins, <repo>/.claude-lint/plugins, and --plugin-dir.
+# Discovery: <config dir>/plugins, <repo>/.ai-lint/plugins, and --plugin-dir.
 # --------------------------------------------------------------------------- #
 
 _PLUGIN_CHECKS: list = []  # list of (name, scope, fn); scope is "project" or "user"
@@ -8303,7 +8305,7 @@ class PluginAPI:
 
 
 def plugin_dirs(extra: list[Path] | None = None) -> list[Path]:
-    dirs = [config_dir() / "plugins", Path.cwd() / ".claude-lint" / "plugins"]
+    dirs = [config_dir() / "plugins", Path.cwd() / ".ai-lint" / "plugins"]
     dirs += list(extra or [])
     return [d for d in dirs if d.is_dir()]
 
@@ -8318,7 +8320,7 @@ def load_plugins(extra: list[Path] | None = None) -> None:
             if f.name.startswith("_"):
                 continue
             try:
-                spec = _ilu.spec_from_file_location(f"claude_lint_plugin_{f.stem}", f)
+                spec = _ilu.spec_from_file_location(f"ai_lint_plugin_{f.stem}", f)
                 if not spec or not spec.loader:
                     continue
                 mod = _ilu.module_from_spec(spec)
@@ -8412,7 +8414,7 @@ def dump_catalog() -> str:
     if yaml is None:
         return "# PyYAML not installed: run `pip install pyyaml` to use the catalog.\n"
     header = (
-        "# claude-lint catalog. Edit and pass with --catalog FILE.\n"
+        "# ai-lint catalog. Edit and pass with --catalog FILE.\n"
         "# reference.*: extend the known keys/events/tools/fields the linter accepts.\n"
         "# checks.<CODE>.severity: error|warn|info|off  ·  enabled: false to silence.\n"
         "# checks.<CODE>.action_fr/action_en: the '-> fix' line shown in --details.\n\n"
@@ -8468,19 +8470,19 @@ def main(argv: list[str] | None = None) -> int:
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=(
             "examples:\n"
-            "  claude-lint.py .                      read-only report for the current repo\n"
-            "  claude-lint.py . --fix               apply safe repairs (backup kept)\n"
-            "  claude-lint.py . --user              include user scope (~/.claude or "
+            "  ai-lint.py .                      read-only report for the current repo\n"
+            "  ai-lint.py . --fix               apply safe repairs (backup kept)\n"
+            "  ai-lint.py . --user              include user scope (~/.claude or "
             "$CLAUDE_CONFIG_DIR)\n"
-            "  claude-lint.py ~/dev --user          every git repo under ~/dev, plus user scope\n"
-            "  claude-lint.py . --generate          preview config to generate for the stack\n"
-            "  claude-lint.py . -i                  interactive review (duplicates, packs, "
+            "  ai-lint.py ~/dev --user          every git repo under ~/dev, plus user scope\n"
+            "  ai-lint.py . --generate          preview config to generate for the stack\n"
+            "  ai-lint.py . -i                  interactive review (duplicates, packs, "
             "restructurings)\n"
-            "  claude-lint.py --restore             undo the last interactive session\n"
-            "  claude-lint.py . --strict --format json --no-cli   CI-friendly run\n"
+            "  ai-lint.py --restore             undo the last interactive session\n"
+            "  ai-lint.py . --strict --format json --no-cli   CI-friendly run\n"
             "\n"
             "read-only by default; --fix and -i are the only writing modes, both reversible.\n"
-            "each run appends a JSON line to ~/.cache/claude-lint/logs/<date>.log.\n"
+            "each run appends a JSON line to ~/.cache/ai-lint/logs/<date>.log.\n"
             "docs snapshot follows code.claude.com/docs; unknown keys are reported, never errors.\n"
             "\n"
             "defaults:\n"
@@ -8489,7 +8491,7 @@ def main(argv: list[str] | None = None) -> int:
             "  report            brief; language from $LANG (fr if it starts with 'fr', else en)\n"
             "  scaffolding       on (missing baseline files created; --no-scaffold to disable)\n"
             "  CLIs              claude and rtk are called when present (--no-cli to skip)\n"
-            "  policy file       <repo>/.claude-lint.toml if present, else built-in defaults\n"
+            "  policy file       <repo>/.ai-lint.toml if present, else built-in defaults\n"
             "  instruction file  warns above 200 lines; user scope above 150\n"
             "  always-loaded     token budget warns above 10000 tokens/turn\n"
             "  skill description warns above 1024 chars in the listing\n"
@@ -8504,7 +8506,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--fix", action="store_true", help="apply repairs (with backup)")
     ap.add_argument("--no-scaffold", action="store_true", help="do not create missing files")
     ap.add_argument("--format", choices=("text", "json"), default="text", help="output format (default: text)")
-    ap.add_argument("--policy", type=Path, help="policy TOML (default: <repo>/.claude-lint.toml)")
+    ap.add_argument("--policy", type=Path, help="policy TOML (default: <repo>/.ai-lint.toml)")
     ap.add_argument("--strict", action="store_true", help="fail on warnings too")
     ap.add_argument("--no-history", action="store_true", help="skip git history scan")
     ap.add_argument("--no-cli", action="store_true", help="do not call the claude / rtk CLIs")
@@ -8551,7 +8553,7 @@ def main(argv: list[str] | None = None) -> int:
         help="-v progress+hints+refs, -vv transformations, -vvv debug",
     )
     vg.add_argument("-q", "--quiet", action="store_true", help="errors and summary only")
-    ap.add_argument("--version", action="version", version=f"claude-lint {VERSION}")
+    ap.add_argument("--version", action="version", version=f"ai-lint {VERSION}")
     ap.add_argument("--print-policy", action="store_true", help="print the default policy as TOML")
     ap.add_argument(
         "--guard",
@@ -8582,7 +8584,7 @@ def main(argv: list[str] | None = None) -> int:
         action="append",
         metavar="DIR",
         help="extra directory of check plugins (repeatable); also loaded from "
-        "<config dir>/plugins and <repo>/.claude-lint/plugins",
+        "<config dir>/plugins and <repo>/.ai-lint/plugins",
     )
     ap.add_argument("--list-plugins", action="store_true", help="list discovered check plugins and exit")
     # No arguments at all: show help (with defaults) instead of silently scanning cwd.
@@ -8635,7 +8637,7 @@ def main(argv: list[str] | None = None) -> int:
         target.chmod(0o444)
         print(f"wrote {target} (read-only). Start the audit with:\n  claude --settings {target}")
         return 0
-    log(1, f"claude-lint {VERSION}")
+    log(1, f"ai-lint {VERSION}")
     detect_rtk(not args.no_cli)
     detect_llmtrim(not args.no_cli)
     RTK["checked_cli"] = not args.no_cli

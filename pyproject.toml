@@ -1,5 +1,5 @@
 [project]
-name = "claude-lint"
+name = "ai-lint"
 version = "2026.09.28-22"
 description = "Validate, repair and harden Claude Code configurations. Single file, no runtime dependencies."
 requires-python = ">=3.9"
@@ -13,10 +13,10 @@ catalog = ["PyYAML>=6"]
 dev = ["pytest>=8", "pytest-cov>=5", "ruff>=0.6", "mypy>=1.11", "PyYAML>=6"]
 
 [tool.coverage.run]
-# claude_lint.py is imported normally, so coverage attaches to it. parallel +
+# ai_lint.py is imported normally, so coverage attaches to it. parallel +
 # concurrency let coverage also measure the CLI runs the tests launch as
 # subprocesses (started via COVERAGE_PROCESS_START); `coverage combine` merges them.
-source = ["claude_lint"]
+source = ["ai_lint"]
 parallel = true
 sigterm = true
 
@@ -24,7 +24,7 @@ sigterm = true
 show_missing = true
 
 [tool.mypy]
-files = ["claude_lint.py", "claude-lint.py"]
+files = ["ai_lint.py", "ai-lint.py"]
 python_version = "3.10"
 # Type-checking catches real bugs here (arg-type, index, return types). Full
 # `strict` on this dense single file is deferred: the bare-generic and

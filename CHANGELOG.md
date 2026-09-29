@@ -1,6 +1,17 @@
 # Changelog
 
-All notable changes to `claude-lint`. Dates are ISO 8601.
+All notable changes to `ai-lint`. Dates are ISO 8601.
+
+## 2026.09.29-37
+
+### Changed
+- Renamed the project from `claude-lint` to **`ai-lint`**: it now lints agent
+  configs for several tools (Claude Code, Copilot, Cursor, Windsurf, Gemini,
+  Codex/ChatGPT), so the name no longer implies Claude alone. Module
+  `claude_lint.py` -> `ai_lint.py`, CLI `claude-lint.py` -> `ai-lint.py`, policy
+  file `.ai-lint.toml`. The former `.claude-lint.toml` and `.agent-lint.toml`
+  filenames are still accepted, so existing configs keep working. Claude Code's
+  own paths (`.claude/`, `CLAUDE.md`) are unchanged — only the tool's name moved.
 
 ## 2026.09.29-36
 
@@ -46,7 +57,7 @@ All notable changes to `claude-lint`. Dates are ISO 8601.
 
 ### Added
 - Configurable model and effort expectations under `[tokens]` in the policy
-  (`.claude-lint.toml`, overridable per key): `preferred_model`, `heavy_models`,
+  (`.ai-lint.toml`, overridable per key): `preferred_model`, `heavy_models`,
   `subagent_model`, `max_effort`, `effort_levels`. `TOKEN_MODEL` /
   `TOKEN_SUBAGENT_MODEL` now read these instead of hard-coding `opus`/`haiku`.
 - New check `TOKEN_EFFORT`: flags a user/project `effortLevel` above
@@ -96,7 +107,7 @@ All notable changes to `claude-lint`. Dates are ISO 8601.
   `@api.check(code, scope="project"|"user")`; each check gets a `CheckContext`
   (root, path/read/glob, add). Findings flow into the normal report and obey the
   catalog; a failing plugin is isolated, never fatal. Discovery from
-  `<config dir>/plugins`, `<repo>/.claude-lint/plugins` and `--plugin-dir`;
+  `<config dir>/plugins`, `<repo>/.ai-lint/plugins` and `--plugin-dir`;
   `--list-plugins` lists them. Example in examples/plugins/.
 
 ### Performance
@@ -122,12 +133,12 @@ All notable changes to `claude-lint`. Dates are ISO 8601.
 ## 2026.09.28-24
 
 ### Changed
-- The implementation now lives in an importable module `claude_lint.py`; `claude-lint.py`
+- The implementation now lives in an importable module `ai_lint.py`; `ai-lint.py`
   is a thin CLI wrapper. This lets coverage and mypy see the real code (previously the
-  hyphenated filename made it invisible to both). Behaviour and the `./claude-lint.py`
+  hyphenated filename made it invisible to both). Behaviour and the `./ai-lint.py`
   invocation are unchanged.
 - Added a mypy config (bug-catching subset; full strict deferred) and coverage config
-  (`make typecheck`, `make cov`), plus a `claude_lint` shim removed in favour of the rename.
+  (`make typecheck`, `make cov`), plus a `ai_lint` shim removed in favour of the rename.
 
 ### Fixed
 - `check_attribution` no longer risks a None membership test on an unreadable
@@ -188,10 +199,10 @@ All notable changes to `claude-lint`. Dates are ISO 8601.
   on Python 3.9 / 3.11 / 3.13, with a read-only `permissions` block.
 
 ### Changed
-- Renamed the project and executable to `claude-lint` (`claude-lint.py`). The cache
-  directory is now `~/.cache/claude-lint/`; `--restore` still reads the former
+- Renamed the project and executable to `ai-lint` (`ai-lint.py`). The cache
+  directory is now `~/.cache/ai-lint/`; `--restore` still reads the former
   `~/.cache/agent-config-lint/trash/` so pre-rename sessions stay restorable.
-- The policy file is now `.claude-lint.toml` (example: `claude-lint.example.toml`);
+- The policy file is now `.ai-lint.toml` (example: `ai-lint.example.toml`);
   the former `.agent-lint.toml` is still accepted.
 
 ## 2026.09.27-16
@@ -230,7 +241,7 @@ All notable changes to `claude-lint`. Dates are ISO 8601.
   defaults (scope, mode, report language, scaffolding, token budget, MCP cap, rtk),
   plus usage examples.
 - Per-run log: each run appends one JSON line to
-  `~/.cache/claude-lint/logs/<date>.log` (timestamp, version, arguments,
+  `~/.cache/ai-lint/logs/<date>.log` (timestamp, version, arguments,
   repository count, elapsed time, finding counts by level and code, fixed/applied
   counts, exit code). Counts and codes only — never file contents or secrets.
   Best-effort: a logging failure never changes the run's result.
@@ -243,7 +254,7 @@ All notable changes to `claude-lint`. Dates are ISO 8601.
 - `RTK_MISSING` now spells out both ways forward: install rtk, or set
   `permissions.require_rtk = false` to skip rtk routing. `RTK_MISSING` and
   `LLMTRIM_MISSING` appear in the brief report's "broken" section.
-- The project format hook no longer reformats `claude-lint.py`; the single
+- The project format hook no longer reformats `ai-lint.py`; the single
   distribution file keeps its dense hand-authored layout (it is still linted).
 
 ## 2026.09.27-13

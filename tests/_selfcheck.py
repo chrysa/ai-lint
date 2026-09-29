@@ -14,7 +14,7 @@ BLOCKERS = {"ATTR_TRACE", "API_KEY_LEAK", "SECRET_INLINE"}
 proc = subprocess.run(
     [
         sys.executable,
-        str(ROOT / "claude-lint.py"),
+        str(ROOT / "ai-lint.py"),
         ".",
         "--no-cli",
         "--no-history",

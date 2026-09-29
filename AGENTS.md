@@ -1,4 +1,4 @@
-# claude-lint
+# ai-lint
 
 <!-- Neutral agent instructions. Tool-specific files (e.g. CLAUDE.md) only import this one.
      HTML comments are stripped before loading: they cost no context. -->

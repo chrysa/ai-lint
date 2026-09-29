@@ -1,4 +1,4 @@
-"""Test harness for claude-lint.
+"""Test harness for ai-lint.
 
 Builds a miniature reproduction of the real environment (user scope +
 project repos) inside temporary directories, with HOME and CLAUDE_CONFIG_DIR
@@ -18,7 +18,7 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parent.parent
-SCRIPT = ROOT / "claude-lint.py"
+SCRIPT = ROOT / "ai-lint.py"
 
 
 def _load_module():
@@ -26,9 +26,9 @@ def _load_module():
     so coverage and mypy see it directly)."""
     if str(ROOT) not in sys.path:
         sys.path.insert(0, str(ROOT))
-    import claude_lint
+    import ai_lint
 
-    return claude_lint
+    return ai_lint
 
 
 @pytest.fixture(scope="session")
