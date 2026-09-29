@@ -2,6 +2,15 @@
 
 All notable changes to `ai-lint`. Dates are ISO 8601.
 
+## 2026.09.29-45
+
+### Changed
+- The report now says WHY a finding is not auto-fixed. Each entry under "not
+  fixed / manual action" gets a "not auto-fixed: ..." line explaining the reason
+  (needs human judgment, would destroy content, would change the command or git
+  history, secrets are never touched, etc.), so a recurring "same output" is
+  self-explanatory rather than looking like the tool did nothing.
+
 ## 2026.09.29-44
 
 ### Fixed
