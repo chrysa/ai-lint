@@ -32,7 +32,13 @@ jobs:
       - name: Compute next version
         id: version
         run: |
-          NEXT="$(git cliff --bumped-version 2>/dev/null)"
+          set +e
+          NEXT="$(git cliff --bumped-version 2>cliff.err)"
+          rc=$?
+          if [ $rc -ne 0 ]; then
+            echo "git-cliff --bumped-version failed (rc=$rc):"; cat cliff.err || true
+          fi
+          echo "computed version: '${NEXT}'"
           echo "tag=${NEXT}" >> "$GITHUB_OUTPUT"
 
       - name: Release if the version advanced
