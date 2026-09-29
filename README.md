@@ -221,8 +221,9 @@ already follows every rule below.
 | `.claude/skills/review-changes` | reviews the uncommitted diff against `AGENTS.md` |
 | `.claude/agents/` | `code-reviewer`, `test-runner`, `security-auditor`, `infra-reviewer` (read-only tools, except the test runner) when relevant |
 | `.mcp.json` | `github` (remote repo on GitHub, token from `${GITHUB_PERSONAL_ACCESS_TOKEN}`), `sentry` and `supabase` (when used, OAuth), `playwright` (web UI); capped by `mcp.max_servers` |
-| `.gitignore` | `.claude/settings.local.json`, `CLAUDE.local.md` |
+| `.gitignore` | `.claude/settings.local.json`, `CLAUDE.local.md`, plus a secrets block (`.env`, `*.pem`, `*.key`, `secrets/`) when missing (`[security] scaffold_gitignore`) |
 | `AGENTS.md`, `CLAUDE.md` | skeleton and `@AGENTS.md` import (scaffolding) |
+| `pre-compact.sh` | portable `PreCompact` hook (session snapshot) when settings reference one that is missing (`[security] scaffold_missing_hooks`); written inside the repo or the user config dir only |
 | `~/.claude/settings.json` (`--user`) | attribution off, deny on `~/.ssh`, `~/.aws`, `~/.kube`, `~/.gnupg`, vault token, gh hosts; `disableBypassPermissionsMode`; native rtk hook and `RTK_TELEMETRY_DISABLED=1` when rtk is installed |
 | rtk `config.toml` (`--user`) | `[hooks] exclude_commands`, `[retriever] mode = "sqlite"` |
 | user MCP servers (`--user`) | printed as `claude mcp add --scope user ...` commands (Notion by default): `~/.claude.json` is written by the CLI only |

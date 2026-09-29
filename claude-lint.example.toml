@@ -34,6 +34,10 @@ instructions = true
 user_settings = true
 schema_url = "https://json.schemastore.org/claude-code-settings.json"
 
+[security]
+scaffold_missing_hooks = true
+scaffold_gitignore = true
+
 [skills]
 portable = true
 max_listing_chars = 1536

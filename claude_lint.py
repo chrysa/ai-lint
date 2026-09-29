@@ -71,7 +71,7 @@ try:
 except ModuleNotFoundError:  # Python < 3.11: policy files unsupported, defaults apply
     tomllib = None
 
-VERSION = "2026.09.29-34"
+VERSION = "2026.09.29-35"
 DOCS = "https://code.claude.com/docs/en/"
 ISSUES = "https://github.com/anthropics/claude-code/issues/"
 
@@ -203,6 +203,13 @@ DEFAULT_POLICY: dict[str, Any] = {
         "instructions": True,
         "user_settings": True,
         "schema_url": "https://json.schemastore.org/claude-code-settings.json",
+    },
+    "security": {
+        # Propose (and, under --generate / -i, write) the files that harden a
+        # config: a PreCompact hook referenced but missing, and a .gitignore
+        # block keeping secrets out of git. Set false to skip that class.
+        "scaffold_missing_hooks": True,
+        "scaffold_gitignore": True,
     },
     "skills": {
         "portable": True,  # stay within the Agent Skills spec (agentskills.io)
@@ -657,6 +664,43 @@ sed -i -e :a -e '/^\\n*$/{$d;N;ba' -e '}' "$1"
 """
 HOOK_SIGNATURE = "claude-lint"
 
+# Portable, tool-agnostic PreCompact hook. No project-specific coupling: it writes
+# a small session snapshot (git state + working dir) so context survives a compact.
+# Referenced by settings that declare a PreCompact hook but ship no script.
+PRE_COMPACT_HOOK = """#!/usr/bin/env bash
+# PreCompact hook — snapshot session state before context compaction.
+# Portable scaffold written by claude-lint. Safe to edit or extend.
+set -uo pipefail
+SNAP_DIR="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/pre-compact-snapshots"
+mkdir -p "$SNAP_DIR"
+SNAP="$SNAP_DIR/snapshot-$(date +%Y%m%d-%H%M%S).md"
+{
+  echo "# Pre-compact snapshot · $(date -Iseconds)"
+  echo "working_dir: $(pwd)"
+  if git rev-parse --git-dir >/dev/null 2>&1; then
+    echo "branch: $(git branch --show-current 2>/dev/null || echo DETACHED)"
+    echo "## Uncommitted changes (preserve)"
+    git status --porcelain 2>/dev/null | head -50
+    echo "## Recent commits"
+    git log --oneline -5 2>/dev/null
+  fi
+} > "$SNAP" 2>/dev/null || true
+exit 0
+"""
+
+# Lines a repo should git-ignore so secrets never get committed. Appended (never
+# overwritten) to .gitignore under a labelled block when any are missing.
+SECRETS_GITIGNORE = [
+    ".env",
+    ".env.*",
+    "!.env.example",
+    "*.pem",
+    "*.key",
+    "secrets/",
+    ".claude/settings.local.json",
+]
+SECRETS_GITIGNORE_HEADER = "# claude-lint: keep secrets and local config out of git"
+
 AGENTS_SKELETON = """# {name}
 
 <!-- Neutral agent instructions. Tool-specific files (e.g. CLAUDE.md) only import this one.
@@ -1096,6 +1140,10 @@ HINTS: dict[str, tuple[str, str]] = {  # code -> (why/how, reference)
         DOCS + "memory#when-agents-md-support-is-unavailable",
     ),
     "SCAFFOLD_RENDER_MISSING": ("doctrine/rules exists: run your renderer.", ""),
+    "SECURITY_GITIGNORE": (
+        "Secrets committed to git stay in history even after deletion; ignore them up front.",
+        "",
+    ),
     "USER_SCOPE_ABSENT": ("Nothing to check at user scope.", ""),
     "WRITE_FAILED": (
         "Permissions, read-only mount, or a symlink to a generated file.",
@@ -7048,6 +7096,66 @@ def detect_commands(repo: Path) -> str:
     return "\n".join(cmds) or "<!-- Build, run, test and lint commands, one per line. -->"
 
 
+def _is_within(path: Path, root: Path) -> bool:
+    """True if path is inside root (both resolved), so a scan never writes outside it."""
+    try:
+        return path.resolve().is_relative_to(root.resolve())
+    except (OSError, ValueError):
+        return False
+
+
+def _settings_hook_scripts(settings_path: Path, base: Path) -> list[tuple[str, Path]]:
+    """(event, resolved script path) for every command hook in a settings file."""
+    data = load_json_file(settings_path)
+    out: list[tuple[str, Path]] = []
+    for event, groups in (data.get("hooks") or {}).items():
+        for group in groups if isinstance(groups, list) else []:
+            for h in (group.get("hooks") or []) if isinstance(group, dict) else []:
+                if not isinstance(h, dict) or h.get("type") not in (None, "command"):
+                    continue
+                cmd = h.get("command")
+                first = str(cmd).split()[0] if isinstance(cmd, str) and "args" not in h else str(cmd)
+                script = resolve_script(first, base)
+                if script is not None:
+                    out.append((str(event), script))
+    return out
+
+
+def scaffold_security(repo: Path, policy: dict, rep: Report) -> None:
+    """Propose the files that harden a config: a PreCompact hook that settings
+    reference but that is missing on disk, and a .gitignore block keeping secrets
+    out of git. Written only under --generate / -i, like the other scaffolds."""
+    sec = policy.get("security", {})
+    if sec.get("scaffold_missing_hooks", True):
+        seen: set[Path] = set()
+        for settings in (repo / ".claude" / "settings.json", repo / ".claude" / "settings.local.json"):
+            for _event, script in _settings_hook_scripts(settings, repo):
+                if script in seen or script.exists() or not script.name.endswith(".sh"):
+                    continue
+                # Scaffold only into a safe location: inside the scanned repo, or
+                # under the user config dir (a project may legitimately reference a
+                # user-global hook). Never write to an arbitrary absolute path.
+                if not (_is_within(script, repo) or _is_within(script, config_dir())):
+                    continue
+                seen.add(script)
+                # Only a pre-compact-style hook has a safe generic body; others
+                # are project-specific and are left to the human (still reported
+                # by HOOK_MISSING_SCRIPT).
+                if "compact" in script.name.lower():
+                    gen_new_file(script, PRE_COMPACT_HOOK, rep, f"missing PreCompact hook {script.name}", 0o755)
+    if sec.get("scaffold_gitignore", True) and (repo / ".git").exists():
+        gi = repo / ".gitignore"
+        current = read_text(gi) or ""
+        missing = [p for p in SECRETS_GITIGNORE if not re.search(rf"^{re.escape(p)}\s*$", current, re.M)]
+        if missing:
+            block = SECRETS_GITIGNORE_HEADER + "\n" + "\n".join(missing) + "\n"
+            if gi.exists():
+                rep.add("warn", "SECURITY_GITIGNORE", gi, f"secrets not git-ignored: {', '.join(missing)}", True)
+                rep.new_files[gi] = ((current.rstrip("\n") + "\n\n" + block) if current.strip() else block, 0o644)
+            else:
+                gen_new_file(gi, block, rep, "secrets .gitignore", 0o644)
+
+
 def scaffold_project(repo: Path, policy: dict, rep: Report) -> None:
     pol = policy["scaffold"]
     settings = repo / ".claude" / "settings.json"
@@ -7130,6 +7238,17 @@ def scaffold_user(policy: dict, rep: Report) -> None:
             True,
         )
         rep.new_files[settings] = (dump_json(data), 0o644)
+    # User-scope security hooks: a user settings file may reference a PreCompact
+    # hook under the config dir that does not exist. Every project inheriting it
+    # would report HOOK_MISSING_SCRIPT; scaffold it once here.
+    if policy.get("security", {}).get("scaffold_missing_hooks", True):
+        home = config_dir()
+        for sf in (home / "settings.json", home / "settings.local.json"):
+            for _event, script in _settings_hook_scripts(sf, home):
+                if script.exists() or not script.name.endswith(".sh") or "compact" not in script.name.lower():
+                    continue
+                if _is_within(script, home):
+                    gen_new_file(script, PRE_COMPACT_HOOK, rep, f"missing PreCompact hook {script.name}", 0o755)
 
 
 # --------------------------------------------------------------------------- #
@@ -7161,6 +7280,7 @@ def lint_repo(repo: Path, policy: dict, rep: Report, history: bool, user_text: s
     check_misplaced(repo, rep)
     if SCAFFOLD and (repo / ".git").exists():
         scaffold_project(repo, policy, rep)
+        scaffold_security(repo, policy, rep)
     dot = repo / ".claude"
     project_perms = False
     for name in ("settings.json", "settings.local.json"):

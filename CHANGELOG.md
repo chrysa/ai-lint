@@ -2,6 +2,19 @@
 
 All notable changes to `claude-lint`. Dates are ISO 8601.
 
+## 2026.09.29-35
+
+### Added
+- Security scaffolding (`scaffold_security`): the scan now proposes the files
+  that harden a config, written only under `--generate` / `-i` like the other
+  scaffolds. A `PreCompact` hook that settings reference but that is missing on
+  disk gets a portable, tool-agnostic `pre-compact.sh` (session snapshot);
+  missing secret patterns get a labelled `.gitignore` block (`SECURITY_GITIGNORE`).
+  Writes stay within the scanned repo or the user config dir — never an
+  arbitrary absolute path. Toggle with `[security] scaffold_missing_hooks` /
+  `scaffold_gitignore`. This closes the `HOOK_MISSING_SCRIPT` errors by offering
+  the script rather than only reporting it.
+
 ## 2026.09.29-34
 
 ### Changed
