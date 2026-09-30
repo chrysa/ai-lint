@@ -61,13 +61,15 @@ import stat
 import subprocess
 import sys
 import time
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
 
 from ai_lint.content_validation import CriticalContentValidator
+from ai_lint.finding import Finding
 from ai_lint.project_profile import ProjectProfiler
+from ai_lint.report import Report, configure_report_context
 from ai_lint.restore_log import RestoreLog
 from ai_lint.self_update import SelfUpdater
 from ai_lint.terminal_view import Tty
@@ -1278,56 +1280,6 @@ def progress(done: int, total: int, label: str = "") -> None:
     )
 
 
-@dataclass
-class Finding:
-    level: str
-    code: str
-    path: str
-    message: str
-    fixable: bool = False
-
-
-@dataclass
-class Report:
-    findings: list[Finding] = field(default_factory=list)
-    edits: dict[Path, tuple[str, str]] = field(default_factory=dict)
-    new_files: dict[Path, tuple[str, int]] = field(default_factory=dict)
-    chmods: list[Path] = field(default_factory=list)
-    moves: list[tuple[Path, Path]] = field(default_factory=list)
-    seen: set = field(default_factory=set)
-    budget: dict = field(default_factory=dict)
-    stats: dict = field(default_factory=dict)
-    agent_unknown: dict = field(default_factory=dict)
-    proposals: list = field(default_factory=list)
-    project_profiles: list = field(default_factory=list)
-
-    def add(self, level: str, code: str, path: Path | str, msg: str, fixable: bool = False) -> None:
-        if code in DISABLED_CODES:  # silenced in the catalog
-            return
-        level = SEVERITY_OVERRIDES.get(code, level)  # catalog can re-rank a code
-        self.findings.append(Finding(level, code, str(path), msg, fixable))
-        log(3, f"finding {level}:{code} @ {path}")
-
-    def count(self, level: str) -> int:
-        return sum(1 for f in self.findings if f.level == level)
-
-    def edit(self, path: Path, old: str, new: str) -> None:
-        """Register a text change, chaining with an earlier change to the same file."""
-        if path in self.new_files:
-            self.new_files[path] = (new, self.new_files[path][1])
-        elif path in self.edits:
-            self.edits[path] = (self.edits[path][0], new)
-        elif old != new:
-            self.edits[path] = (old, new)
-
-    def current(self, path: Path) -> str | None:
-        if path in self.new_files:
-            return self.new_files[path][0]
-        if path in self.edits:
-            return self.edits[path][1]
-        return read_text(path)
-
-
 # --------------------------------------------------------------------------- #
 # Helpers
 # --------------------------------------------------------------------------- #
@@ -1389,6 +1341,14 @@ def read_text(p: Path) -> str | None:
         _READ_CACHE.clear()
     _READ_CACHE[key] = text
     return text
+
+
+configure_report_context(
+    lambda: DISABLED_CODES,
+    lambda: SEVERITY_OVERRIDES,
+    lambda level, message: log(level, message),
+    read_text,
+)
 
 
 def dump_json(data: Any) -> str:
