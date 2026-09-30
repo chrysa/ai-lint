@@ -57,7 +57,8 @@ the optional editable catalogue.
 
 ```
 ai-lint.py                    CLI entry point (thin wrapper)
-ai_lint/                      engine package (empty __init__; _engine.py = the logic)
+ai_lint/                      engine package (empty __init__; _engine.py + thematic modules)
+ai_lint/self_update.py        object-based release-branch update prompt
 skills/config-audit/SKILL.md  guarded audit workflow (user-invoked only)
 ai-lint.example.toml          default policy, copy to <repo>/.ai-lint.toml to customize
 examples/plugins/             sample custom-check plugin
