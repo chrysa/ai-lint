@@ -57,11 +57,12 @@ the optional editable catalogue.
 
 ```
 ai-lint.py                    CLI entry point (thin wrapper)
-ai_lint/                      engine package (empty __init__; _engine.py = the logic)
+ai_lint/                      engine package (empty __init__; _engine.py + thematic modules)
+ai_lint/self_update.py        object-based release-branch update prompt
 skills/config-audit/SKILL.md  guarded audit workflow (user-invoked only)
 ai-lint.example.toml          default policy, copy to <repo>/.ai-lint.toml to customize
 examples/plugins/             sample custom-check plugin
-tests/                        pytest suite (make test)
+tests/                        pytest suite
 README.md · CHANGELOG.md
 ```
 
@@ -144,11 +145,13 @@ The full report ends with:
 | `--generate` | Generate missing configuration for the detected stack (see below) |
 | `--user`, `--user-only` | Include / restrict to user scope |
 | `--no-scaffold` | Do not create missing files |
-| `--format json` | Machine-readable output (`findings`, `fixed`, `not_fixed`, `would_fix`, `hints`) |
+| `--format json` | Machine-readable output (`project_profiles`, `findings`, `fixed`, `not_fixed`, `would_fix`, `hints`) |
 | `--strict` | Exit 1 on warnings too (CI) |
 | `--policy FILE` | Policy file (default `<repo>/.ai-lint.toml`) |
 | `--no-history` | Skip the git history scan for attribution |
 | `--no-cli` | Do not call the `claude` / `rtk` CLIs (static fallbacks are used) |
+| `--no-update-check` | Skip the interactive ai-lint self-update prompt |
+| `--update-check` | Check the release branch for an ai-lint update, prompt if possible, then exit |
 | `--rtk-report` | Append `rtk gain` and `rtk discover --since 7` output |
 | `-v` / `-vv` / `-vvv` | Progress + why/how + doc link / every transformation / debug |
 | `-q` | Errors and summary only |
@@ -169,6 +172,39 @@ The full report ends with:
 | `--guard` | PreToolUse hook mode (stdin JSON, exit 2 blocks) |
 
 Exit codes: `0` clean, `1` errors (or warnings with `--strict`), `2` usage error or guard block.
+
+## Self-update prompt
+
+When ai-lint is run from a git clone on the release branch (`main` by default), an
+interactive text run checks `origin/main` at most once per day. If a newer fast-forward
+commit exists, ai-lint asks before running:
+
+```sh
+git -C <ai-lint clone> pull --ff-only origin main
+```
+
+The check stays silent for `--format json`, CI, pipes, quiet mode and non-interactive
+runs. It never pulls automatically. Use `--update-check` to force a one-off check, or
+`--no-update-check` / `AI_LINT_UPDATE_CHECK=0` to disable it. Override the target with
+`AI_LINT_UPDATE_REMOTE` and `AI_LINT_RELEASE_BRANCH` when testing another remote or
+release branch.
+
+## JSON feedback contract
+
+`--format json` keeps the original finding fields (`level`, `code`, `path`, `message`,
+`fixable`) and adds action metadata for each item in `findings`, `fixed`, `not_fixed`
+and `would_fix`:
+
+| Field | Meaning |
+|---|---|
+| `feedback_schema_version` | Top-level schema version for the feedback additions |
+| `project_profiles` | Detected project kind, confidence, evidence signals and adaptation rules |
+| `status` | `open`, `fixed` or `would_fix` for the finding list where the item appears |
+| `category` | High-level area used by the stats/report grouping |
+| `fix_mode` | `auto`, `interactive` or `manual` |
+| `evidence` | Minimal evidence object with the path and message that triggered the finding |
+| `manual_reason` | Why ai-lint avoids auto-fixing the item, when applicable |
+| `next_action` | The concrete next command or review action to take |
 
 ## Run log
 
@@ -540,6 +576,11 @@ example is in [`examples/plugins/example_check.py`](examples/plugins/example_che
 ## CI
 
 ```sh
+python -m ruff check ai_lint ai-lint.py tests
+python -m ruff format --check ai_lint ai-lint.py tests
+python -m mypy
+python -m pytest -q
+python tests/_selfcheck.py
 python3 ai-lint.py . --strict --format json --no-cli --no-scaffold
 ```
 
