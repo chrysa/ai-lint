@@ -5,6 +5,7 @@ real data twice."""
 from __future__ import annotations
 
 import itertools
+import subprocess
 
 import pytest
 
@@ -20,7 +21,7 @@ def _run_interactive(mod, answers, repos, monkeypatch):
     monkeypatch.setattr("builtins.input", fake_input)
     monkeypatch.setattr(mod.sys.stdin, "isatty", lambda: True)
     # Never launch a real subprocess (the MCP branch would call `claude mcp add`).
-    monkeypatch.setattr(mod.subprocess, "run", lambda *a, **k: None)
+    monkeypatch.setattr(mod.subprocess, "run", lambda *a, **k: subprocess.CompletedProcess([], 0))
 
     policy = mod.load_policy(None, repos)
     rep = mod.Report()
