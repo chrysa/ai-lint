@@ -283,6 +283,9 @@ class TuiApp:
             print(f"  {self.t.grn}Removed{self.t.r} {self.t.short(str(path), self.t.width - 12)}")
 
     def _duplicate_answer(self, members: list[dict], remove: list[int]) -> str:
+        if self.full_yes:
+            # Apply only a non-empty safe recommendation; otherwise keep the group.
+            return "" if remove else "g"
         default = "appliquer le conseil" if remove else "tout garder"
         while True:
             answer = self.services._ask(
