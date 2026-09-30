@@ -4,6 +4,16 @@ Why the project is the way it is — the rationale an agent would otherwise re-d
 undo) each session. History of *what* changed is in [CHANGELOG.md](CHANGELOG.md); this file
 records *why*. Newest first. Each entry: decision, why, and what would reverse it.
 
+## D-016 · Reports explain adaptation and next actions
+ai-lint's human feedback must show not only findings, but the reasoning needed to act on them:
+the detected project profile, evidence, why a rule applies, whether it is auto-fixable,
+interactive-only or manual-only, and the next command or decision. Standards that are skipped
+or downgraded because of the scanned project's profile are reported as such. **Why:** profile
+adaptation without explanation looks like inconsistency; a report that only lists problems keeps
+the human in the verification loop. Clear feedback lets ai-lint be trusted in CI, interactive
+review and unattended guard workflows. **Reverse:** none foreseen; output may become more compact,
+but it must keep the profile/evidence/action split.
+
 ## D-015 · Scanned-project profile drives generated config
 ai-lint adapts to the project it scans before generating or judging Claude configuration.
 The project profile — CLI, library, full-stack app, frontend, infrastructure, standards repo,
