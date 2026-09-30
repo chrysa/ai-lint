@@ -66,6 +66,8 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
 
+from ai_lint.content_validation import CriticalContentValidator
+from ai_lint.project_profile import ProjectProfiler
 from ai_lint.self_update import SelfUpdater
 
 try:
@@ -4485,120 +4487,11 @@ if __name__ == "__main__":
 
 
 def detect_stack(repo: Path) -> dict:
-    s: dict[str, Any] = {"make": [], "scripts": {}, "pm": None}
-    exists = lambda *names: any((repo / n).exists() for n in names)
-    s["python"] = exists("pyproject.toml", "requirements.txt", "setup.py", "uv.lock", "poetry.lock")
-    s["uv"] = exists("uv.lock")
-    pkg = read_text(repo / "package.json")
-    if pkg:
-        try:
-            pj = json.loads(pkg)
-        except json.JSONDecodeError:
-            pj = {}
-        s["scripts"] = pj.get("scripts") or {}
-        deps = {**(pj.get("dependencies") or {}), **(pj.get("devDependencies") or {})}
-        s["pm"] = (
-            "pnpm"
-            if exists("pnpm-lock.yaml")
-            else "yarn"
-            if exists("yarn.lock")
-            else "bun"
-            if exists("bun.lockb", "bun.lock")
-            else "npm"
-        )
-        s["web_ui"] = any(d in deps for d in ("react", "next", "vue", "svelte", "vite", "@angular/core"))
-        s["sentry"] = any(d.startswith("@sentry/") for d in deps)
-        s["supabase"] = "@supabase/supabase-js" in deps
-    py_blob = " ".join(filter(None, (read_text(repo / f) for f in ("pyproject.toml", "requirements.txt")))).lower()
-    s["sentry"] = s.get("sentry") or "sentry-sdk" in py_blob or "sentry_sdk" in py_blob
-    s["supabase"] = s.get("supabase") or "supabase" in py_blob or (repo / "supabase").is_dir()
-    s["unity"] = (repo / "ProjectSettings" / "ProjectVersion.txt").exists()
-    s["docker"] = exists("Dockerfile", "docker-compose.yml", "docker-compose.yaml", "compose.yml", "compose.yaml")
-    s["compose"] = exists("docker-compose.yml", "docker-compose.yaml", "compose.yml", "compose.yaml")
-    s["k8s"] = exists("k8s", "kubernetes", "manifests", "kustomization.yaml", "deploy/k8s")
-    s["helm"] = exists("Chart.yaml", "charts", "helm")
-    s["terraform"] = any(repo.glob("*.tf")) or any(repo.glob("*/*.tf"))
-    s["tofu"] = s["terraform"] and bool(shutil.which("tofu")) and not shutil.which("terraform")
-    mk = read_text(repo / "Makefile") or ""
-    s["make"] = sorted(set(re.findall(r"^([a-zA-Z][\w-]*):(?!=)", mk, re.M)))
-    remote = git(repo, "remote", "get-url", "origin") or ""
-    s["github"] = "github.com" in remote
-    s["gh"] = s["github"] and bool(shutil.which("gh"))
-    return s
+    return ProjectProfiler(repo).detect_stack()
 
 
 def detect_project_profile(repo: Path, stack: dict | None = None) -> dict:
-    """Classify the scanned repository so reports and generation can adapt."""
-    stack = stack or detect_stack(repo)
-    pyproject = read_text(repo / "pyproject.toml") or ""
-    make_targets = stack.get("make") or []
-    signals: list[str] = []
-
-    def note(enabled: bool, signal: str) -> None:
-        if enabled:
-            signals.append(signal)
-
-    note(bool(stack.get("python")), "python")
-    note(bool(stack.get("pm")), f"node:{stack.get('pm')}")
-    note(bool(stack.get("web_ui")), "web-ui")
-    note(bool(stack.get("docker")), "docker")
-    note(bool(stack.get("compose")), "compose")
-    note(bool(stack.get("k8s")), "kubernetes")
-    note(bool(stack.get("helm")), "helm")
-    note(bool(stack.get("terraform")), "terraform")
-    note(bool(stack.get("unity")), "unity")
-    note(bool(make_targets), "make:" + ",".join(make_targets[:5]))
-
-    standards = (repo / "standards" / "STANDARDS.chrysa.md").exists() or (repo / "standards" / "rules").is_dir()
-    note(standards, "shared-standards")
-    workflows = (repo / ".github" / "workflows").is_dir()
-    note(workflows, "github-actions")
-    claude_config = (repo / ".claude").exists() or (repo / "CLAUDE.md").exists() or (repo / "AGENTS.md").exists()
-    note(claude_config, "agent-config")
-
-    has_cli_entry = "[project.scripts]" in pyproject or any(
-        p.name.endswith(".py") and "-" in p.stem for p in repo.glob("*.py")
-    )
-    has_src_layout = (repo / "src").is_dir()
-    has_app_dirs = any((repo / n).is_dir() for n in ("app", "apps", "backend", "frontend", "services"))
-    has_package_dir = any(p.is_dir() and (p / "__init__.py").exists() for p in repo.iterdir() if not p.name.startswith("."))
-    has_python = bool(stack.get("python"))
-    has_node = bool(stack.get("pm"))
-    has_infra = bool(stack.get("terraform") or stack.get("k8s") or stack.get("helm"))
-    config_files = any((repo / n).exists() for n in (".claude", ".github", ".mcp.json", "repos.yml", "templates"))
-
-    if standards:
-        kind, confidence = "standards-repo", "high"
-    elif stack.get("unity"):
-        kind, confidence = "game-or-unity", "high"
-    elif has_infra and not (has_python or has_node):
-        kind, confidence = "infrastructure", "high"
-    elif has_python and stack.get("web_ui"):
-        kind, confidence = "full-stack", "high"
-    elif has_node and stack.get("web_ui") and not has_python:
-        kind, confidence = "frontend", "high"
-    elif has_python and has_cli_entry:
-        kind, confidence = "python-cli", "high"
-    elif has_python and (has_src_layout or has_package_dir) and not has_app_dirs:
-        kind, confidence = "python-library", "medium"
-    elif has_python:
-        kind, confidence = "python-project", "medium"
-    elif config_files and not (has_python or has_node or has_infra):
-        kind, confidence = "config-only", "medium"
-    else:
-        kind, confidence = "generic", "low"
-
-    return {
-        "path": str(repo),
-        "kind": kind,
-        "confidence": confidence,
-        "signals": dedupe(signals),
-        "adaptation": {
-            "generate_only_detected_artifacts": True,
-            "prefer_info_when_intent_unclear": True,
-            "never_loosen": True,
-        },
-    }
+    return ProjectProfiler(repo).detect_profile(stack)
 
 
 def generated_permissions(stack: dict, policy: dict) -> dict:
@@ -8543,6 +8436,9 @@ def guard_check(data: dict) -> str | None:
     for pat in ATTRIBUTION_PATTERNS:
         if pat.search(new) and not pat.search(old):
             return "guard: assistant attribution is forbidden"
+    content_reason = CriticalContentValidator([cwd]).validation_reason(path, old, new)
+    if content_reason:
+        return f"guard: {path} needs validation ({content_reason})"
     name = path.name
     violations: list[str] = []
     if name in ("settings.json", "settings.local.json") or re.search(r"settings.*\.json$", name):
