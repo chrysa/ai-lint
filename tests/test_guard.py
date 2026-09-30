@@ -85,6 +85,53 @@ def test_edit_attribution_into_file_blocked(linter_module, tmp_path):
     assert r and "attribution" in r.lower()
 
 
+def test_edit_critical_content_requires_validation(linter_module, tmp_path):
+    f = tmp_path / "README.md"
+    f.write_text("# Project\n")
+
+    r = g(
+        linter_module,
+        tool_name="Edit",
+        cwd=str(tmp_path),
+        tool_input={
+            "file_path": str(f),
+            "old_string": "# Project",
+            "new_string": "# Project\n\nUpdated scope.",
+        },
+    )
+
+    assert r and "validation" in r.lower()
+
+
+def test_write_critical_rule_requires_validation(linter_module, tmp_path):
+    f = tmp_path / ".claude" / "rules" / "shared-standards.md"
+    f.parent.mkdir(parents=True)
+    f.write_text("# Rules\n")
+
+    r = g(
+        linter_module,
+        tool_name="Write",
+        cwd=str(tmp_path),
+        tool_input={"file_path": str(f), "content": "# Rules\n\nChanged.\n"},
+    )
+
+    assert r and "critical content" in r.lower()
+
+
+def test_noncritical_content_edit_allowed(linter_module, tmp_path):
+    f = tmp_path / "notes.md"
+    f.write_text("# Notes\n")
+
+    r = g(
+        linter_module,
+        tool_name="Edit",
+        cwd=str(tmp_path),
+        tool_input={"file_path": str(f), "old_string": "# Notes", "new_string": "# Notes\n\nMore."},
+    )
+
+    assert r is None
+
+
 def test_unrelated_tool_ignored(linter_module):
     assert g(linter_module, tool_name="Read", tool_input={"file_path": "/x"}) is None
 
