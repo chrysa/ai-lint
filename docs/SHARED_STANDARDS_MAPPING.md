@@ -40,7 +40,10 @@ say so in the report. The user should see:
 - local decisions that override the fleet default;
 - one concrete next action per unresolved risk.
 
-This makes adaptation auditable instead of implicit.
+In `--format json`, the same adaptation must stay machine-readable through
+`project_profiles` and per-finding `category`, `fix_mode`, `evidence`,
+`manual_reason` and `next_action` fields. This makes adaptation auditable instead of
+implicit and lets another tool continue the review without guessing from prose.
 
 ## Local exceptions
 

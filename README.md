@@ -144,7 +144,7 @@ The full report ends with:
 | `--generate` | Generate missing configuration for the detected stack (see below) |
 | `--user`, `--user-only` | Include / restrict to user scope |
 | `--no-scaffold` | Do not create missing files |
-| `--format json` | Machine-readable output (`findings`, `fixed`, `not_fixed`, `would_fix`, `hints`) |
+| `--format json` | Machine-readable output (`project_profiles`, `findings`, `fixed`, `not_fixed`, `would_fix`, `hints`) |
 | `--strict` | Exit 1 on warnings too (CI) |
 | `--policy FILE` | Policy file (default `<repo>/.ai-lint.toml`) |
 | `--no-history` | Skip the git history scan for attribution |
@@ -169,6 +169,23 @@ The full report ends with:
 | `--guard` | PreToolUse hook mode (stdin JSON, exit 2 blocks) |
 
 Exit codes: `0` clean, `1` errors (or warnings with `--strict`), `2` usage error or guard block.
+
+## JSON feedback contract
+
+`--format json` keeps the original finding fields (`level`, `code`, `path`, `message`,
+`fixable`) and adds action metadata for each item in `findings`, `fixed`, `not_fixed`
+and `would_fix`:
+
+| Field | Meaning |
+|---|---|
+| `feedback_schema_version` | Top-level schema version for the feedback additions |
+| `project_profiles` | Detected project kind, confidence, evidence signals and adaptation rules |
+| `status` | `open`, `fixed` or `would_fix` for the finding list where the item appears |
+| `category` | High-level area used by the stats/report grouping |
+| `fix_mode` | `auto`, `interactive` or `manual` |
+| `evidence` | Minimal evidence object with the path and message that triggered the finding |
+| `manual_reason` | Why ai-lint avoids auto-fixing the item, when applicable |
+| `next_action` | The concrete next command or review action to take |
 
 ## Run log
 
