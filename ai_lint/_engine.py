@@ -4525,7 +4525,6 @@ def detect_stack(repo: Path) -> dict:
     return s
 
 
-
 def detect_project_profile(repo: Path, stack: dict | None = None) -> dict:
     """Classify the scanned repository so reports and generation can adapt."""
     stack = stack or detect_stack(repo)
@@ -4555,7 +4554,9 @@ def detect_project_profile(repo: Path, stack: dict | None = None) -> dict:
     claude_config = (repo / ".claude").exists() or (repo / "CLAUDE.md").exists() or (repo / "AGENTS.md").exists()
     note(claude_config, "agent-config")
 
-    has_cli_entry = "[project.scripts]" in pyproject or any(p.name.endswith(".py") and "-" in p.stem for p in repo.glob("*.py"))
+    has_cli_entry = "[project.scripts]" in pyproject or any(
+        p.name.endswith(".py") and "-" in p.stem for p in repo.glob("*.py")
+    )
     has_src_layout = (repo / "src").is_dir()
     has_app_dirs = any((repo / n).is_dir() for n in ("app", "apps", "backend", "frontend", "services"))
     has_package_dir = any(p.is_dir() and (p / "__init__.py").exists() for p in repo.iterdir() if not p.name.startswith("."))
@@ -6479,6 +6480,14 @@ def proposal_desc(p: dict) -> str:
 
 
 
+def _confidence_label(confidence: str) -> str:
+    return {
+        "high": _loc("confiance haute", "high confidence"),
+        "medium": _loc("confiance moyenne", "medium confidence"),
+        "low": _loc("confiance basse", "low confidence"),
+    }.get(confidence, confidence)
+
+
 def render_profile_summary(rep: Report, color: bool, prefix: str = "") -> list[str]:
     profiles = getattr(rep, "project_profiles", []) or []
     if not profiles:
@@ -6489,10 +6498,8 @@ def render_profile_summary(rep: Report, color: bool, prefix: str = "") -> list[s
         signals = ", ".join(p.get("signals") or [])
         if len(signals) > 140:
             signals = signals[:137] + "..."
-        lines.append(
-            f"{prefix}  - {home_path(str(p.get('path', '')))}: {p.get('kind', 'generic')} "
-            f"({p.get('confidence', 'low')} confidence)"
-        )
+        confidence = _confidence_label(str(p.get("confidence", "low")))
+        lines.append(f"{prefix}  - {home_path(str(p.get('path', '')))}: {p.get('kind', 'generic')} ({confidence})")
         if signals:
             lines.append(f"{prefix}    {dim}" + _loc("signaux", "signals") + f": {signals}{r0}")
     if len(profiles) > 5:
