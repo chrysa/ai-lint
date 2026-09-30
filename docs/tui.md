@@ -43,6 +43,12 @@ run that script to undo both. The existing `--restore` command restores moved
 files from the session trash. MCP additions still use the existing explicit
 command confirmation and are not undone by the local restore script.
 
-This is the first TUI increment for issue #7. The agent conversion wizard (#25),
-expanded setup wizard and desktop compatibility checks (#26) remain separate
-follow-up work; the terminal flow does not claim to implement them yet.
+Conversion previews are available through the dedicated `--convert-to` /
+`--convert-from` route, including `--interactive`; they do not start a writable
+review session. See [agent conversion](agent-conversion.md). Normal review also
+shows [desktop OS observations](desktop-compatibility.md) when a supported desktop
+shape is detected, with runtime compatibility explicitly unverified.
+
+Issue #7 remains open for a fuller conversion/application wizard, project setup
+proposals and expanded readiness. Existing action prompts mix French with the
+English overview and structured feedback.

@@ -2,6 +2,26 @@
 
 All notable changes to `ai-lint`. Dates are ISO 8601.
 
+## 2026-09-30 — modular review and portability
+
+### Added
+- Structured `TuiApp` review with project/readiness observations, grouped findings,
+  validated navigation, progress and action receipts (#33/#34).
+- Per-diff critical restructuring approval, stale-preview/collision safeguards and
+  tested text/move undo scripts. External MCP additions remain outside local undo.
+- Lossless read-only Claude/Codex/AGENTS conversion plans in JSON and terminal
+  previews; unsupported mappings and target conflicts require review (#35).
+- Desktop application profiles and bounded Linux/macOS/Windows launch/path,
+  CI runner and packaging observations in JSON/TUI (#36). Runtime verification
+  remains outside the metadata checks.
+
+### Changed
+- Extracted thematic one-class modules for guard, results, feedback, plugins,
+  TUI services, conversion adapters and desktop observations. Public engine
+  wrappers remain compatible; package `__init__.py` remains empty.
+- CI uses direct Python tools and pinned pre-commit hooks without `make`.
+- Feature milestone #36 passed 348 tests and every CI check.
+
 ## 2026.09.29-46
 
 ### Changed
