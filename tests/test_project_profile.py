@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import json
 
+from ai_lint.feedback_renderer import FeedbackRenderer
+from ai_lint.finding import Finding
 from ai_lint.project_profile import ProjectProfiler
 
 
@@ -62,3 +64,15 @@ def test_finding_feedback_contract(linter_module):
         "message": "duplicate always-loaded instruction",
     }
     assert data["next_action"]
+
+
+def test_feedback_renderer_contract_directly():
+    renderer = FeedbackRenderer("en", {}, {}, [("DUP_", "duplicates")])
+    finding = Finding("warn", "DUP_NAME", "AGENTS.md", "duplicate name", False)
+
+    data = renderer.finding_feedback(finding)
+
+    assert data["category"] == "duplicates"
+    assert data["fix_mode"] == "interactive"
+    assert data["manual_reason"] is None
+    assert data["next_action"].startswith("run with -i")
