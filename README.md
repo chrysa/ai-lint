@@ -149,6 +149,8 @@ The full report ends with:
 | `--policy FILE` | Policy file (default `<repo>/.ai-lint.toml`) |
 | `--no-history` | Skip the git history scan for attribution |
 | `--no-cli` | Do not call the `claude` / `rtk` CLIs (static fallbacks are used) |
+| `--no-update-check` | Skip the interactive ai-lint self-update prompt |
+| `--update-check` | Check the release branch for an ai-lint update, prompt if possible, then exit |
 | `--rtk-report` | Append `rtk gain` and `rtk discover --since 7` output |
 | `-v` / `-vv` / `-vvv` | Progress + why/how + doc link / every transformation / debug |
 | `-q` | Errors and summary only |
@@ -169,6 +171,22 @@ The full report ends with:
 | `--guard` | PreToolUse hook mode (stdin JSON, exit 2 blocks) |
 
 Exit codes: `0` clean, `1` errors (or warnings with `--strict`), `2` usage error or guard block.
+
+## Self-update prompt
+
+When ai-lint is run from a git clone on the release branch (`main` by default), an
+interactive text run checks `origin/main` at most once per day. If a newer fast-forward
+commit exists, ai-lint asks before running:
+
+```sh
+git -C <ai-lint clone> pull --ff-only origin main
+```
+
+The check stays silent for `--format json`, CI, pipes, quiet mode and non-interactive
+runs. It never pulls automatically. Use `--update-check` to force a one-off check, or
+`--no-update-check` / `AI_LINT_UPDATE_CHECK=0` to disable it. Override the target with
+`AI_LINT_UPDATE_REMOTE` and `AI_LINT_RELEASE_BRANCH` when testing another remote or
+release branch.
 
 ## JSON feedback contract
 
