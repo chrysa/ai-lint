@@ -133,8 +133,7 @@ class SelfUpdater:
         if not (sys.stdin.isatty() and sys.stderr.isatty()):
             root = shlex.quote(str(git.root))
             print(
-                f"{msg}\nRun: git -C {root} pull --ff-only "
-                f"{self.config.remote} {self.config.release_branch}",
+                f"{msg}\nRun: git -C {root} pull --ff-only {self.config.remote} {self.config.release_branch}",
                 file=sys.stderr,
             )
             return
