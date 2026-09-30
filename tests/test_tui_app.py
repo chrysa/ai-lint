@@ -77,6 +77,19 @@ def test_non_tty_does_not_scan_or_prompt(review, monkeypatch, capsys):
     assert "terminal" in capsys.readouterr().out
 
 
+def test_full_yes_applies_critical_proposal_without_tty(review, monkeypatch):
+    mod, repo, _cfg, policy, report = review
+    proposal = rule_proposal(repo)
+    monkeypatch.setattr(mod.sys.stdin, "isatty", lambda: False)
+    monkeypatch.setattr(mod, "compute_proposals", lambda *args: [proposal])
+    monkeypatch.setattr("builtins.input", lambda *args: pytest.fail("full yes must not prompt"))
+    app = mod._tui_app()
+    app.full_yes = True
+    app.run(report, [repo], policy, False)
+    assert app.done["restructurations appliquées"] == 1
+    assert proposal["path"].read_text() != "# Rules\nPrefer clear names.\n"
+
+
 @pytest.mark.parametrize("approval", ["", "o", "A", "y", "no", "q"])
 def test_critical_proposal_requires_exact_approval(review, monkeypatch, capsys, approval):
     proposal = rule_proposal(review[1])

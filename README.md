@@ -602,3 +602,6 @@ python3 ai-lint.py . --strict --format json --no-cli --no-scaffold
   an OS-level boundary.
 - Permission rules are not a security boundary on their own (indirect reads, other
   invocation forms); the sandbox is.
+# Fully automated local repair
+
+`python ai-lint.py . --full-yes` runs `--fix` and accepts all local interactive review actions without prompts. It keeps backups and the interactive restore log. It skips self-update prompts and external MCP commands.

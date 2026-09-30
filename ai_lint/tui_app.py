@@ -26,8 +26,9 @@ SKIPPED_PROPOSALS = "skipped proposals"
 class TuiApp:
     """Drive terminal review using the engine's existing domain operations."""
 
-    def __init__(self, services: TuiServices) -> None:
+    def __init__(self, services: TuiServices, full_yes: bool = False) -> None:
         self.services = services
+        self.full_yes = full_yes
         self.t = Tty(services.home_path)
         self.position: int = 0
         self.chosen: list[str] = []
@@ -93,6 +94,8 @@ class TuiApp:
                 print(f"    +{len(rows) - 5} more; use --details or --format json for the complete report")
 
     def _pick_sections(self) -> list[str]:
+        if self.full_yes:
+            return [section[0] for section in self.sections]
         while True:
             pick = self.services._ask("\nSections (1,3; Enter = all; f = findings; ? = help; q = quit): ", "")
             if pick.lower() == "q":
@@ -126,7 +129,7 @@ class TuiApp:
         self.repos = repos
         self.rows = self.services.feedback_rows(rep)
         self.manual_count = sum(row["fix_mode"] == "manual" for row in self.rows)
-        if not sys.stdin.isatty():
+        if not self.full_yes and not sys.stdin.isatty():
             print("\n-i a besoin d'un vrai terminal (pas d'un pipe) : relance-le directement dans ton shell.")
             return 0
         self._start_session(user_scope)
@@ -232,7 +235,7 @@ class TuiApp:
     def _review_duplicates(self) -> None:
         self._section_rule(f"DOUBLONS ({self.services._fr_plural(len(self.dups), 'groupe')})")
         print("  Inspect each group before removing copies. Removed files are kept in the session trash.")
-        auto_all = False
+        auto_all = self.full_yes
         for number, (why, group) in enumerate(self.dups, 1):
             members = [member for member in group if Path(member["path"]).exists()]
             if len(members) < 2:
@@ -342,10 +345,14 @@ class TuiApp:
                 f"{self.services._fr_plural(len(members), members[0]['kind'])} · ~{toks} tokens/session"
             )
             print("  " + ", ".join(nm[len(stem) :].lstrip("-_") or nm for nm in names))
-            ans = self.services._ask(
-                "  Entrée = garder · p = en faire un plugin · k = mettre de côté (parked/) · q = fin : ",
-                "",
-            ).lower()
+            ans = (
+                "p"
+                if self.full_yes
+                else self.services._ask(
+                    "  Entrée = garder · p = en faire un plugin · k = mettre de côté (parked/) · q = fin : ",
+                    "",
+                ).lower()
+            )
             if ans == "q":
                 break
             if ans == "p":
@@ -397,6 +404,8 @@ class TuiApp:
             self._proposal_action(proposal, answer)
 
     def _proposal_answer(self, kind: str, accept: set[str], skip: set[str]) -> str:
+        if self.full_yes:
+            return "o"
         if kind in accept:
             return "o"
         extra = " · k = mettre de côté" if kind == "agent-pack" else ""
@@ -465,6 +474,8 @@ class TuiApp:
             )
             print(self.services.redact(difference))
         print("  Critical files: " + ", ".join(self.services.home_path(str(path)) for path in critical))
+        if self.full_yes:
+            return True
         answer = self.services._ask(
             "  Type approve to apply these exact changes; Enter or any other answer refuses: ", ""
         )
@@ -508,7 +519,9 @@ class TuiApp:
         )
         print(f"  {self.t.dim}avant :{self.t.r} {desc[:200]}{'…' if len(desc) > 200 else ''}")
         print(f"  {self.t.grn}après :{self.t.r} {proposal}")
-        ans = self.services._ask("  o = appliquer · Entrée = passer · q = fin : ", "").lower()
+        ans = (
+            "o" if self.full_yes else self.services._ask("  o = appliquer · Entrée = passer · q = fin : ", "")
+        ).lower()
         if ans == "q":
             return False
         if ans == "o":
@@ -545,7 +558,7 @@ class TuiApp:
             f"Modèle par défaut : {self.t.b}{self.udata['model']}{self.t.r}. "
             "Opus sert à chaque session et aux subagents qui en héritent."
         )
-        if (
+        if not self.full_yes and (
             self.services._ask(
                 "  o = passer à Sonnet par défaut (/model opus au besoin) · Entrée = garder : ", ""
             ).lower()
@@ -563,6 +576,9 @@ class TuiApp:
             return
         command = match.group(1)
         print(f"Serveur MCP proposé : {self.t.b}{command}{self.t.r}")
+        if self.full_yes:
+            self._count(SKIPPED_ACTIONS)
+            return
         if self.services._ask("  o = lancer la commande · Entrée = passer : ", "").lower() != "o":
             self._count(SKIPPED_ACTIONS)
             return

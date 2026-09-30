@@ -6735,8 +6735,10 @@ def _tui_app() -> TuiApp:
     )
 
 
-def interactive(rep: Report, repos: list[Path], policy: dict, user_scope: bool) -> int:
-    return _tui_app().run(rep, repos, policy, user_scope)
+def interactive(rep: Report, repos: list[Path], policy: dict, user_scope: bool, full_yes: bool = False) -> int:
+    app = _tui_app()
+    app.full_yes = full_yes
+    return app.run(rep, repos, policy, user_scope)
 
 
 def restore_trash(target: str | None) -> int:
@@ -8066,6 +8068,7 @@ def main(argv: list[str] | None = None) -> int:
             "  ai-lint.py . --generate          preview config to generate for the stack\n"
             "  ai-lint.py . -i                  interactive review (duplicates, packs, "
             "restructurings)\n"
+            "  ai-lint.py . --full-yes          apply repairs and local review actions without prompts\n"
             "  ai-lint.py --restore             undo the last interactive session\n"
             "  ai-lint.py . --strict --format json --no-cli   CI-friendly run\n"
             "\n"
@@ -8098,6 +8101,9 @@ def main(argv: list[str] | None = None) -> int:
     )
     ap.add_argument("--convert-from", choices=("claude", "codex", "agents"), help="source ecosystem for --convert-to")
     ap.add_argument("--fix", action="store_true", help="apply repairs (with backup)")
+    ap.add_argument(
+        "--full-yes", action="store_true", help="run --fix and accept all local review actions without prompts"
+    )
     ap.add_argument("--no-scaffold", action="store_true", help="do not create missing files")
     ap.add_argument("--format", choices=("text", "json"), default="text", help="output format (default: text)")
     ap.add_argument("--policy", type=Path, help="policy TOML (default: <repo>/.ai-lint.toml)")
@@ -8199,6 +8205,12 @@ def main(argv: list[str] | None = None) -> int:
         ap.print_help()
         return 0
     args = ap.parse_args(argv)
+    if args.full_yes and args.format != "text":
+        ap.error("--full-yes requires --format text")
+    if args.full_yes:
+        args.fix = True
+        args.interactive = True
+        args.no_update_check = True
     if args.convert_from and not args.convert_to:
         ap.error("--convert-from requires --convert-to")
     if args.convert_to:
@@ -8326,7 +8338,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.interactive and args.format == "text":
         global INTERACTIVE_RAN
         INTERACTIVE_RAN = True
-        if interactive(rep, repos, policy, bool(args.user or args.user_only)):
+        if interactive(rep, repos, policy, bool(args.user or args.user_only), full_yes=args.full_yes):
             rep = run_lint(repos, policy, args, history)
     if args.format == "text":
         disc = render_discovery(sys.stdout.isatty())
