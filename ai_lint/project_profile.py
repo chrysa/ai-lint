@@ -9,6 +9,8 @@ import subprocess
 from pathlib import Path
 from typing import Any
 
+from ai_lint.desktop_checker import DesktopChecker
+
 
 class ProjectProfiler:
     def __init__(self, repo: Path) -> None:
@@ -62,11 +64,16 @@ class ProjectProfiler:
         self._note(signals, agent_config, "agent-config")
 
         kind, confidence = self._classify(stack, pyproject, standards)
+        desktop = DesktopChecker(self.repo).detect()
+        if desktop["detected"]:
+            kind, confidence = "desktop-app", "medium"
+            signals.extend("desktop:" + framework for framework in desktop["frameworks"])
         return {
             "path": str(self.repo),
             "kind": kind,
             "confidence": confidence,
             "signals": self._dedupe(signals),
+            "desktop": desktop,
             "adaptation": {
                 "generate_only_detected_artifacts": True,
                 "prefer_info_when_intent_unclear": True,
