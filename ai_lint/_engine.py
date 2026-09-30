@@ -1293,6 +1293,7 @@ class Report:
     stats: dict = field(default_factory=dict)
     agent_unknown: dict = field(default_factory=dict)
     proposals: list = field(default_factory=list)
+    project_profiles: list = field(default_factory=list)
 
     def add(self, level: str, code: str, path: Path | str, msg: str, fixable: bool = False) -> None:
         if code in DISABLED_CODES:  # silenced in the catalog
@@ -4524,6 +4525,80 @@ def detect_stack(repo: Path) -> dict:
     return s
 
 
+
+def detect_project_profile(repo: Path, stack: dict | None = None) -> dict:
+    """Classify the scanned repository so reports and generation can adapt."""
+    stack = stack or detect_stack(repo)
+    pyproject = read_text(repo / "pyproject.toml") or ""
+    package_json = read_text(repo / "package.json") or ""
+    make_targets = stack.get("make") or []
+    signals: list[str] = []
+
+    def note(enabled: bool, signal: str) -> None:
+        if enabled:
+            signals.append(signal)
+
+    note(bool(stack.get("python")), "python")
+    note(bool(stack.get("pm")), f"node:{stack.get('pm')}")
+    note(bool(stack.get("web_ui")), "web-ui")
+    note(bool(stack.get("docker")), "docker")
+    note(bool(stack.get("compose")), "compose")
+    note(bool(stack.get("k8s")), "kubernetes")
+    note(bool(stack.get("helm")), "helm")
+    note(bool(stack.get("terraform")), "terraform")
+    note(bool(stack.get("unity")), "unity")
+    note(bool(make_targets), "make:" + ",".join(make_targets[:5]))
+
+    standards = (repo / "standards" / "STANDARDS.chrysa.md").exists() or (repo / "standards" / "rules").is_dir()
+    note(standards, "shared-standards")
+    workflows = (repo / ".github" / "workflows").is_dir()
+    note(workflows, "github-actions")
+    claude_config = (repo / ".claude").exists() or (repo / "CLAUDE.md").exists() or (repo / "AGENTS.md").exists()
+    note(claude_config, "agent-config")
+
+    has_cli_entry = "[project.scripts]" in pyproject or any(p.name.endswith(".py") and "-" in p.stem for p in repo.glob("*.py"))
+    has_src_layout = (repo / "src").is_dir()
+    has_app_dirs = any((repo / n).is_dir() for n in ("app", "apps", "backend", "frontend", "services"))
+    has_package_dir = any(p.is_dir() and (p / "__init__.py").exists() for p in repo.iterdir() if not p.name.startswith("."))
+    has_python = bool(stack.get("python"))
+    has_node = bool(stack.get("pm"))
+    has_infra = bool(stack.get("terraform") or stack.get("k8s") or stack.get("helm"))
+    config_files = any((repo / n).exists() for n in (".claude", ".github", ".mcp.json", "repos.yml", "templates"))
+
+    if standards:
+        kind, confidence = "standards-repo", "high"
+    elif stack.get("unity"):
+        kind, confidence = "game-or-unity", "high"
+    elif has_infra and not (has_python or has_node):
+        kind, confidence = "infrastructure", "high"
+    elif has_python and stack.get("web_ui"):
+        kind, confidence = "full-stack", "high"
+    elif has_node and stack.get("web_ui") and not has_python:
+        kind, confidence = "frontend", "high"
+    elif has_python and has_cli_entry:
+        kind, confidence = "python-cli", "high"
+    elif has_python and (has_src_layout or has_package_dir) and not has_app_dirs:
+        kind, confidence = "python-library", "medium"
+    elif has_python:
+        kind, confidence = "python-project", "medium"
+    elif config_files and not (has_python or has_node or has_infra):
+        kind, confidence = "config-only", "medium"
+    else:
+        kind, confidence = "generic", "low"
+
+    return {
+        "path": str(repo),
+        "kind": kind,
+        "confidence": confidence,
+        "signals": dedupe(signals),
+        "adaptation": {
+            "generate_only_detected_artifacts": True,
+            "prefer_info_when_intent_unclear": True,
+            "never_loosen": True,
+        },
+    }
+
+
 def generated_permissions(stack: dict, policy: dict) -> dict:
     g, perms = policy["generate"], policy["permissions"]
     allow = [
@@ -6404,6 +6479,28 @@ def proposal_desc(p: dict) -> str:
     return p["title"]
 
 
+
+def render_profile_summary(rep: Report, color: bool, prefix: str = "") -> list[str]:
+    profiles = getattr(rep, "project_profiles", []) or []
+    if not profiles:
+        return []
+    b, dim, r0 = ("\033[1m", "\033[2m", "\033[0m") if color else ("", "", "")
+    lines = [f"{prefix}{b}" + _loc("PROFIL PROJET", "PROJECT PROFILE") + f"{r0}"]
+    for p in profiles[:5]:
+        signals = ", ".join(p.get("signals") or [])
+        if len(signals) > 140:
+            signals = signals[:137] + "..."
+        lines.append(
+            f"{prefix}  - {home_path(str(p.get('path', '')))}: {p.get('kind', 'generic')} "
+            f"({p.get('confidence', 'low')} confidence)"
+        )
+        if signals:
+            lines.append(f"{prefix}    {dim}" + _loc("signaux", "signals") + f": {signals}{r0}")
+    if len(profiles) > 5:
+        lines.append(f"{prefix}  {dim}+{len(profiles) - 5} more{r0}")
+    return lines
+
+
 def render_brief(rep: Report, fixed: list[Finding], fix: bool, repos_count: int, color: bool) -> str:
     b, dim, r0 = ("\033[1m", "\033[2m", "\033[0m") if color else ("", "", "")
     red, yel, grn = ("\033[31m", "\033[33m", "\033[32m") if color else ("", "", "")
@@ -6416,6 +6513,7 @@ def render_brief(rep: Report, fixed: list[Finding], fix: bool, repos_count: int,
             else ""
         )
     ]
+    out += render_profile_summary(rep, color)
     if fix:
         out.append(
             _loc(
@@ -7555,6 +7653,7 @@ def run_lint(repos: list[Path], policy: dict, args: argparse.Namespace, history:
         run_plugin_checks("user", config_dir(), policy, rep)
     check_rtk(policy, rep, repos, bool(args.user or args.user_only))
     check_llmtrim(rep, repos, bool(args.user or args.user_only))
+    rep.project_profiles = [detect_project_profile(r) for r in repos]
     rep.budget = token_budget(repos[0] if repos else None, bool(args.user or args.user_only), policy, rep)
     user_roots = [config_dir()] if (args.user or args.user_only) else []
     dup_roots = user_roots + [r / ".claude" for r in repos]
@@ -7822,6 +7921,10 @@ def render_text(
 ) -> str:
     out: list[str] = []
     g, r0, dim = ("\033[32m", "\033[0m", "\033[2m") if color else ("", "", "")
+    if not quiet:
+        profile_lines = render_profile_summary(rep, color)
+        if profile_lines:
+            out += profile_lines + [""]
     if fix and applied and not quiet:
         out.append(f"{g}== Files changed ({len(applied)}){r0}")
         for a in applied:
@@ -8997,6 +9100,7 @@ def main(argv: list[str] | None = None) -> int:
                 {
                     "cli_version": ".".join(map(str, CLI_VERSION)) if CLI_VERSION else None,
                     "repositories": [str(r) for r in repos],
+                    "project_profiles": getattr(rep, "project_profiles", []),
                     "findings": [asdict(f) for f in rep.findings],
                     "fixed": [asdict(f) for f in fixed],
                     "not_fixed": [asdict(f) for f in rep.findings if args.fix or not f.fixable],
