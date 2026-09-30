@@ -25,6 +25,9 @@ config. Keep it: correct against the docs, safe by construction, cheap to run, d
   and `.claude/rules/shared-standards.md` where they fit this repo.
 - **Project adaptation.** Detect the scanned project's profile before generating or judging
   config; adapt rules to the stack, maturity, runtime, repo role and local policy.
+- **Feedback quality.** Reports must explain the detected profile, why each important
+  finding applies, what can be fixed automatically, what needs human approval, and the next
+  command or decision.
 
 ## Priorities (in order)
 
