@@ -4081,6 +4081,17 @@ def rtk_config_path() -> Path:
 def detect_rtk(use_cli: bool) -> None:
     cfg_path = rtk_config_path()
     RTK["config_path"] = cfg_path
+    RTK.update(
+        path=None,
+        version=None,
+        genuine=None,
+        config=None,
+        exclude=set(),
+        rewrite_cache={},
+        rewrite_cli=None,
+        help_commands=set(),
+        checked_cli=use_cli,
+    )
     raw = read_text(cfg_path)
     if raw is not None and tomllib is not None:
         try:
@@ -8081,7 +8092,7 @@ def main(argv: list[str] | None = None) -> int:
             "  mode              read-only (no --fix, no --generate, no -i)\n"
             "  report            brief; language from $LANG (fr if it starts with 'fr', else en)\n"
             "  scaffolding       on (missing baseline files created; --no-scaffold to disable)\n"
-            "  CLIs              claude and rtk are called when present (--no-cli to skip)\n"
+            "  CLIs              claude, rtk and llmtrim are called when present (--no-cli to skip; --no-rtk skips only rtk)\n"
             "  policy file       <repo>/.ai-lint.toml if present, else built-in defaults\n"
             "  instruction file  warns above 200 lines; user scope above 150\n"
             "  always-loaded     token budget warns above 10000 tokens/turn\n"
@@ -8100,7 +8111,9 @@ def main(argv: list[str] | None = None) -> int:
         help="preview an agent contract conversion; never writes files",
     )
     ap.add_argument("--convert-from", choices=("claude", "codex", "agents"), help="source ecosystem for --convert-to")
-    ap.add_argument("--fix", action="store_true", help="apply repairs (with backup)")
+    ap.add_argument(
+        "--fix", "--optimize-config", dest="fix", action="store_true", help="apply config repairs (with backup)"
+    )
     ap.add_argument(
         "--full-yes", action="store_true", help="run --fix and accept all local review actions without prompts"
     )
@@ -8110,6 +8123,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--strict", action="store_true", help="fail on warnings too")
     ap.add_argument("--no-history", action="store_true", help="skip git history scan")
     ap.add_argument("--no-cli", action="store_true", help="do not call the claude / rtk CLIs")
+    ap.add_argument("--no-rtk", action="store_true", help="do not call the rtk CLI (use static fallbacks)")
+    ap.add_argument("--graphify", action="store_true", help="build a local code graph for each scanned repository")
     ap.add_argument(
         "--no-update-check",
         action="store_true",
@@ -8280,9 +8295,9 @@ def main(argv: list[str] | None = None) -> int:
         print(f"wrote {target} (read-only). Start the audit with:\n  claude --settings {target}")
         return 0
     log(1, f"ai-lint {VERSION}")
-    detect_rtk(not args.no_cli)
+    detect_rtk(not args.no_cli and not args.no_rtk)
     detect_llmtrim(not args.no_cli)
-    RTK["checked_cli"] = not args.no_cli
+    RTK["checked_cli"] = not args.no_cli and not args.no_rtk
     if not args.no_cli:
         CLI_VERSION = detect_cli_version()
         log(1, "claude CLI: " + (".".join(map(str, CLI_VERSION)) if CLI_VERSION else "not found"))
@@ -8340,6 +8355,23 @@ def main(argv: list[str] | None = None) -> int:
         INTERACTIVE_RAN = True
         if interactive(rep, repos, policy, bool(args.user or args.user_only), full_yes=args.full_yes):
             rep = run_lint(repos, policy, args, history)
+    if args.graphify:
+        graphify = shutil.which("graphify")
+        if not graphify:
+            rep.add("error", "GRAPHIFY_MISSING", "graphify", "--graphify requires the Graphify CLI on PATH")
+        else:
+            for repo in repos:
+                result = subprocess.run(
+                    [graphify, "extract", str(repo), "--code-only"],
+                    check=False,
+                    text=True,
+                    capture_output=True,
+                )
+                if result.returncode:
+                    message = (result.stderr or result.stdout or f"exit status {result.returncode}").strip()
+                    rep.add("error", "GRAPHIFY_FAILED", repo, message[:1000])
+                else:
+                    print(f"Graphify: indexed {repo}")
     if args.format == "text":
         disc = render_discovery(sys.stdout.isatty())
         if disc:

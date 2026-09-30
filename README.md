@@ -95,14 +95,17 @@ alias ai-lint='python3 /path/to/ai-lint/ai-lint.py'
 ```
 
 Running it with no arguments prints the help, including the effective defaults.
-Optional companions it uses when present: the `claude` CLI (`--no-cli` to skip),
-`rtk`, and `llmtrim`. Python >= 3.11 is only needed to read a policy file.
+Optional companions it uses when present: the `claude` CLI and `llmtrim` (`--no-cli`
+to skip both), and `rtk` (`--no-rtk` skips only RTK). Python >= 3.11 is only needed
+to read a policy file.
 
 ## Quick start
 
 ```sh
 ./ai-lint.py . --user --generate         # preview everything it would generate
 ./ai-lint.py . --user --generate --fix   # generate, then lint and repair the result
+./ai-lint.py . --optimize-config        # apply safe configuration repairs (with backup)
+./ai-lint.py . --graphify               # build a local code graph for each repository
 ./ai-lint.py .                 # read-only: findings, diff, summary
 ./ai-lint.py . --fix           # apply repairs (backup in ~/.cache/ai-lint/)
 ./ai-lint.py . --user --fix    # include user scope (~/.claude or $CLAUDE_CONFIG_DIR)
@@ -144,6 +147,8 @@ The full report ends with:
 | Option | Effect |
 |---|---|
 | `--fix` | Apply repairs (and generation) in passes until stable, then re-lint |
+| `--optimize-config` | Alias for `--fix`: apply safe configuration repairs with backups |
+| `--graphify` | Run `graphify extract <repo> --code-only` for each scanned repository |
 | `--generate` | Generate missing configuration for the detected stack (see below) |
 | `--user`, `--user-only` | Include / restrict to user scope |
 | `--no-scaffold` | Do not create missing files |
@@ -152,6 +157,7 @@ The full report ends with:
 | `--policy FILE` | Policy file (default `<repo>/.ai-lint.toml`) |
 | `--no-history` | Skip the git history scan for attribution |
 | `--no-cli` | Do not call the `claude` / `rtk` CLIs (static fallbacks are used) |
+| `--no-rtk` | Do not call the `rtk` CLI; keep static fallbacks and other CLI checks |
 | `--no-update-check` | Skip the interactive ai-lint self-update prompt |
 | `--update-check` | Check the release branch for an ai-lint update, prompt if possible, then exit |
 | `--rtk-report` | Append `rtk gain` and `rtk discover --since 7` output |
@@ -439,7 +445,8 @@ rotated) and in shell startup files.
 
 When `require_rtk` is on but `rtk` is not installed, the tool says so and points to both
 ways forward: install rtk, or set `permissions.require_rtk = false` to skip rtk routing.
-Both `rtk` and `llmtrim` are probed only when the CLIs are allowed (not under `--no-cli`).
+`rtk` and `llmtrim` are probed only when their CLIs are allowed (`--no-cli` skips
+both; `--no-rtk` skips only RTK).
 
 **llmtrim** (companion CLI, when present): subagents that carry the llmtrim route marker
 delegate to the `llmtrim` binary. If those route subagents exist but `llmtrim` is not on
