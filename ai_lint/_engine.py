@@ -68,7 +68,9 @@ from urllib.parse import urlparse
 
 from ai_lint.content_validation import CriticalContentValidator
 from ai_lint.project_profile import ProjectProfiler
+from ai_lint.restore_log import RestoreLog
 from ai_lint.self_update import SelfUpdater
+from ai_lint.terminal_view import Tty
 
 try:
     import tomllib
@@ -6565,30 +6567,6 @@ def render_brief(rep: Report, fixed: list[Finding], fix: bool, repos_count: int,
 # --------------------------------------------------------------------------- #
 
 
-class Tty:
-    def __init__(self) -> None:
-        on = sys.stdout.isatty() and not os.environ.get("NO_COLOR")
-        c = lambda code: f"\033[{code}m" if on else ""
-        self.b, self.dim, self.r, self.red, self.grn, self.yel, self.cyan = (
-            c(1),
-            c(2),
-            c(0),
-            c(31),
-            c(32),
-            c(33),
-            c(36),
-        )
-        self.width = min(shutil.get_terminal_size((110, 40)).columns, 140)
-
-    def rule(self, title: str = "") -> None:
-        line = "─" * max(0, self.width - len(title) - 3)
-        print(f"\n{self.b}── {title} {line}{self.r}" if title else f"{self.dim}{'─' * self.width}{self.r}")
-
-    def short(self, p: str, width: int) -> str:
-        p = home_path(str(p))
-        return p if len(p) <= width else p[: width // 3] + "…" + p[-(width - width // 3 - 1) :]
-
-
 def _affixes(texts: list[str]) -> tuple[str, str]:
     if len(texts) < 2:
         return "", ""
@@ -6663,24 +6641,6 @@ def advice(why: str, members: list[dict]) -> tuple[list[int], str]:
     return [], "proches mais pas identiques : à toi de juger (rien n'est proposé par défaut)"
 
 
-class RestoreLog(list):
-    """Undo commands, written to restore.sh as soon as each move happens (survives a crash)."""
-
-    def __init__(self, script: Path) -> None:
-        super().__init__()
-        self.script = script
-
-    def append(self, line: str) -> None:
-        super().append(line)
-        self.script.parent.mkdir(parents=True, exist_ok=True)
-        new = not self.script.exists()
-        with self.script.open("a", encoding="utf-8") as fh:
-            if new:
-                fh.write("#!/bin/sh\n# Annule les déplacements de cette session\n")
-            fh.write(line + "\n")
-        self.script.chmod(0o755)
-
-
 def _show_file(path: Path, t: Tty, lines: int = 25) -> None:
     f = path / "SKILL.md" if path.is_dir() else path
     text = (read_text(f) or "").splitlines()
@@ -6705,7 +6665,7 @@ def _family_to_plugin(members: list[dict], name: str, policy: dict, restore: lis
 
 
 def interactive(rep: Report, repos: list[Path], policy: dict, user_scope: bool) -> int:
-    t = Tty()
+    t = Tty(home_path)
     if not sys.stdin.isatty():
         print("\n-i a besoin d'un vrai terminal (pas d'un pipe) : relance-le directement dans ton shell.")
         return 0

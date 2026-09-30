@@ -8,52 +8,11 @@ import shlex
 import subprocess
 import sys
 import time
-from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-
-@dataclass(frozen=True)
-class SelfUpdateConfig:
-    release_branch: str = "main"
-    remote: str = "origin"
-    interval_seconds: float = 24 * 60 * 60
-    source_root: Path = Path(__file__).resolve().parents[1]
-    cache_path: Path = Path(os.path.expanduser("~/.cache/ai-lint/update-check.json"))
-
-    @classmethod
-    def from_env(cls) -> SelfUpdateConfig:
-        return cls(
-            release_branch=os.environ.get("AI_LINT_RELEASE_BRANCH", cls.release_branch),
-            remote=os.environ.get("AI_LINT_UPDATE_REMOTE", cls.remote),
-        )
-
-
-class GitRunner:
-    def __init__(self, root: Path) -> None:
-        self.root = root
-
-    def output(self, *args: str, timeout: int = 30) -> str | None:
-        try:
-            res = subprocess.run(
-                ["git", "-C", str(self.root), *args],
-                capture_output=True,
-                text=True,
-                timeout=timeout,
-                check=False,
-            )
-        except (OSError, subprocess.TimeoutExpired):
-            return None
-        return res.stdout if res.returncode == 0 else None
-
-    def run(self, *args: str, timeout: int = 30) -> subprocess.CompletedProcess[str]:
-        return subprocess.run(
-            ["git", "-C", str(self.root), *args],
-            capture_output=True,
-            text=True,
-            timeout=timeout,
-            check=False,
-        )
+from ai_lint.git_runner import GitRunner
+from ai_lint.self_update_config import SelfUpdateConfig
 
 
 class SelfUpdater:
