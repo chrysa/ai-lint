@@ -21,6 +21,43 @@ Keep the always-loaded contract in `CLAUDE.md` concise.
    noisy.
 7. Add adversarial review for unattended or high-impact changes.
 8. Treat prompts, rules and agent config as maintainable code.
+9. Adapt to the scanned project instead of applying a universal preset.
+
+## Project adaptation
+
+ai-lint must profile the scanned project before judging or generating agent configuration.
+The detected stack, repository role, maturity, runtime constraints and local policy decide
+which checks are errors, warnings or advice. A Python CLI, a full-stack web app, a Unity game,
+a config-only repository and a shared standards repo should not receive the same generated
+skills, MCP servers, permissions, hooks or documentation scaffold.
+
+Adaptation rules:
+
+- Detect stack signals first: Python, Node/React, Docker/Compose, Kubernetes, Terraform,
+  Unity, GitHub remote, Makefile targets, test commands and existing `.claude/` assets.
+- Generate only artifacts that fit the detected project; do not add MCP, agents, hooks or
+  skills just because ai-lint knows how to generate them.
+- Treat missing project intent as an interactive question or an info-level hint, not an error.
+- Respect repo-local policy files and documented decisions over generic defaults.
+- Keep fixes conservative across every profile: adaptation may reduce scope or ask the human,
+  but it may never loosen config automatically.
+
+## Feedback quality
+
+ai-lint reports should be decision-ready, not just diagnostic. A useful report tells the
+operator what ai-lint inferred, what it changed or refused to change, and what to do next.
+
+Report requirements:
+
+- Show the detected project profile and the main signals behind it.
+- Separate errors, warnings, info and restructure proposals.
+- For each high-impact finding, include evidence, risk, recommended action and whether it is
+  auto-fixable, interactive-only or manual-only.
+- Explain skipped or not-applicable standards so the user can tell adaptation from omission.
+- Surface uncertainty explicitly and ask a focused question when the next action depends on
+  project intent.
+- End with a short next-step block: commands to run, files to review, and decisions needed.
+- Keep machine-readable JSON stable for CI while keeping human output brief and prioritized.
 
 ## What ai-lint should check or encourage
 
