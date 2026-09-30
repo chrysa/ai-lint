@@ -65,6 +65,7 @@ class Report:
     agent_unknown: dict = field(default_factory=dict)
     proposals: list = field(default_factory=list)
     project_profiles: list = field(default_factory=list)
+    desktop_compatibility: list = field(default_factory=list)
 
     def add(
         self,

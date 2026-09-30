@@ -68,6 +68,13 @@ class TuiApp:
             docs = "detected" if (repo / "README.md").is_file() else NOT_DETECTED
             print(f"  {self.services.home_path(str(repo))}: tests {tests}; CI {ci}; README {docs}")
         print("  These are filesystem signals, not a verification that tests or CI pass.")
+        for desktop in report.desktop_compatibility:
+            if not desktop["detected"]:
+                continue
+            print(f"  Desktop: {self.services.home_path(desktop['path'])}; " + ", ".join(desktop["frameworks"]))
+            for os_name, state in desktop["os"].items():
+                observed = "observed" if state["ci_runner_observed"] else "not observed"
+                print(f"    {os_name}: CI runner {observed}; runtime compatibility unverified")
 
     def _findings_board(self) -> None:
         self.t.rule("FINDINGS")

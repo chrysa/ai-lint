@@ -67,6 +67,7 @@ from urllib.parse import urlparse
 
 from ai_lint.agent_converter import AgentConverter
 from ai_lint.content_validation import CriticalContentValidator as CriticalContentValidator
+from ai_lint.desktop_checker import DesktopChecker
 from ai_lint.feedback_renderer import FeedbackRenderer
 from ai_lint.finding import Finding
 from ai_lint.guard_checker import BASH_WRITE_HINT as BASH_WRITE_HINT
@@ -7229,6 +7230,7 @@ def run_lint(repos: list[Path], policy: dict, args: argparse.Namespace, history:
     check_rtk(policy, rep, repos, bool(args.user or args.user_only))
     check_llmtrim(rep, repos, bool(args.user or args.user_only))
     rep.project_profiles = [detect_project_profile(r) for r in repos]
+    rep.desktop_compatibility = [DesktopChecker(r).check(rep) for r in repos]
     rep.budget = token_budget(repos[0] if repos else None, bool(args.user or args.user_only), policy, rep)
     user_roots = [config_dir()] if (args.user or args.user_only) else []
     dup_roots = user_roots + [r / ".claude" for r in repos]
@@ -7568,7 +7570,7 @@ CATEGORIES = [
     ("COMMAND_", "skills"),
     ("AGENT_", "subagents"),
     ("MCP_", "mcp"),
-    ("DESKTOP_", "mcp"),
+    ("DESKTOP_CONFIG", "mcp"),
     ("RTK_", "rtk"),
     ("TOKEN_", "tokens"),
     ("ATTR_", "attribution"),
@@ -7577,6 +7579,7 @@ CATEGORIES = [
     ("AGENTS_", "instructions"),
     ("RULE_", "instructions"),
     ("MEMORY_", "instructions"),
+    ("DESKTOP_", "desktop"),
     ("RENDER_", "instructions"),
     ("LOCAL_MD", "instructions"),
     ("FRONTMATTER_", "instructions"),
@@ -8342,6 +8345,7 @@ def main(argv: list[str] | None = None) -> int:
                     "feedback_schema_version": 1,
                     "repositories": [str(r) for r in repos],
                     "project_profiles": getattr(rep, "project_profiles", []),
+                    "desktop_compatibility": rep.desktop_compatibility,
                     "findings": [finding_feedback(f) for f in rep.findings],
                     "fixed": [finding_feedback(f, "fixed") for f in fixed],
                     "not_fixed": [finding_feedback(f) for f in rep.findings if args.fix or not f.fixable],
