@@ -206,7 +206,8 @@ def test_multiedit_loosening_blocked(guard_module, tmp_path):
             },
         }
     )
-    assert reason and "new allow rule" in reason
+    assert reason
+    assert "new allow rule" in reason
 
 
 def test_guard_json_repair_and_invalid_output(linter_module):
@@ -238,3 +239,63 @@ def test_guard_frontmatter_extension(linter_module):
 def test_guard_toml_parser_unavailable(linter_module, monkeypatch):
     monkeypatch.setattr(linter_module, "tomllib", None)
     assert linter_module.lint_toml_violations("", "") == ["cannot verify .ai-lint.toml without Python 3.11"]
+
+
+@pytest.mark.parametrize(
+    ("filename", "old", "new", "expected"),
+    [
+        (".mcp.json", "{}", '{"mcpServers": {"demo": {"command": "run"}}}', "new MCP server"),
+        ("claude_desktop_config.json", "{}", '{"mcpServers": {"demo": {"command": "run"}}}', "new MCP server"),
+        (".claude-plugin/plugin.json", "{}", '{"hooks": {}}', "plugin hooks added"),
+        (".claude-plugin/marketplace.json", "{}", '{"plugins": [{"name": "demo"}]}', "new marketplace plugin"),
+        (
+            "hooks/hooks.json",
+            '{"hooks": {"PreToolUse": [{"hooks": [{"command": "validate"}]}]}}',
+            "{}",
+            "hook(s) removed",
+        ),
+        ("settings.local.json", "{}", "broken", "must stay strict JSON"),
+        ("settings.json", "broken", "{}", None),
+        (
+            ".claude/skills/demo/SKILL.md",
+            "---\nallowed-tools: Read\n---\nInspect.\n",
+            "---\nallowed-tools: Read Bash\n---\nInspect.\n",
+            "allowed-tools extended",
+        ),
+        (
+            ".github/workflows/agent.yml",
+            "name: claude-code\n",
+            "name: claude-code\npull_request_target:\n",
+            "pull_request_target trigger added",
+        ),
+        ("notes.md", "# Notes\n", "# Updated notes\n", None),
+    ],
+)
+def test_guard_write_dispatch(guard_module, tmp_path, filename, old, new, expected):
+    path = tmp_path / filename
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(old)
+    reason = guard_module.guard_check(
+        {
+            "tool_name": "Write",
+            "cwd": str(tmp_path),
+            "tool_input": {"file_path": filename, "content": new},
+        }
+    )
+    if expected is None:
+        assert reason is None
+    else:
+        assert reason
+        assert expected in reason
+
+
+def test_notebook_edit_still_checks_protected_paths(guard_module, tmp_path):
+    reason = guard_module.guard_check(
+        {
+            "tool_name": "NotebookEdit",
+            "cwd": str(tmp_path),
+            "tool_input": {"notebook_path": ".git/hooks/demo.ipynb"},
+        }
+    )
+    assert reason
+    assert "git hooks" in reason

@@ -52,23 +52,42 @@ class GuardChecker:
         self.engine_path = engine_path.resolve()
 
     def _norm_handlers(self, hooks: Any) -> set[str]:
-        sigs: set[str] = set()
         if not isinstance(hooks, dict):
-            return sigs
-        for event, groups in hooks.items():
-            for g in groups if isinstance(groups, list) else []:
-                for h in (g or {}).get("hooks", []) if isinstance(g, dict) else []:
-                    if not isinstance(h, dict):
-                        continue
-                    target = h.get("command") or h.get("url") or f"{h.get('server')}:{h.get('tool')}" or h.get("prompt")
-                    target = " ".join([str(target), *map(str, h.get("args") or [])])
-                    target = re.sub(r"[\"']?\$\{?CLAUDE_PROJECT_DIR\}?[\"']?/|^\./", "", target.strip())
-                    sigs.add(f"{event}:{target}")
-        return sigs
+            return set()
+        return {
+            f"{event}:{self._handler_target(handler)}"
+            for event, groups in hooks.items()
+            for handler in self._handlers(groups)
+        }
+
+    def _handlers(self, groups: Any):
+        if not isinstance(groups, list):
+            return
+        for group in groups:
+            if not isinstance(group, dict):
+                continue
+            for handler in group.get("hooks", []):
+                if isinstance(handler, dict):
+                    yield handler
+
+    def _handler_target(self, handler: dict) -> str:
+        target = handler.get("command") or handler.get("url") or f"{handler.get('server')}:{handler.get('tool')}"
+        target = " ".join([str(target), *map(str, handler.get("args") or [])])
+        return re.sub(r"[\"']?\$\{?CLAUDE_PROJECT_DIR\}?[\"']?/|^\./", "", target.strip())
 
     def settings_violations(self, old: dict, new: dict) -> list[str]:
-        v: list[str] = []
         po, pn = old.get("permissions") or {}, new.get("permissions") or {}
+        return (
+            self._allow_violations(po, pn)
+            + self._restriction_violations(po, pn)
+            + self._permission_mode_violations(po, pn)
+            + self._hook_violations(old, new)
+            + self._environment_violations(old, new)
+            + self._executable_violations(old, new)
+        )
+
+    def _allow_violations(self, po: dict, pn: dict) -> list[str]:
+        v: list[str] = []
         ao, an = list(po.get("allow") or []), list(pn.get("allow") or [])
         for r in an:
             if r in ao or any(self.covers(o, r) for o in ao):
@@ -79,11 +98,19 @@ class GuardChecker:
                 if plain in ao or any(self.covers(o, plain) for o in ao):
                     continue  # rtk routing of an existing rule: same scope
             v.append(f"new allow rule {r!r}")
+        return v
+
+    def _restriction_violations(self, po: dict, pn: dict) -> list[str]:
+        v: list[str] = []
         for key, stricter in (("deny", ()), ("ask", ("deny",))):
             for r in po.get(key) or []:
                 pools = [pn.get(key) or []] + [pn.get(k) or [] for k in stricter]
                 if not any(r in pool or any(self.covers(n, r) for n in pool) for pool in pools):
                     v.append(f"{key} rule removed {r!r}")
+        return v
+
+    def _permission_mode_violations(self, po: dict, pn: dict) -> list[str]:
+        v: list[str] = []
         if pn.get("defaultMode") in ("bypassPermissions", "auto", "acceptEdits") and pn.get("defaultMode") != po.get(
             "defaultMode"
         ):
@@ -93,6 +120,10 @@ class GuardChecker:
                 v.append(f"{k} relaxed")
         if set(pn.get("additionalDirectories") or []) - set(po.get("additionalDirectories") or []):
             v.append("additionalDirectories extended")
+        return v
+
+    def _hook_violations(self, old: dict, new: dict) -> list[str]:
+        v: list[str] = []
         removed = self._norm_handlers(old.get("hooks")) - self._norm_handlers(new.get("hooks"))
         if removed:
             v.append("hook(s) removed: " + ", ".join(sorted(removed)[:3]))
@@ -102,6 +133,10 @@ class GuardChecker:
             v.append("enableAllProjectMcpServers enabled")
         if set(new.get("enabledMcpjsonServers") or []) - set(old.get("enabledMcpjsonServers") or []):
             v.append("enabledMcpjsonServers extended")
+        return v
+
+    def _environment_violations(self, old: dict, new: dict) -> list[str]:
+        v: list[str] = []
         so, sn = old.get("sandbox") or {}, new.get("sandbox") or {}
         if so.get("enabled") and not sn.get("enabled"):
             v.append("sandbox disabled")
@@ -109,6 +144,10 @@ class GuardChecker:
             v.append("allowUnsandboxedCommands enabled")
         if set((new.get("env") or {})) - set((old.get("env") or {})):
             v.append("env variable(s) added")
+        return v
+
+    def _executable_violations(self, old: dict, new: dict) -> list[str]:
+        v: list[str] = []
         for k in (
             "apiKeyHelper",
             "awsAuthRefresh",
@@ -132,13 +171,18 @@ class GuardChecker:
         sn = new.get("mcpServers", new) if isinstance(new, dict) else {}
         v = [f"new MCP server {n!r}" for n in set(sn) - set(so)]
         for n in set(sn) & set(so):
-            a, b = so[n] if isinstance(so[n], dict) else {}, sn[n] if isinstance(sn[n], dict) else {}
-            old_cmd = " ".join([str(a.get("command") or a.get("url") or ""), *map(str, a.get("args") or [])]).split()
-            new_cmd = " ".join([str(b.get("command") or b.get("url") or ""), *map(str, b.get("args") or [])]).split()
-            if old_cmd != new_cmd:
-                v.append(f"MCP server {n!r} command/url changed")
-            if set(b.get("env") or {}) - set(a.get("env") or {}):
-                v.append(f"MCP server {n!r} env extended")
+            v.extend(self._mcp_server_violations(n, so[n], sn[n]))
+        return v
+
+    def _mcp_server_violations(self, n: str, old: Any, new: Any) -> list[str]:
+        v: list[str] = []
+        a, b = old if isinstance(old, dict) else {}, new if isinstance(new, dict) else {}
+        old_cmd = " ".join([str(a.get("command") or a.get("url") or ""), *map(str, a.get("args") or [])]).split()
+        new_cmd = " ".join([str(b.get("command") or b.get("url") or ""), *map(str, b.get("args") or [])]).split()
+        if old_cmd != new_cmd:
+            v.append(f"MCP server {n!r} command/url changed")
+        if set(b.get("env") or {}) - set(a.get("env") or {}):
+            v.append(f"MCP server {n!r} env extended")
         return v
 
     def frontmatter_violations(self, old: str, new: str) -> list[str]:
@@ -158,6 +202,11 @@ class GuardChecker:
             tok(mo.get("disallowedTools"))
         ) - tok(mn.get("disallowedTools")):
             v.append("disallowed tools reduced")
+        v.extend(self._frontmatter_execution_violations(mo, mn, old, new))
+        return v
+
+    def _frontmatter_execution_violations(self, mo: dict, mn: dict, old: str, new: str) -> list[str]:
+        v: list[str] = []
         if ("hooks" in self.frontmatter_block(new)) and "hooks" not in self.frontmatter_block(old):
             v.append("frontmatter hooks added")
         if mn.get("permissionMode") in ("bypassPermissions", "auto", "acceptEdits") and mn.get(
@@ -231,22 +280,7 @@ class GuardChecker:
         ti = data.get("tool_input") or {}
         cwd = Path(data.get("cwd") or os.getcwd())
         if tool in ("Bash", "PowerShell", "Monitor"):
-            cmd = str(ti.get("command", ""))
-            if re.fullmatch(r"\s*(rtk\s+)?(python3?\s+)?\S*ai-lint\.py(\s+[\w\-./=~:]+)*\s*", cmd):
-                if re.search(r"--session-settings\b|--policy\b|\s-i\b|--interactive\b", cmd) or (
-                    re.search(r"--generate\b", cmd) and re.search(r"--fix\b", cmd)
-                ):
-                    return "guard: --generate --fix, --session-settings and --policy add permissions: the human runs them (a --generate preview is allowed)"
-                return None  # the linter only tightens
-            if CONFIG_HINT.search(cmd) and BASH_WRITE_HINT.search(cmd):
-                return (
-                    "guard: agent configuration files may only be changed with Edit/Write "
-                    "(so the change can be inspected), or by running ai-lint.py"
-                )
-            for pat in self._attribution_patterns:
-                if pat.search(cmd):
-                    return "guard: assistant attribution is forbidden"
-            return None
+            return self._command_reason(str(ti.get("command", "")))
         if tool not in ("Edit", "Write", "MultiEdit", "NotebookEdit"):
             return None
         raw = ti.get("file_path") or ti.get("notebook_path")
@@ -258,6 +292,47 @@ class GuardChecker:
         if why:
             return f"guard: {path} is protected ({why})"
         old = self.read_text(path) or ""
+        if tool == "NotebookEdit":
+            return None
+        new = self._edited_content(tool, ti, old)
+        return self._content_reason(path, cwd, old, new)
+
+    def _content_reason(self, path: Path, cwd: Path, old: str, new: str) -> str | None:
+        for pat in self._attribution_patterns:
+            if pat.search(new) and not pat.search(old):
+                return "guard: assistant attribution is forbidden"
+        content_reason = CriticalContentValidator([cwd]).validation_reason(path, old, new)
+        if content_reason:
+            return f"guard: {path} needs validation ({content_reason})"
+        violations = self._file_violations(path, old, new)
+        if isinstance(violations, str):
+            return violations
+        if violations:
+            return (
+                "guard: this change would loosen the configuration: "
+                + "; ".join(violations)
+                + ". Leave it for the human and list it under 'not fixed'."
+            )
+        return None
+
+    def _command_reason(self, cmd: str) -> str | None:
+        if re.fullmatch(r"\s*(rtk\s+)?(python3?\s+)?\S*ai-lint\.py(\s+[\w\-./=~:]+)*\s*", cmd):
+            if re.search(r"--session-settings\b|--policy\b|\s-i\b|--interactive\b", cmd) or (
+                re.search(r"--generate\b", cmd) and re.search(r"--fix\b", cmd)
+            ):
+                return "guard: --generate --fix, --session-settings and --policy add permissions: the human runs them (a --generate preview is allowed)"
+            return None  # the linter only tightens
+        if CONFIG_HINT.search(cmd) and BASH_WRITE_HINT.search(cmd):
+            return (
+                "guard: agent configuration files may only be changed with Edit/Write "
+                "(so the change can be inspected), or by running ai-lint.py"
+            )
+        for pat in self._attribution_patterns:
+            if pat.search(cmd):
+                return "guard: assistant attribution is forbidden"
+        return None
+
+    def _edited_content(self, tool: str, ti: dict, old: str) -> str:
         if tool == "Write":
             new = str(ti.get("content", ""))
         elif tool == "Edit":
@@ -268,86 +343,74 @@ class GuardChecker:
             for e in ti.get("edits") or []:
                 a, b = str(e.get("old_string", "")), str(e.get("new_string", ""))
                 new = new.replace(a, b) if e.get("replace_all") else new.replace(a, b, 1)
-        else:
-            return None
-        for pat in self._attribution_patterns:
-            if pat.search(new) and not pat.search(old):
-                return "guard: assistant attribution is forbidden"
-        content_reason = CriticalContentValidator([cwd]).validation_reason(path, old, new)
-        if content_reason:
-            return f"guard: {path} needs validation ({content_reason})"
+        return new
+
+    def _file_violations(self, path: Path, old: str, new: str) -> list[str] | str:
+        name = path.name
+        validator = None
+        label = name
+        if name in ("settings.json", "settings.local.json") or re.search(r"settings.*\.json$", name):
+            label, validator = "settings", self.settings_violations
+        elif name in (".mcp.json", "claude_desktop_config.json"):
+            label = ".mcp.json" if name == ".mcp.json" else "Desktop config"
+            validator = self.mcp_violations
+        elif path.parent.name == ".claude-plugin":
+            validator = {"plugin.json": self._plugin_violations, "marketplace.json": self._marketplace_violations}.get(
+                name
+            )
+        elif name == "hooks.json" and path.parent.name == "hooks":
+            validator = self._hooks_file_violations
+        if validator is None:
+            return self._text_file_violations(path, old, new)
+        parsed = self._guard_json(old, new, label)
+        if isinstance(parsed, str):
+            return parsed
+        return validator(*parsed)
+
+    def _plugin_violations(self, old: dict, new: dict) -> list[str]:
+        return [
+            f"plugin {key} added or changed (executes code)"
+            for key in ("hooks", "mcpServers", "lspServers", "monitors", "channels", "userConfig")
+            if new.get(key) not in (None, old.get(key))
+        ]
+
+    def _marketplace_violations(self, old: dict, new: dict) -> list[str]:
+        on = {p.get("name") for p in old.get("plugins") or [] if isinstance(p, dict)}
+        nn = {p.get("name") for p in new.get("plugins") or [] if isinstance(p, dict)}
+        return [f"new marketplace plugin {x!r}" for x in sorted(nn - on)]
+
+    def _hooks_file_violations(self, old: dict, new: dict) -> list[str]:
+        return self.settings_violations({"hooks": old.get("hooks")}, {"hooks": new.get("hooks")})
+
+    def _text_file_violations(self, path: Path, old: str, new: str) -> list[str]:
         name = path.name
         violations: list[str] = []
-        if name in ("settings.json", "settings.local.json") or re.search(r"settings.*\.json$", name):
-            parsed = self._guard_json(old, new, "settings")
-            if isinstance(parsed, str):
-                return parsed
-            o, n = parsed
-            violations = self.settings_violations(o, n)
-        elif name == ".mcp.json":
-            parsed = self._guard_json(old, new, ".mcp.json")
-            if isinstance(parsed, str):
-                return parsed
-            o, n = parsed
-            violations = self.mcp_violations(o, n)
-        elif name == "claude_desktop_config.json":
-            parsed = self._guard_json(old, new, "Desktop config")
-            if isinstance(parsed, str):
-                return parsed
-            o, n = parsed
-            violations = self.mcp_violations(o, n)
-        elif name == "plugin.json" and path.parent.name == ".claude-plugin":
-            parsed = self._guard_json(old, new, "plugin.json")
-            if isinstance(parsed, str):
-                return parsed
-            o, n = parsed
-            violations = [
-                f"plugin {k} added or changed (executes code)"
-                for k in ("hooks", "mcpServers", "lspServers", "monitors", "channels", "userConfig")
-                if n.get(k) not in (None, o.get(k))
-            ]
-        elif name == "marketplace.json" and path.parent.name == ".claude-plugin":
-            parsed = self._guard_json(old, new, "marketplace.json")
-            if isinstance(parsed, str):
-                return parsed
-            o, n = parsed
-            on = {p.get("name") for p in o.get("plugins") or [] if isinstance(p, dict)}
-            nn = {p.get("name") for p in n.get("plugins") or [] if isinstance(p, dict)}
-            violations = [f"new marketplace plugin {x!r}" for x in sorted(nn - on)]
-        elif name == "hooks.json" and path.parent.name == "hooks":
-            parsed = self._guard_json(old, new, "hooks.json")
-            if isinstance(parsed, str):
-                return parsed
-            o, n = parsed
-            violations = self.settings_violations({"hooks": o.get("hooks")}, {"hooks": n.get("hooks")})
-        elif path.suffix in (".yml", ".yaml") and "/.github/workflows/" in str(path) and "claude-code" in new:
-            risky = [
-                (
-                    r"dangerously-skip-permissions|permission-mode\W+bypassPermissions",
-                    "permissions bypass added",
-                ),
-                (r"(?m)^\s*pull_request_target\s*:", "pull_request_target trigger added"),
-                (
-                    r"(allowed_tools|allowedTools)\W+[^\n]*\bBash(\(\*\))?(?=[\s,\"']|$)",
-                    "unrestricted Bash added",
-                ),
-            ]
-            violations = [msg for pat, msg in risky if re.search(pat, new) and not re.search(pat, old)]
-            if re.search(r"(?m)^\s*permissions\s*:", old) and not re.search(r"(?m)^\s*permissions\s*:", new):
-                violations.append("workflow permissions block removed")
+        if path.suffix in (".yml", ".yaml") and "/.github/workflows/" in str(path) and "claude-code" in new:
+            violations = self._workflow_violations(old, new)
         elif name in (".ai-lint.toml", ".claude-lint.toml", ".agent-lint.toml"):
             violations = self.lint_toml_violations(old, new)
         elif name.endswith(".md") and (
             "/.claude/skills/" in str(path) or "/.claude/agents/" in str(path) or "/.claude/commands/" in str(path)
         ):
             violations = self.frontmatter_violations(old, new)
-        if violations:
-            return (
-                "guard: this change would loosen the configuration: "
-                + "; ".join(violations)
-                + ". Leave it for the human and list it under 'not fixed'."
-            )
-        return None
+        return violations
+
+    def _workflow_violations(self, old: str, new: str) -> list[str]:
+        risky = [
+            (
+                r"dangerously-skip-permissions|permission-mode\W+bypassPermissions",
+                "permissions bypass added",
+            ),
+            (r"(?m)^\s*pull_request_target\s*:", "pull_request_target trigger added"),
+            (
+                r"(allowed_tools|allowedTools)\W+[^\n]*\bBash(\(\*\))?(?=[\s,\"']|$)",
+                "unrestricted Bash added",
+            ),
+        ]
+        violations = [msg for pat, msg in risky if re.search(pat, new) and not re.search(pat, old)]
+        if re.search(r"(?m)^\s*permissions\s*:", old) and not re.search(r"(?m)^\s*permissions\s*:", new):
+            violations.append("workflow permissions block removed")
+        return violations
 
     def run_guard(
         self,
