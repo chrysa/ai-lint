@@ -21,6 +21,7 @@ class SelfUpdater:
 
     def __init__(self, config: SelfUpdateConfig | None = None) -> None:
         self.config = config or SelfUpdateConfig.from_env()
+        self.updated = False
 
     def wants_update(self, answer: str) -> bool:
         return answer.strip().lower() in self.yes_answers
@@ -156,6 +157,7 @@ class SelfUpdater:
             return
         pulled = git.run("pull", "--ff-only", self.config.remote, self.config.release_branch, timeout=60)
         if pulled.returncode == 0:
+            self.updated = True
             print("ai-lint updated. Re-run the command to use the new code.", file=sys.stderr)
         else:
             err = (pulled.stderr or pulled.stdout or "git pull failed").strip()

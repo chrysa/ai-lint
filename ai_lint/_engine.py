@@ -1502,7 +1502,15 @@ def derive_description(text: str) -> str | None:
 def git(repo: Path, *args: str) -> str | None:
     log(3, "git -C " + str(repo) + " " + " ".join(args))
     try:
-        res = subprocess.run(["git", "-C", str(repo), *args], capture_output=True, text=True, timeout=30, check=False)
+        res = subprocess.run(
+            ["git", "-C", str(repo), *args],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=30,
+            check=False,
+        )
     except (OSError, subprocess.TimeoutExpired):
         return None
     return res.stdout if res.returncode == 0 else None
@@ -8267,7 +8275,10 @@ def main(argv: list[str] | None = None) -> int:
         CLI_VERSION = detect_cli_version()
         log(1, "claude CLI: " + (".".join(map(str, CLI_VERSION)) if CLI_VERSION else "not found"))
 
-    SelfUpdater().check(args)
+    updater = SelfUpdater()
+    updater.check(args)
+    if updater.updated:
+        return 0
 
     run_started = time.perf_counter()
     targets = [] if args.user_only else [r.expanduser().resolve() for r in (args.repos or [Path.cwd()])]
