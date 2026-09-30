@@ -28,6 +28,20 @@ recommendation, never forced blindly.
 | Docs and project state | Behaviour changes update docs in the same change. | User-facing behaviour -> README; rationale -> DECISIONS; architecture -> ARCHITECTURE. |
 | Security gates | Secret scanning, PII awareness and permission hardening are gates, not afterthoughts. | The fixer policy remains stricter than the generic standard: automatic actions never loosen. |
 
+## Feedback expectations
+
+When a shared standard is adapted, ignored or downgraded for a scanned project, ai-lint should
+say so in the report. The user should see:
+
+- detected profile and confidence;
+- standards applied as gates;
+- standards treated as advice;
+- standards considered not applicable to this repo profile;
+- local decisions that override the fleet default;
+- one concrete next action per unresolved risk.
+
+This makes adaptation auditable instead of implicit.
+
 ## Local exceptions
 
 - `src/` layout is deferred because ai-lint is currently a clone-and-run CLI, not a distributed public library. See D-011.
