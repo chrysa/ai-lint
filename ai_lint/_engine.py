@@ -68,6 +68,7 @@ from urllib.parse import urlparse
 from ai_lint.content_validation import CriticalContentValidator
 from ai_lint.feedback_renderer import FeedbackRenderer
 from ai_lint.finding import Finding
+from ai_lint.plugin_registry import PluginRegistry
 from ai_lint.project_profile import ProjectProfiler
 from ai_lint.report import Report, configure_report_context
 from ai_lint.restore_log import RestoreLog
@@ -8417,104 +8418,29 @@ def session_settings(policy: dict) -> dict:
 # Discovery: <config dir>/plugins, <repo>/.ai-lint/plugins, and --plugin-dir.
 # --------------------------------------------------------------------------- #
 
-_PLUGIN_CHECKS: list = []  # list of (name, scope, fn); scope is "project" or "user"
-_PLUGINS_LOADED: list = []  # names of loaded plugins, for --list-plugins
-
-
-class CheckContext:
-    """What a plugin check receives. Thin, stable surface over the internals."""
-
-    def __init__(self, scope: str, root: Path, policy: dict, rep: Report) -> None:
-        self.scope = scope
-        self.root = Path(root)  # repo root (project) or config dir (user)
-        self.policy = policy
-        self._rep = rep
-
-    def path(self, *parts: str) -> Path:
-        return self.root.joinpath(*parts)
-
-    def read(self, p: Path) -> str | None:
-        return read_text(p)
-
-    def glob(self, pattern: str) -> list[Path]:
-        try:
-            return sorted(self.root.glob(pattern))
-        except OSError:
-            return []
-
-    def add(
-        self,
-        level: str,
-        code: str,
-        path,
-        message: str,
-        action_fr: str = "",
-        action_en: str = "",
-        fixable: bool = False,
-    ) -> None:
-        # A plugin action feeds the same "-> fix" line as built-in checks.
-        if action_fr or action_en:
-            BRIEF_FR.setdefault(code, ("other", "", action_fr or action_en))
-            BRIEF_EN.setdefault(code, ("other", "", action_en or action_fr))
-        self._rep.add(level, code, path, message, fixable)
-
-
-class PluginAPI:
-    """Passed to each plugin's register(); its .check decorator registers a check."""
-
-    def __init__(self, name: str) -> None:
-        self.name = name
-
-    def check(self, code: str, scope: str = "project"):
-        if scope not in ("project", "user"):
-            raise ValueError("scope must be 'project' or 'user'")
-
-        def deco(fn):
-            _PLUGIN_CHECKS.append((code, scope, fn))
-            return fn
-
-        return deco
+_PLUGIN_REGISTRY = PluginRegistry(
+    config_dir,
+    read_text,
+    lambda level, message: log(level, message),
+    BRIEF_FR,
+    BRIEF_EN,
+)
+_PLUGIN_CHECKS = _PLUGIN_REGISTRY.checks  # list of (name, scope, fn); scope is "project" or "user"
+_PLUGINS_LOADED = _PLUGIN_REGISTRY.loaded  # names of loaded plugins, for --list-plugins
 
 
 def plugin_dirs(extra: list[Path] | None = None) -> list[Path]:
-    dirs = [config_dir() / "plugins", Path.cwd() / ".ai-lint" / "plugins"]
-    dirs += list(extra or [])
-    return [d for d in dirs if d.is_dir()]
+    return _PLUGIN_REGISTRY.plugin_dirs(extra)
 
 
 def load_plugins(extra: list[Path] | None = None) -> None:
     """Import every *.py in the plugin dirs and call its register(api). Failures
     are isolated: a broken plugin is reported and skipped, never fatal."""
-    import importlib.util as _ilu
-
-    for d in plugin_dirs(extra):
-        for f in sorted(d.glob("*.py")):
-            if f.name.startswith("_"):
-                continue
-            try:
-                spec = _ilu.spec_from_file_location(f"ai_lint_plugin_{f.stem}", f)
-                if not spec or not spec.loader:
-                    continue
-                mod = _ilu.module_from_spec(spec)
-                spec.loader.exec_module(mod)
-                reg = getattr(mod, "register", None)
-                if callable(reg):
-                    reg(PluginAPI(f.stem))
-                    _PLUGINS_LOADED.append(f.stem)
-                else:
-                    log(1, f"plugin {f.name}: no register(api), skipped")
-            except Exception as e:  # noqa: BLE001 - never let a plugin crash the run
-                log(1, f"plugin {f.name}: failed to load ({e.__class__.__name__}: {e})")
+    _PLUGIN_REGISTRY.load(extra)
 
 
 def run_plugin_checks(scope: str, root: Path, policy: dict, rep: Report) -> None:
-    for code, sc, fn in _PLUGIN_CHECKS:
-        if sc != scope:
-            continue
-        try:
-            fn(CheckContext(scope, root, policy, rep))
-        except Exception as e:  # noqa: BLE001 - isolate a misbehaving plugin check
-            log(1, f"plugin check {code}: error ({e.__class__.__name__}: {e})")
+    _PLUGIN_REGISTRY.run_checks(scope, root, policy, rep)
 
 
 def dump_reference() -> dict:
