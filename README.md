@@ -61,7 +61,7 @@ ai_lint/                      engine package (empty __init__; _engine.py = the l
 skills/config-audit/SKILL.md  guarded audit workflow (user-invoked only)
 ai-lint.example.toml          default policy, copy to <repo>/.ai-lint.toml to customize
 examples/plugins/             sample custom-check plugin
-tests/                        pytest suite (make test)
+tests/                        pytest suite
 README.md · CHANGELOG.md
 ```
 
@@ -575,6 +575,11 @@ example is in [`examples/plugins/example_check.py`](examples/plugins/example_che
 ## CI
 
 ```sh
+python -m ruff check ai_lint ai-lint.py tests
+python -m ruff format --check ai_lint ai-lint.py tests
+python -m mypy
+python -m pytest -q
+python tests/_selfcheck.py
 python3 ai-lint.py . --strict --format json --no-cli --no-scaffold
 ```
 
