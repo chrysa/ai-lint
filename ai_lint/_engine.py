@@ -104,6 +104,9 @@ def _detect_version() -> str:
 VERSION = _detect_version()
 DOCS = "https://code.claude.com/docs/en/"
 ISSUES = "https://github.com/anthropics/claude-code/issues/"
+UPDATE_RELEASE_BRANCH = "main"
+UPDATE_REMOTE = "origin"
+UPDATE_CHECK_INTERVAL_SECONDS = 24 * 60 * 60
 
 # --------------------------------------------------------------------------- #
 # Policy
@@ -1531,6 +1534,169 @@ def git(repo: Path, *args: str) -> str | None:
     except (OSError, subprocess.TimeoutExpired):
         return None
     return res.stdout if res.returncode == 0 else None
+
+
+def ai_lint_source_root() -> Path:
+    return Path(__file__).resolve().parents[1]
+
+
+def _update_cache_path() -> Path:
+    return Path(os.path.expanduser("~/.cache/ai-lint/update-check.json"))
+
+
+def _update_check_disabled() -> bool:
+    return os.environ.get("AI_LINT_UPDATE_CHECK", "").lower() in {"0", "false", "no", "off"}
+
+
+def _update_check_due(force: bool = False) -> bool:
+    if force or os.environ.get("AI_LINT_UPDATE_CHECK", "").lower() == "always":
+        return True
+    if _update_check_disabled():
+        return False
+    raw_days = os.environ.get("AI_LINT_UPDATE_CHECK_DAYS")
+    try:
+        interval = float(raw_days) * 86400 if raw_days is not None else UPDATE_CHECK_INTERVAL_SECONDS
+    except ValueError:
+        interval = UPDATE_CHECK_INTERVAL_SECONDS
+    if interval <= 0:
+        return True
+    try:
+        data = json.loads(_update_cache_path().read_text(encoding="utf-8"))
+        checked_at = float(data.get("checked_at", 0))
+    except (OSError, ValueError, TypeError, json.JSONDecodeError):
+        checked_at = 0
+    return time.time() - checked_at >= interval
+
+
+def _mark_update_checked() -> None:
+    try:
+        path = _update_cache_path()
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(dump_json({"checked_at": time.time()}), encoding="utf-8")
+    except OSError:
+        pass
+
+
+def update_prompt(local_sha: str, remote_sha: str, remote: str, branch: str) -> str:
+    return (
+        f"ai-lint update available on {remote}/{branch}: "
+        f"{local_sha[:12]} -> {remote_sha[:12]}."
+    )
+
+
+def wants_update(answer: str) -> bool:
+    return answer.strip().lower() in {"y", "yes", "o", "oui"}
+
+
+def maybe_check_for_ai_lint_update(args: argparse.Namespace, force: bool = False) -> None:
+    """Best-effort self-update prompt for clone-based installs.
+
+    It is intentionally quiet outside interactive text runs: JSON, CI, pipes and
+    offline sessions must not gain surprise network chatter or stdout noise.
+    """
+    if getattr(args, "no_update_check", False) and not force:
+        return
+    interactive = sys.stdin.isatty() and sys.stderr.isatty()
+    if not force and (
+        getattr(args, "format", "text") != "text"
+        or getattr(args, "quiet", False)
+        or not interactive
+        or os.environ.get("CI")
+    ):
+        return
+    if not _update_check_due(force):
+        return
+
+    branch = os.environ.get("AI_LINT_RELEASE_BRANCH", UPDATE_RELEASE_BRANCH)
+    remote = os.environ.get("AI_LINT_UPDATE_REMOTE", UPDATE_REMOTE)
+    root = ai_lint_source_root()
+    top = git(root, "rev-parse", "--show-toplevel")
+    if not top:
+        return
+    root = Path(top.strip())
+    current = (git(root, "rev-parse", "--abbrev-ref", "HEAD") or "").strip()
+    if current != branch:
+        if force:
+            print(f"ai-lint update check skipped: current branch is {current!r}, release branch is {branch!r}.")
+        _mark_update_checked()
+        return
+
+    try:
+        fetched = subprocess.run(
+            ["git", "-C", str(root), "fetch", "--quiet", remote, branch],
+            capture_output=True,
+            text=True,
+            timeout=15,
+            check=False,
+        )
+    except (OSError, subprocess.TimeoutExpired) as e:
+        if force:
+            print(f"ai-lint update check failed: {e}", file=sys.stderr)
+        _mark_update_checked()
+        return
+    _mark_update_checked()
+    if fetched.returncode != 0:
+        if force:
+            err = (fetched.stderr or fetched.stdout or "git fetch failed").strip()
+            print(f"ai-lint update check failed: {err}", file=sys.stderr)
+        return
+
+    local_sha = (git(root, "rev-parse", "HEAD") or "").strip()
+    remote_sha = (git(root, "rev-parse", "FETCH_HEAD") or "").strip()
+    if not local_sha or not remote_sha:
+        return
+    if local_sha == remote_sha:
+        if force:
+            print(f"ai-lint is up to date on {remote}/{branch}.")
+        return
+    ancestor = subprocess.run(
+        ["git", "-C", str(root), "merge-base", "--is-ancestor", local_sha, remote_sha],
+        capture_output=True,
+        text=True,
+        timeout=10,
+        check=False,
+    )
+    if ancestor.returncode != 0:
+        if force:
+            print(
+                f"ai-lint update check found a non-fast-forward difference on {remote}/{branch}; "
+                "update manually.",
+                file=sys.stderr,
+            )
+        return
+
+    msg = update_prompt(local_sha, remote_sha, remote, branch)
+    if not interactive:
+        print(f"{msg}\nRun: git -C {shlex.quote(str(root))} pull --ff-only {remote} {branch}", file=sys.stderr)
+        return
+    print(f"{msg} Pull now? [y/N] ", end="", file=sys.stderr, flush=True)
+    try:
+        answer = input()
+    except EOFError:
+        return
+    if not wants_update(answer):
+        print("ai-lint update skipped.", file=sys.stderr)
+        return
+    dirty = (git(root, "status", "--porcelain") or "").strip()
+    if dirty:
+        print(
+            "ai-lint update skipped: working tree is not clean. Run manually after committing/stashing:\n"
+            f"  git -C {shlex.quote(str(root))} pull --ff-only {remote} {branch}",
+            file=sys.stderr,
+        )
+        return
+    pulled = subprocess.run(
+        ["git", "-C", str(root), "pull", "--ff-only", remote, branch],
+        capture_output=True,
+        text=True,
+        timeout=60,
+        check=False,
+    )
+    if pulled.returncode == 0:
+        print("ai-lint updated. Re-run the command to use the new code.", file=sys.stderr)
+    else:
+        err = (pulled.stderr or pulled.stdout or "git pull failed").strip()
+        print(f"ai-lint update failed: {err}", file=sys.stderr)
 
 
 def is_ignored(repo: Path, rel: str) -> bool:
@@ -8949,6 +9115,16 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--no-history", action="store_true", help="skip git history scan")
     ap.add_argument("--no-cli", action="store_true", help="do not call the claude / rtk CLIs")
     ap.add_argument(
+        "--no-update-check",
+        action="store_true",
+        help="skip the interactive ai-lint self-update prompt",
+    )
+    ap.add_argument(
+        "--update-check",
+        action="store_true",
+        help="check the release branch for an ai-lint update, prompt if possible, then exit",
+    )
+    ap.add_argument(
         "--generate",
         action="store_true",
         help="generate missing config for the detected stack: settings, hooks, skills, "
@@ -9043,9 +9219,12 @@ def main(argv: list[str] | None = None) -> int:
     # Progress bar by default: interactive stderr, no -v (which logs per repo),
     # no -q, text output only. Keeps pipes, JSON and CI silent.
     PROGRESS = sys.stderr.isatty() and args.verbose == 0 and not args.quiet and args.format == "text"
+    LANG = args.lang or ("fr" if os.environ.get("LANG", "").lower().startswith("fr") else "en")
+    if args.update_check:
+        maybe_check_for_ai_lint_update(args, force=True)
+        return 0
     if args.catalog:
         load_catalog(args.catalog)
-    LANG = args.lang or ("fr" if os.environ.get("LANG", "").lower().startswith("fr") else "en")
     load_plugins(args.plugin_dir)
     if args.list_plugins:
         dirs = ", ".join(str(d) for d in plugin_dirs(args.plugin_dir)) or "(none)"
@@ -9087,6 +9266,8 @@ def main(argv: list[str] | None = None) -> int:
     if not args.no_cli:
         CLI_VERSION = detect_cli_version()
         log(1, "claude CLI: " + (".".join(map(str, CLI_VERSION)) if CLI_VERSION else "not found"))
+
+    maybe_check_for_ai_lint_update(args)
 
     run_started = time.perf_counter()
     targets = [] if args.user_only else [r.expanduser().resolve() for r in (args.repos or [Path.cwd()])]
