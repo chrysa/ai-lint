@@ -79,6 +79,7 @@ from ai_lint.restore_log import RestoreLog as RestoreLog
 from ai_lint.self_update import SelfUpdater
 from ai_lint.terminal_view import Tty
 from ai_lint.tui_app import TuiApp
+from ai_lint.tui_services import TuiServices
 
 try:
     import tomllib
@@ -5863,7 +5864,9 @@ def proposal_edits(p: dict, policy: dict) -> dict[Path, tuple[str, str]]:
     lines = next(lines for heading, lines in sections if heading == title)
     slug = slugify(title)[:40]
     cfg = config_dir()
-    root = cfg if path.parent == cfg else path.parent if path.parent.name == ".claude" else path.parent / ".claude"
+    root = path.parent
+    if path.parent != cfg and path.parent.name != ".claude":
+        root = path.parent / ".claude"
     skill = root / "skills" / slug / "SKILL.md"
     if skill.exists():
         raise FileExistsError(f"{skill} already exists; review it manually before extracting this procedure")
@@ -5905,98 +5908,129 @@ def apply_proposal(
     expected_edits: dict[Path, tuple[str, str]] | None = None,
 ) -> str:
     kind = p["kind"]
-    mk, mname = _local_marketplace(policy)
     if kind in ("agent-pack", "skill-family"):
-        if kind == "agent-pack":
-            plugin = slugify("-".join(p["path"].relative_to(p["root"] / "agents").parts))
-            target = mk / "plugins" / plugin / "agents"
-            target.mkdir(parents=True, exist_ok=True)
-            for f in p["files"]:
-                dest = target / f.name
-                if dest.exists():
-                    dest = target / f"{slugify(f.parent.name)}-{f.name}"
-                shutil.move(str(f), str(dest))
-                restore.append(f"mkdir -p '{f.parent}' && mv '{dest}' '{f}'")
-            for d in sorted({f.parent for f in p["files"]}, key=lambda x: -len(x.parts)):
-                try:
-                    d.rmdir()
-                except OSError:
-                    pass
-            desc = f"{len(p['files'])} subagents from {p['path'].name}"
-        else:
-            plugin = slugify(p["prefix"] + "-skills")
-            target = mk / "plugins" / plugin / "skills"
-            target.mkdir(parents=True, exist_ok=True)
-            for d in p["dirs"]:
-                dest = target / d.name
-                if dest.exists():
-                    dest = target / f"{slugify(d.parent.name)}-{d.name}"
-                shutil.move(str(d), str(dest))
-                restore.append(f"mv '{dest}' '{d}'")
-            desc = f"{len(p['dirs'])} {p['prefix']} skills"
-        _register_plugin(plugin, desc, policy, restore)
-        return (
-            f"plugin '{plugin}@{mname}' created, not loaded anywhere yet. In a project that "
-            f"needs it: /plugin -> "
-            f"marketplace '{mname}' -> install '{plugin}' with the project scope"
-            + (
-                " (its skills are then invoked as /" + plugin + ":<skill>, or by their bare name when unique)"
-                if kind == "skill-family"
-                else ""
-            )
-        )
+        return _apply_plugin_proposal(p, policy, restore)
     if kind == "split-skill":
-        sk: Path = p["path"]
-        text = read_text(sk) or ""
-        backup([sk])
-        stripped = text.lstrip("\ufeff \t\r\n")
-        head, body = "", text
-        if stripped.startswith("---") and (end := stripped.find("\n---", 3)) != -1:
-            head, body = stripped[: end + 4] + "\n", stripped[end + 4 :]
-        secs = _sections(body)
-        keep, moved, count = [secs[0]], [], len(secs[0][1])
-        for title, lines in secs[1:]:
-            if count + len(lines) <= policy["restructure"]["skill_keep_lines"] and not moved:
-                keep.append((title, lines))
-                count += len(lines)
-            else:
-                moved.append((title, lines))
-        if len(moved) < 1:
-            return "nothing to split"
-        refdir = sk.parent / "references"
-        refdir.mkdir(exist_ok=True)
-        links = []
-        for title, lines in moved:
-            name = slugify(title)[:40] + ".md"
-            (refdir / name).write_text("\n".join(lines).strip() + "\n", encoding="utf-8")
-            links.append(f"- {title}: read [references/{name}](references/{name}) when needed")
-        new = (
-            head
-            + "\n".join(l for _, ls in keep for l in ls).rstrip()
-            + "\n\n## Additional resources\n\n"
-            + "\n".join(links)
-            + "\n"
-        )
-        sk.write_text(new, encoding="utf-8")
-        return (
-            f"SKILL.md now {new.count(chr(10)) + 1} lines, {len(moved)} section(s) in references/ (backup in ~/.cache)"
-        )
+        return _apply_split_proposal(p, policy, restore)
     if kind == "command-to-skill":
-        cmd_file: Path = p["path"]
-        dest = p["root"] / "skills" / cmd_file.stem / "SKILL.md"
-        dest.parent.mkdir(parents=True, exist_ok=True)
-        shutil.move(str(cmd_file), str(dest))
-        restore.append(f"mv '{dest}' '{cmd_file}'; rmdir '{dest.parent}'")
-        return f"/{cmd_file.stem} is now a skill (same command name)"
+        return _apply_command_proposal(p, restore)
     if kind in ("rule-paths", "procedure-to-skill"):
-        edits = proposal_edits(p, policy)
-        if expected_edits is not None and edits != expected_edits:
-            raise OSError("proposal changed after approval; review the new diff before applying")
-        _apply_proposal_edits(edits, restore)
-        if kind == "rule-paths":
-            return f"rule loads only for {p['glob']}"
-        return f"section moved to skill /{slugify(p['section'])[:40]}; review its description"
+        return _apply_text_proposal(p, policy, restore, expected_edits)
     return "unsupported"
+
+
+def _apply_plugin_proposal(p: dict, policy: dict, restore: list[str]) -> str:
+    mk, mname = _local_marketplace(policy)
+    kind = p["kind"]
+    plugin, desc = _move_agent_pack(p, mk, restore) if kind == "agent-pack" else _move_skill_family(p, mk, restore)
+    _register_plugin(plugin, desc, policy, restore)
+    return (
+        f"plugin '{plugin}@{mname}' created, not loaded anywhere yet. In a project that "
+        f"needs it: /plugin -> "
+        f"marketplace '{mname}' -> install '{plugin}' with the project scope"
+        + (
+            " (its skills are then invoked as /" + plugin + ":<skill>, or by their bare name when unique)"
+            if kind == "skill-family"
+            else ""
+        )
+    )
+
+
+def _move_agent_pack(p: dict, mk: Path, restore: list[str]) -> tuple[str, str]:
+    plugin = slugify("-".join(p["path"].relative_to(p["root"] / "agents").parts))
+    target = mk / "plugins" / plugin / "agents"
+    target.mkdir(parents=True, exist_ok=True)
+    for f in p["files"]:
+        dest = target / f.name
+        if dest.exists():
+            dest = target / f"{slugify(f.parent.name)}-{f.name}"
+        shutil.move(str(f), str(dest))
+        restore.append(f"mkdir -p '{f.parent}' && mv '{dest}' '{f}'")
+    for d in sorted({f.parent for f in p["files"]}, key=lambda x: -len(x.parts)):
+        try:
+            d.rmdir()
+        except OSError:
+            pass
+    desc = f"{len(p['files'])} subagents from {p['path'].name}"
+    return plugin, desc
+
+
+def _move_skill_family(p: dict, mk: Path, restore: list[str]) -> tuple[str, str]:
+    plugin = slugify(p["prefix"] + "-skills")
+    target = mk / "plugins" / plugin / "skills"
+    target.mkdir(parents=True, exist_ok=True)
+    for d in p["dirs"]:
+        dest = target / d.name
+        if dest.exists():
+            dest = target / f"{slugify(d.parent.name)}-{d.name}"
+        shutil.move(str(d), str(dest))
+        restore.append(f"mv '{dest}' '{d}'")
+    desc = f"{len(p['dirs'])} {p['prefix']} skills"
+    return plugin, desc
+
+
+def _apply_split_proposal(p: dict, policy: dict, restore: list[str]) -> str:
+    sk: Path = p["path"]
+    text = read_text(sk) or ""
+    saved = backup([sk])
+    stripped = text.lstrip("\ufeff \t\r\n")
+    head, body = "", text
+    if stripped.startswith("---") and (end := stripped.find("\n---", 3)) != -1:
+        head, body = stripped[: end + 4] + "\n", stripped[end + 4 :]
+    secs = _sections(body)
+    keep, moved, count = [secs[0]], [], len(secs[0][1])
+    for title, lines in secs[1:]:
+        if count + len(lines) <= policy["restructure"]["skill_keep_lines"] and not moved:
+            keep.append((title, lines))
+            count += len(lines)
+        else:
+            moved.append((title, lines))
+    if len(moved) < 1:
+        return "nothing to split"
+    refdir = sk.parent / "references"
+    refdir.mkdir(exist_ok=True)
+    links = []
+    for title, lines in moved:
+        name = slugify(title)[:40] + ".md"
+        ref = refdir / name
+        _apply_proposal_edits({ref: (read_text(ref) or "", "\n".join(lines).strip() + "\n")}, restore)
+        links.append(f"- {title}: read [references/{name}](references/{name}) when needed")
+    new = (
+        head
+        + "\n".join(l for _, ls in keep for l in ls).rstrip()
+        + "\n\n## Additional resources\n\n"
+        + "\n".join(links)
+        + "\n"
+    )
+    snapshot = saved / str(sk.resolve()).lstrip("/")
+    restore.append(f"cp {shlex.quote(str(snapshot))} {shlex.quote(str(sk))}")
+    sk.write_text(new, encoding="utf-8")
+    return f"SKILL.md now {new.count(chr(10)) + 1} lines, {len(moved)} section(s) in references/ (backup in ~/.cache)"
+
+
+def _apply_command_proposal(p: dict, restore: list[str]) -> str:
+    cmd_file: Path = p["path"]
+    dest = p["root"] / "skills" / cmd_file.stem / "SKILL.md"
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    shutil.move(str(cmd_file), str(dest))
+    restore.append(f"mv '{dest}' '{cmd_file}'; rmdir '{dest.parent}'")
+    return f"/{cmd_file.stem} is now a skill (same command name)"
+
+
+def _apply_text_proposal(
+    p: dict,
+    policy: dict,
+    restore: list[str],
+    expected_edits: dict[Path, tuple[str, str]] | None,
+) -> str:
+    kind = p["kind"]
+    edits = proposal_edits(p, policy)
+    if expected_edits is not None and edits != expected_edits:
+        raise OSError("proposal changed after approval; review the new diff before applying")
+    _apply_proposal_edits(edits, restore)
+    if kind == "rule-paths":
+        return f"rule loads only for {p['glob']}"
+    return f"section moved to skill /{slugify(p['section'])[:40]}; review its description"
 
 
 def render_proposals(props: list[dict], color: bool) -> str:
@@ -6659,33 +6693,35 @@ def _family_to_plugin(members: list[dict], name: str, policy: dict, restore: lis
 
 def _tui_app() -> TuiApp:
     return TuiApp(
-        home_path=home_path,
-        config_dir=config_dir,
-        session_duplicates=session_duplicates,
-        is_generated_family=is_generated_family,
-        compute_proposals=compute_proposals,
-        frontmatter_of=frontmatter_of,
-        _writable=_writable,
-        load_json_file=load_json_file,
-        _ask=_ask,
-        advice=advice,
-        _fr_plural=_fr_plural,
-        _trash=_trash,
-        _affixes=_affixes,
-        _scope_of=_scope_of,
-        _show_file=_show_file,
-        _family_to_plugin=_family_to_plugin,
-        proposal_fr=proposal_fr,
-        apply_proposal=apply_proposal,
-        read_text=read_text,
-        split_frontmatter=split_frontmatter,
-        set_frontmatter=set_frontmatter,
-        move_to_metadata=move_to_metadata,
-        backup=backup,
-        dump_json=dump_json,
-        feedback_rows=lambda report: [finding_feedback(finding) for finding in report.findings],
-        proposal_edits=proposal_edits,
-        redact=redact,
+        TuiServices(
+            home_path=home_path,
+            config_dir=config_dir,
+            session_duplicates=session_duplicates,
+            is_generated_family=is_generated_family,
+            compute_proposals=compute_proposals,
+            frontmatter_of=frontmatter_of,
+            _writable=_writable,
+            load_json_file=load_json_file,
+            _ask=_ask,
+            advice=advice,
+            _fr_plural=_fr_plural,
+            _trash=_trash,
+            _affixes=_affixes,
+            _scope_of=_scope_of,
+            _show_file=_show_file,
+            _family_to_plugin=_family_to_plugin,
+            proposal_fr=proposal_fr,
+            apply_proposal=apply_proposal,
+            read_text=read_text,
+            split_frontmatter=split_frontmatter,
+            set_frontmatter=set_frontmatter,
+            move_to_metadata=move_to_metadata,
+            backup=backup,
+            dump_json=dump_json,
+            feedback_rows=lambda report: [finding_feedback(finding) for finding in report.findings],
+            proposal_edits=proposal_edits,
+            redact=redact,
+        )
     )
 
 

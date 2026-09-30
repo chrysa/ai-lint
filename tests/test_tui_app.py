@@ -261,3 +261,25 @@ def test_critical_diff_redacts_secrets(review, monkeypatch, capsys):
     _app, changed = run(review, monkeypatch, ["", "o", ""], [proposal])
     assert changed == 0
     assert secret not in capsys.readouterr().out
+
+
+def test_split_skill_restores_original_and_reference_file(review, monkeypatch):
+    mod, repo, _cfg, _policy, _report = review
+    skill = repo / ".claude" / "skills" / "demo" / "SKILL.md"
+    skill.parent.mkdir(parents=True)
+    old = (
+        "---\nname: demo\ndescription: Run project checks.\n---\n\n# Overview\n\n## Reference\n"
+        + "Detailed guidance.\n" * 200
+    )
+    skill.write_text(old)
+    reference = skill.parent / "references" / "reference.md"
+    reference.parent.mkdir()
+    reference.write_text("Existing reference\n")
+    proposal = {"kind": "split-skill", "path": skill, "gain": 40, "title": "Split skill", "lines": 210}
+    app, changed = run(review, monkeypatch, ["", "o"], [proposal])
+    assert changed == 1
+    assert "Additional resources" in skill.read_text()
+    assert reference.read_text() != "Existing reference\n"
+    subprocess.run(["sh", str(app.restore.script)], check=True)
+    assert skill.read_text() == old
+    assert reference.read_text() == "Existing reference\n"
