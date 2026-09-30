@@ -39,6 +39,11 @@ class TuiApp:
             "misc": self._review_misc,
         }
 
+    def preview_conversion(self, plans: list[dict], render) -> None:
+        """Expose conversion plans without starting a writable review session."""
+        self.t.rule("AGENT CONVERSION")
+        print(render(plans))
+
     def _count(self, action: str) -> None:
         self.done[action] = self.done.get(action, 0) + 1
 
