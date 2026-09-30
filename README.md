@@ -58,6 +58,8 @@ the optional editable catalogue.
 ```
 ai-lint.py                    CLI entry point (thin wrapper)
 ai_lint/                      engine package (empty __init__; _engine.py + thematic modules)
+ai_lint/content_validation.py object-based human validation gate for critical content files
+ai_lint/project_profile.py    object-based stack/profile detection for scanned repositories
 ai_lint/self_update.py        object-based release-branch update prompt
 skills/config-audit/SKILL.md  guarded audit workflow (user-invoked only)
 ai-lint.example.toml          default policy, copy to <repo>/.ai-lint.toml to customize
@@ -188,6 +190,13 @@ runs. It never pulls automatically. Use `--update-check` to force a one-off chec
 `--no-update-check` / `AI_LINT_UPDATE_CHECK=0` to disable it. Override the target with
 `AI_LINT_UPDATE_REMOTE` and `AI_LINT_RELEASE_BRANCH` when testing another remote or
 release branch.
+
+## Critical content validation
+
+In guarded sessions (`--guard`), edits to critical content files are blocked until a human
+validates them. This covers the repo contract and project-state files (`CLAUDE.md`,
+`AGENTS.md`, `README.md`, `ARCHITECTURE.md`, `DECISIONS.md`, `TESTING.md`), the local
+standards/best-practice docs, fixer policy and `.claude/rules/*.md`.
 
 ## JSON feedback contract
 

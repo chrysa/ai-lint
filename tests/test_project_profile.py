@@ -4,14 +4,16 @@ from __future__ import annotations
 
 import json
 
+from ai_lint.project_profile import ProjectProfiler
 
-def test_detect_project_profile_python_cli(tmp_path, linter_module):
+
+def test_detect_project_profile_python_cli(tmp_path):
     repo = tmp_path / "tool"
     repo.mkdir()
     (repo / "pyproject.toml").write_text("[project]\nname = 'tool'\n\n[project.scripts]\ntool = 'tool:main'\n")
     (repo / "tool.py").write_text("def main():\n    return 0\n")
 
-    profile = linter_module.detect_project_profile(repo)
+    profile = ProjectProfiler(repo).detect_profile()
 
     assert profile["kind"] == "python-cli"
     assert profile["confidence"] == "high"
@@ -19,12 +21,12 @@ def test_detect_project_profile_python_cli(tmp_path, linter_module):
     assert profile["adaptation"]["never_loosen"] is True
 
 
-def test_detect_project_profile_standards_repo(tmp_path, linter_module):
+def test_detect_project_profile_standards_repo(tmp_path):
     repo = tmp_path / "standards"
     (repo / "standards" / "rules").mkdir(parents=True)
     (repo / "standards" / "STANDARDS.chrysa.md").write_text("# Standards\n")
 
-    profile = linter_module.detect_project_profile(repo)
+    profile = ProjectProfiler(repo).detect_profile()
 
     assert profile["kind"] == "standards-repo"
     assert profile["confidence"] == "high"

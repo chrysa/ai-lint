@@ -10,6 +10,10 @@ How ai-lint is built, so a change lands in the right place. User-facing behaviou
 - **`ai_lint/_engine.py`** — legacy orchestration module: checks, repairs, generation,
   guard, catalogue, plugins and rendering. It is importable (tests, mypy and coverage
   attach to it); the hyphenated name could not be imported, hence the split.
+- **`ai_lint/content_validation.py`** — object-oriented validation gate for critical
+  content files in guarded sessions (`CriticalContentValidator`, `CriticalContentPolicy`).
+- **`ai_lint/project_profile.py`** — object-oriented stack and project-profile detection
+  (`ProjectProfiler`) used by reports, JSON and future generation branching.
 - **`ai_lint/self_update.py`** — object-oriented self-update prompt (`SelfUpdater`,
   `SelfUpdateConfig`, `GitRunner`). New isolated domains should follow this pattern:
   one thematic module, empty package `__init__.py`, small objects with explicit methods.
@@ -34,6 +38,8 @@ section banners:
 | `# Guard` | `guard_check`, `run_guard` — the PreToolUse hook. |
 | `# Plugin system` | `CheckContext`, `PluginAPI`, `load_plugins`, `run_plugin_checks`. |
 | catalogue | `catalog_data`, `dump_catalog`, `load_catalog`. |
+| `ai_lint/content_validation.py` | `CriticalContentValidator.validation_reason()` blocks critical content edits until human validation. |
+| `ai_lint/project_profile.py` | `ProjectProfiler.detect_stack()` and `.detect_profile()` classify the scanned repo. |
 | `ai_lint/self_update.py` | `SelfUpdater.check()` handles release-branch update detection, confirmation and `git pull --ff-only`; config is in `SelfUpdateConfig`. |
 
 ## Core types
