@@ -10,77 +10,27 @@ import shlex
 import shutil
 import subprocess
 import sys
-from collections.abc import Callable
 from pathlib import Path
 
 from ai_lint.content_validation import CriticalContentValidator
 from ai_lint.report import Report
 from ai_lint.restore_log import RestoreLog
 from ai_lint.terminal_view import Tty
+from ai_lint.tui_services import TuiServices
+
+NOT_DETECTED = "not detected"
+SKIPPED_ACTIONS = "skipped actions"
+SKIPPED_PROPOSALS = "skipped proposals"
 
 
 class TuiApp:
     """Drive terminal review using the engine's existing domain operations."""
 
-    def __init__(
-        self,
-        *,
-        home_path: Callable,
-        config_dir: Callable,
-        session_duplicates: Callable,
-        is_generated_family: Callable,
-        compute_proposals: Callable,
-        frontmatter_of: Callable,
-        _writable: Callable,
-        load_json_file: Callable,
-        _ask: Callable,
-        advice: Callable,
-        _fr_plural: Callable,
-        _trash: Callable,
-        _affixes: Callable,
-        _scope_of: Callable,
-        _show_file: Callable,
-        _family_to_plugin: Callable,
-        proposal_fr: Callable,
-        apply_proposal: Callable,
-        read_text: Callable,
-        split_frontmatter: Callable,
-        set_frontmatter: Callable,
-        move_to_metadata: Callable,
-        backup: Callable,
-        dump_json: Callable,
-        feedback_rows: Callable[[Report], list[dict]],
-        proposal_edits: Callable[[dict, dict], dict[Path, tuple[str, str]]],
-        redact: Callable[[str], str],
-    ) -> None:
-        self.home_path = home_path
-        self.config_dir = config_dir
-        self.session_duplicates = session_duplicates
-        self.is_generated_family = is_generated_family
-        self.compute_proposals = compute_proposals
-        self.frontmatter_of = frontmatter_of
-        self._writable = _writable
-        self.load_json_file = load_json_file
-        self._ask = _ask
-        self.advice = advice
-        self._fr_plural = _fr_plural
-        self._trash = _trash
-        self._affixes = _affixes
-        self._scope_of = _scope_of
-        self._show_file = _show_file
-        self._family_to_plugin = _family_to_plugin
-        self.proposal_fr = proposal_fr
-        self.apply_proposal = apply_proposal
-        self.read_text = read_text
-        self.split_frontmatter = split_frontmatter
-        self.set_frontmatter = set_frontmatter
-        self.move_to_metadata = move_to_metadata
-        self.backup = backup
-        self.dump_json = dump_json
-        self.feedback_rows = feedback_rows
-        self.proposal_edits = proposal_edits
-        self.redact = redact
-        self.t = Tty(home_path)
+    def __init__(self, services: TuiServices) -> None:
+        self.services = services
+        self.t = Tty(services.home_path)
+        self.position: int = 0
+        self.chosen: list[str] = []
         self._reviews = {
             "dups": self._review_duplicates,
             "families": self._review_families,
@@ -98,7 +48,9 @@ class TuiApp:
     def _overview(self, report: Report) -> None:
         self.t.rule("PROJECT OVERVIEW")
         for profile in report.project_profiles:
-            print(f"  {self.home_path(profile['path'])}: {profile['kind']} ({profile['confidence']} confidence)")
+            print(
+                f"  {self.services.home_path(profile['path'])}: {profile['kind']} ({profile['confidence']} confidence)"
+            )
             print("    Evidence: " + ", ".join(profile.get("signals") or ["no detected signals"]))
         if not report.project_profiles:
             print("  No project profiles available in this scan.")
@@ -106,10 +58,10 @@ class TuiApp:
         print("  Critical content requires an explicit diff approval.")
         self.t.rule("AUTONOMY READINESS")
         for repo in self.repos:
-            tests = "detected" if (repo / "tests").is_dir() else "not detected"
-            ci = "detected" if (repo / ".github" / "workflows").is_dir() else "not detected"
-            docs = "detected" if (repo / "README.md").is_file() else "not detected"
-            print(f"  {self.home_path(str(repo))}: tests {tests}; CI {ci}; README {docs}")
+            tests = "detected" if (repo / "tests").is_dir() else NOT_DETECTED
+            ci = "detected" if (repo / ".github" / "workflows").is_dir() else NOT_DETECTED
+            docs = "detected" if (repo / "README.md").is_file() else NOT_DETECTED
+            print(f"  {self.services.home_path(str(repo))}: tests {tests}; CI {ci}; README {docs}")
         print("  These are filesystem signals, not a verification that tests or CI pass.")
 
     def _findings_board(self) -> None:
@@ -124,13 +76,13 @@ class TuiApp:
         for (severity, category, mode), rows in grouped.items():
             print(f"  {severity.upper()} / {category} / {mode}: {len(rows)}")
             for row in rows[:5]:
-                print(f"    {row['code']} · {self.home_path(row['path'])}: {row['next_action']}")
+                print(f"    {row['code']} · {self.services.home_path(row['path'])}: {row['next_action']}")
             if len(rows) > 5:
                 print(f"    +{len(rows) - 5} more; use --details or --format json for the complete report")
 
     def _pick_sections(self) -> list[str]:
         while True:
-            pick = self._ask("\nSections (1,3; Enter = all; f = findings; ? = help; q = quit): ", "")
+            pick = self.services._ask("\nSections (1,3; Enter = all; f = findings; ? = help; q = quit): ", "")
             if pick.lower() == "q":
                 return []
             if pick == "":
@@ -160,7 +112,7 @@ class TuiApp:
     def run(self, rep: Report, repos: list[Path], policy: dict, user_scope: bool) -> int:
         self.policy = policy
         self.repos = repos
-        self.rows = self.feedback_rows(rep)
+        self.rows = self.services.feedback_rows(rep)
         self.manual_count = sum(row["fix_mode"] == "manual" for row in self.rows)
         if not sys.stdin.isatty():
             print("\n-i a besoin d'un vrai terminal (pas d'un pipe) : relance-le directement dans ton shell.")
@@ -175,7 +127,7 @@ class TuiApp:
             return 0
         self.t.rule("REVUE INTERACTIVE")
         print(
-            f"Rien n'est supprimé : ce que tu retires part dans {self.t.cyan}{self.home_path(str(self.trash_root))}{self.t.r},"
+            f"Rien n'est supprimé : ce que tu retires part dans {self.t.cyan}{self.services.home_path(str(self.trash_root))}{self.t.r},"
         )
         print("et un script restore.sh annule toute la session. À chaque question : ? pour l'aide.\n")
         for i, (_, label, _) in enumerate(self.sections, 1):
@@ -195,7 +147,7 @@ class TuiApp:
         return self._summary()
 
     def _start_session(self, user_scope: bool) -> None:
-        self.cfg = self.config_dir()
+        self.cfg = self.services.config_dir()
         self.roots = ([self.cfg] if user_scope else []) + [r / ".claude" for r in self.repos]
         stamp = dt.datetime.now().strftime("%Y%m%dT%H%M%S%f")
         self.trash_root = Path(os.path.expanduser(f"~/.cache/ai-lint/trash/{stamp}"))
@@ -204,15 +156,15 @@ class TuiApp:
 
     def _inventory(self, rep: Report, user_scope: bool) -> None:
         # ---- inventory
-        groups = self.session_duplicates([self.cfg] if user_scope else [], [r / ".claude" for r in self.repos])
-        self.families = [(w, m) for w, m in groups if w == "DUP_SIMILAR" and self.is_generated_family(m)]
+        groups = self.services.session_duplicates([self.cfg] if user_scope else [], [r / ".claude" for r in self.repos])
+        self.families = [(w, m) for w, m in groups if w == "DUP_SIMILAR" and self.services.is_generated_family(m)]
         self.dups = [(w, m) for w, m in groups if (w, m) not in self.families]
         order = {"DUP_EXACT": 0, "DUP_NAME": 1, "DUP_SIMILAR": 2}
         self.dups.sort(key=lambda g: (order[g[0]], -len(g[1])))
-        self.props = self.compute_proposals(self.roots, self.repos, self.policy)
+        self.props = self.services.compute_proposals(self.roots, self.repos, self.policy)
         self.limit = self.policy["tokens"]["skill_description_chars"]
         self._description_inventory()
-        self.udata = self.load_json_file(self.cfg / "settings.json")
+        self.udata = self.services.load_json_file(self.cfg / "settings.json")
         self.misc = []
         if "opus" in str(self.udata.get("model", "")).lower():
             self.misc.append("model")
@@ -223,11 +175,11 @@ class TuiApp:
         self.long_desc_ro = 0  # read-only skills skipped (symlinked / synced stores)
         for r in self.roots:
             for sk in sorted(r.glob("skills/*/SKILL.md")):
-                meta = self.frontmatter_of(sk)
+                meta = self.services.frontmatter_of(sk)
                 if len((meta or {}).get("description", "")) > self.limit and (meta or {}).get(
                     "disable-model-invocation", ""
                 ).lower() not in ("true", "yes", "on", "1"):
-                    if self._writable(sk):
+                    if self.services._writable(sk):
                         self.long_desc.append(sk)
                     else:
                         self.long_desc_ro += 1
@@ -266,7 +218,7 @@ class TuiApp:
         self._count("failed actions")
 
     def _review_duplicates(self) -> None:
-        self._section_rule(f"DOUBLONS ({self._fr_plural(len(self.dups), 'groupe')})")
+        self._section_rule(f"DOUBLONS ({self.services._fr_plural(len(self.dups), 'groupe')})")
         print("  Inspect each group before removing copies. Removed files are kept in the session trash.")
         auto_all = False
         for number, (why, group) in enumerate(self.dups, 1):
@@ -284,7 +236,7 @@ class TuiApp:
                 auto_all = True
 
     def _duplicate_group(self, n: int, why: str, members: list[dict], auto_all: bool) -> str:
-        remove, reason = self.advice(why, members)
+        remove, reason = self.services.advice(why, members)
         label = {"DUP_EXACT": "copies identiques", "DUP_NAME": "même nom", "DUP_SIMILAR": "quasi-doublons"}[why]
         if auto_all and remove:
             self._remove_duplicates(members, remove)
@@ -311,21 +263,21 @@ class TuiApp:
             path = Path(members[index]["path"])
             if not path.exists():
                 continue
-            self._trash(path, self.trash_root, self.restore)
+            self.services._trash(path, self.trash_root, self.restore)
             self._count("doublons retirés")
             print(f"  {self.t.grn}Removed{self.t.r} {self.t.short(str(path), self.t.width - 12)}")
 
     def _duplicate_answer(self, members: list[dict], remove: list[int]) -> str:
         default = "appliquer le conseil" if remove else "tout garder"
         while True:
-            answer = self._ask(
+            answer = self.services._ask(
                 f"  Entrée = {default} · g = tout garder · 2,3 = retirer · v2 = voir "
                 "· A = conseil pour tous les groupes sûrs · s = passer · q = fin des doublons : ",
                 "",
             )
             low = answer.lower()
             if low.startswith("v") and low[1:].isdigit() and 0 < int(low[1:]) <= len(members):
-                self._show_file(Path(members[int(low[1:]) - 1]["path"]), self.t)
+                self.services._show_file(Path(members[int(low[1:]) - 1]["path"]), self.t)
             elif answer == "?":
                 print("  Retirer = déplacer dans la corbeille de la session (restore.sh pour annuler).")
             else:
@@ -333,23 +285,20 @@ class TuiApp:
 
     def _render_duplicates(self, n: int, label: str, members: list[dict], remove: list[int], reason: str) -> None:
         print(
-            f"\n{self.t.b}[{n}/{len(self.dups)}] {label}{self.t.r} · {self._fr_plural(len(members), members[0]['kind'])}"
+            f"\n{self.t.b}[{n}/{len(self.dups)}] {label}{self.t.r} · {self.services._fr_plural(len(members), members[0]['kind'])}"
         )
         descs = [m["desc"] for m in members]
-        pre, suf = self._affixes(descs)
+        pre, suf = self.services._affixes(descs)
         if len(pre) + len(suf) > 30:
             print(f"  {self.t.dim}description commune : « {pre}…{suf} »{self.t.r}")
         wname = max(len(m["name"]) for m in members)
         for i, m in enumerate(members):
             mark = f"{self.t.red}✗{self.t.r}" if i in remove else f"{self.t.grn}✓{self.t.r}"
             mtime = dt.datetime.fromtimestamp(m["file"].stat().st_mtime).strftime("%d/%m/%y")
-            var = (
-                m["desc"][len(pre) : len(m["desc"]) - len(suf) if suf else None]
-                if len(pre) + len(suf) > 30
-                else m["desc"]
-            )
+            end = len(m["desc"]) - len(suf) if suf else None
+            var = m["desc"][len(pre) : end] if len(pre) + len(suf) > 30 else m["desc"]
             print(
-                f"  {mark} {self.t.b}{i + 1:>2}{self.t.r} {m['name']:<{wname}}  {self._scope_of(m):<11} "
+                f"  {mark} {self.t.b}{i + 1:>2}{self.t.r} {m['name']:<{wname}}  {self.services._scope_of(m):<11} "
                 f"{m['lines']:>4} l.  {mtime}  "
                 f"{self.t.dim}{self.t.short(str(m['path']), self.t.width - wname - 40)}{self.t.r}"
             )
@@ -378,24 +327,24 @@ class TuiApp:
             toks = sum((len(m["desc"]) + 40) // 4 for m in members)
             print(
                 f"\n{self.t.b}[{n}/{len(self.families)}] {stem}-*{self.t.r} · "
-                f"{self._fr_plural(len(members), members[0]['kind'])} · ~{toks} tokens/session"
+                f"{self.services._fr_plural(len(members), members[0]['kind'])} · ~{toks} tokens/session"
             )
             print("  " + ", ".join(nm[len(stem) :].lstrip("-_") or nm for nm in names))
-            ans = self._ask(
+            ans = self.services._ask(
                 "  Entrée = garder · p = en faire un plugin · k = mettre de côté (parked/) · q = fin : ",
                 "",
             ).lower()
             if ans == "q":
                 break
             if ans == "p":
-                print("     " + self._family_to_plugin(members, stem, self.policy, self.restore))
+                print("     " + self.services._family_to_plugin(members, stem, self.policy, self.restore))
                 self._count("familles transformées en plugin")
             elif ans == "k":
                 for member in members:
                     self._park_member(member)
                 self._count("familles mises de côté")
             else:
-                self._count("skipped actions")
+                self._count(SKIPPED_ACTIONS)
 
     def _park_member(self, member: dict) -> None:
         source = Path(member["path"])
@@ -423,13 +372,13 @@ class TuiApp:
         for number, proposal in enumerate(self.props, 1):
             kind = proposal["kind"]
             if kind in skip_kind:
-                self._count("skipped proposals")
+                self._count(SKIPPED_PROPOSALS)
                 continue
             if kind != last_kind:
                 print(f"\n{self.t.dim}{explain[kind]}{self.t.r}")
                 last_kind = kind
             gain = f"~{proposal['gain']} tokens/session" if proposal["gain"] else "per-use"
-            print(f"[{number}/{len(self.props)}] {self.proposal_fr(proposal)} ({gain})")
+            print(f"[{number}/{len(self.props)}] {self.services.proposal_fr(proposal)} ({gain})")
             answer = self._proposal_answer(kind, accept_kind, skip_kind)
             if answer.lower() == "q":
                 break
@@ -439,7 +388,7 @@ class TuiApp:
         if kind in accept:
             return "o"
         extra = " · k = mettre de côté" if kind == "agent-pack" else ""
-        answer = self._ask(
+        answer = self.services._ask(
             f"  o = appliquer{extra} · Entrée = passer · A = appliquer tous les '{kind}' "
             f"· S = passer tous les '{kind}' · q = fin : ",
             "",
@@ -458,7 +407,7 @@ class TuiApp:
             elif answer.lower() in ("o", "y"):
                 self._apply_reviewed_proposal(proposal)
             else:
-                self._count("skipped proposals")
+                self._count(SKIPPED_PROPOSALS)
         except (OSError, StopIteration) as error:
             self._failure(error)
 
@@ -472,7 +421,7 @@ class TuiApp:
         self._count("packs mis de côté")
 
     def _apply_reviewed_proposal(self, proposal: dict) -> None:
-        edits = self.proposal_edits(proposal, self.policy)
+        edits = self.services.proposal_edits(proposal, self.policy)
         validator = CriticalContentValidator([*self.repos, self.cfg])
         critical = [path for path, (old, new) in edits.items() if validator.validation_reason(path, old, new)]
         source = Path(proposal["path"]) if edits else None
@@ -481,7 +430,7 @@ class TuiApp:
         if critical and not self._approve_edits(edits, critical):
             self._count("critical proposals refused")
             return
-        result = self.apply_proposal(
+        result = self.services.apply_proposal(
             proposal,
             self.policy,
             self.restore,
@@ -498,13 +447,15 @@ class TuiApp:
                 difflib.unified_diff(
                     old.splitlines(True),
                     new.splitlines(True),
-                    fromfile=f"before/{self.home_path(str(path))}",
-                    tofile=f"after/{self.home_path(str(path))}",
+                    fromfile=f"before/{self.services.home_path(str(path))}",
+                    tofile=f"after/{self.services.home_path(str(path))}",
                 )
             )
-            print(self.redact(difference))
-        print("  Critical files: " + ", ".join(self.home_path(str(path)) for path in critical))
-        answer = self._ask("  Type approve to apply these exact changes; Enter or any other answer refuses: ", "")
+            print(self.services.redact(difference))
+        print("  Critical files: " + ", ".join(self.services.home_path(str(path)) for path in critical))
+        answer = self.services._ask(
+            "  Type approve to apply these exact changes; Enter or any other answer refuses: ", ""
+        )
         if answer != "approve":
             print("  Refused; no proposal changes written.")
             return False
@@ -519,7 +470,7 @@ class TuiApp:
         )
         if self.long_desc_ro:
             print(
-                f"{self.t.dim}({self._fr_plural(self.long_desc_ro, 'skill')} en lecture seule "
+                f"{self.t.dim}({self.services._fr_plural(self.long_desc_ro, 'skill')} en lecture seule "
                 f"ignoré{'s' if self.long_desc_ro > 1 else ''} : liens vers un store synchronisé.){self.t.r}"
             )
         for number, path in enumerate(self.long_desc, 1):
@@ -536,8 +487,8 @@ class TuiApp:
         return " ".join(short)[: self.limit]
 
     def _review_description(self, n: int, sk: Path) -> bool:
-        text = self.read_text(sk) or ""
-        desc = (self.split_frontmatter(text)[0] or {}).get("description", "")
+        text = self.services.read_text(sk) or ""
+        desc = (self.services.split_frontmatter(text)[0] or {}).get("description", "")
         proposal = self._short_description(desc)
         print(
             f"\n{self.t.b}[{n}/{len(self.long_desc)}] {sk.parent.name}{self.t.r} {self.t.dim}{len(desc)} → "
@@ -545,12 +496,14 @@ class TuiApp:
         )
         print(f"  {self.t.dim}avant :{self.t.r} {desc[:200]}{'…' if len(desc) > 200 else ''}")
         print(f"  {self.t.grn}après :{self.t.r} {proposal}")
-        ans = self._ask("  o = appliquer · Entrée = passer · q = fin : ", "").lower()
+        ans = self.services._ask("  o = appliquer · Entrée = passer · q = fin : ", "").lower()
         if ans == "q":
             return False
         if ans == "o":
-            new = self.set_frontmatter(text, {"description": proposal})
-            new = self.move_to_metadata(self.set_frontmatter(new, {"full_description": desc}), ["full_description"])
+            new = self.services.set_frontmatter(text, {"description": proposal})
+            new = self.services.move_to_metadata(
+                self.services.set_frontmatter(new, {"full_description": desc}), ["full_description"]
+            )
             try:
                 self._write_text(sk, new)
             except OSError as e:
@@ -558,11 +511,11 @@ class TuiApp:
                 return True
             self._count("descriptions raccourcies")
         else:
-            self._count("skipped actions")
+            self._count(SKIPPED_ACTIONS)
         return True
 
     def _write_text(self, path: Path, new: str) -> None:
-        saved = self.backup([path])
+        saved = self.services.backup([path])
         snapshot = saved / str(path.resolve()).lstrip("/")
         self.restore.append(f"cp {shlex.quote(str(snapshot))} {shlex.quote(str(path))}")
         path.write_text(new, encoding="utf-8")
@@ -581,13 +534,15 @@ class TuiApp:
             "Opus sert à chaque session et aux subagents qui en héritent."
         )
         if (
-            self._ask("  o = passer à Sonnet par défaut (/model opus au besoin) · Entrée = garder : ", "").lower()
+            self.services._ask(
+                "  o = passer à Sonnet par défaut (/model opus au besoin) · Entrée = garder : ", ""
+            ).lower()
             != "o"
         ):
-            self._count("skipped actions")
+            self._count(SKIPPED_ACTIONS)
             return
         self.udata["model"] = "sonnet"
-        self._write_text(self.cfg / "settings.json", self.dump_json(self.udata))
+        self._write_text(self.cfg / "settings.json", self.services.dump_json(self.udata))
         self._count("modèle changé")
 
     def _review_mcp(self, message: str) -> None:
@@ -596,11 +551,11 @@ class TuiApp:
             return
         command = match.group(1)
         print(f"Serveur MCP proposé : {self.t.b}{command}{self.t.r}")
-        if self._ask("  o = lancer la commande · Entrée = passer : ", "").lower() != "o":
-            self._count("skipped actions")
+        if self.services._ask("  o = lancer la commande · Entrée = passer : ", "").lower() != "o":
+            self._count(SKIPPED_ACTIONS)
             return
         result = subprocess.run(shlex.split(command), check=False)
-        if result is not None and result.returncode:
+        if result.returncode:
             self._failure(OSError(f"MCP command exited with status {result.returncode}"))
         else:
             self._count("serveurs MCP ajoutés")
@@ -617,11 +572,11 @@ class TuiApp:
             print("  aucune modification")
         if self.restore:
             print(
-                f"\n  Pour tout annuler : {self.t.cyan}{self.home_path(str(self.restore.script))}{self.t.r}  (run this script to undo edits and moves)"
+                f"\n  Pour tout annuler : {self.t.cyan}{self.services.home_path(str(self.restore.script))}{self.t.r}  (run this script to undo edits and moves)"
             )
         return sum(
             v
             for k, v in self.done.items()
             if "gardés" not in k
-            and k not in ("critical proposals refused", "failed actions", "skipped proposals", "skipped actions")
+            and k not in ("critical proposals refused", "failed actions", SKIPPED_PROPOSALS, SKIPPED_ACTIONS)
         )

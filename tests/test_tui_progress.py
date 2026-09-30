@@ -4,12 +4,14 @@ the session is."""
 
 from __future__ import annotations
 
+import subprocess
+
 
 def _run(mod, answers, repos, monkeypatch):
     queue = list(answers)
     monkeypatch.setattr("builtins.input", lambda prompt="": queue.pop(0) if queue else "q")
     monkeypatch.setattr(mod.sys.stdin, "isatty", lambda: True)
-    monkeypatch.setattr(mod.subprocess, "run", lambda *a, **k: None)
+    monkeypatch.setattr(mod.subprocess, "run", lambda *a, **k: subprocess.CompletedProcess([], 0))
     rep = mod.Report()
     mod.interactive(rep, repos, mod.load_policy(None, repos), user_scope=True)
 
