@@ -4530,7 +4530,6 @@ def detect_project_profile(repo: Path, stack: dict | None = None) -> dict:
     """Classify the scanned repository so reports and generation can adapt."""
     stack = stack or detect_stack(repo)
     pyproject = read_text(repo / "pyproject.toml") or ""
-    package_json = read_text(repo / "package.json") or ""
     make_targets = stack.get("make") or []
     signals: list[str] = []
 
