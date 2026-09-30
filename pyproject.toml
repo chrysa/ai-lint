@@ -9,8 +9,8 @@ dependencies = []  # the linter runs with the standard library alone
 # Only needed for the editable catalog (--print-catalog / --catalog). The linter
 # runs without it and those options degrade gracefully when it is absent.
 catalog = ["PyYAML>=6"]
-# Everything to run `make test` / `make lint` / `make selfcheck`.
-dev = ["pytest>=8", "pytest-cov>=5", "ruff>=0.6", "mypy>=1.11", "PyYAML>=6"]
+# Everything to run the local and CI quality gates.
+dev = ["pytest>=8", "pytest-cov>=5", "ruff>=0.6", "mypy>=1.11", "PyYAML>=6", "pre-commit>=3"]
 
 [tool.coverage.run]
 # ai_lint.py is imported normally, so coverage attaches to it. parallel +
