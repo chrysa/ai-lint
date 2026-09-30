@@ -23,6 +23,8 @@ config. Keep it: correct against the docs, safe by construction, cheap to run, d
 - **Conventional Commits.** Ask before any external action (push, release, repo rename).
 - **Respect shared-standards.** Apply [docs/SHARED_STANDARDS_MAPPING.md](docs/SHARED_STANDARDS_MAPPING.md)
   and `.claude/rules/shared-standards.md` where they fit this repo.
+- **Project adaptation.** Detect the scanned project's profile before generating or judging
+  config; adapt rules to the stack, maturity, runtime, repo role and local policy.
 
 ## Priorities (in order)
 
