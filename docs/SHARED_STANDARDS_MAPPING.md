@@ -24,7 +24,7 @@ recommendation, never forced blindly.
 | Code quality | Prefer small, named, testable units; no broad duplication; typed errors where practical. | Refactors should reduce `ai_lint/_engine.py` gradually without changing public CLI behaviour. |
 | No hardcoded external endpoints | External services, credentials and host-specific paths come from env/config, never literals. | Generated MCP and settings use env refs, not inline secrets or machine paths. |
 | Container/runtime policy | ai-lint has no runtime container requirement; it must run with bare Python >= 3.9. | Do not add runtime dependencies or container-only assumptions for the CLI. |
-| CI/CD and pre-commit | CI and hooks should be deterministic, least-privilege and conventional. | `make check`, `make selfcheck`, pre-commit config and Conventional Commits are the gate. |
+| CI/CD and pre-commit | CI and hooks should be deterministic, least-privilege and conventional. | CI runs Ruff, mypy, pytest, self-check and coverage directly from `pyproject.toml` tooling; local shortcuts may keep `make check` / `make selfcheck`; releases follow Conventional Commits. |
 | Docs and project state | Behaviour changes update docs in the same change. | User-facing behaviour -> README; rationale -> DECISIONS; architecture -> ARCHITECTURE. |
 | Security gates | Secret scanning, PII awareness and permission hardening are gates, not afterthoughts. | The fixer policy remains stricter than the generic standard: automatic actions never loosen. |
 
