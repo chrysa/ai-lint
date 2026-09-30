@@ -4,16 +4,26 @@ Why the project is the way it is — the rationale an agent would otherwise re-d
 undo) each session. History of *what* changed is in [CHANGELOG.md](CHANGELOG.md); this file
 records *why*. Newest first. Each entry: decision, why, and what would reverse it.
 
+## D-019 · Critical content changes require human validation
+Guarded sessions block edits to critical content files: repo contracts (`CLAUDE.md`,
+`AGENTS.md`), public/project docs (`README.md`, `ARCHITECTURE.md`, `DECISIONS.md`,
+`TESTING.md`), local standards/best-practice docs, fixer policy and `.claude/rules/*.md`.
+**Why:** these files change project meaning, operating rules or standards; an agent may draft
+the change, but a human must validate the content before it lands. **How to apply:** the
+`--guard` PreToolUse check returns a block reason for changed critical content. Config
+hardening checks still run separately. **Reverse:** only if a future approval channel can pass
+an explicit validated decision into the guard.
+
 ## D-018 · New domains move into object-oriented modules
 ai-lint is being decomposed gradually: new isolated domains should live outside
 `ai_lint/_engine.py` as thematic modules with small objects and explicit methods. Package
-`__init__.py` files stay empty. The first extraction is `ai_lint/self_update.py`, which owns
-`SelfUpdater`, `SelfUpdateConfig` and `GitRunner`. **Why:** a full one-shot rewrite of the
-dense engine would be high-risk, but adding new behaviour to the monolith keeps increasing
-coupling. Object modules let tests target one domain without importing unrelated engine
-state. **How to apply:** extract one domain at a time, keep public CLI behaviour stable, and
-update tests/docs in the same change. **Reverse:** only if packaging constraints force a
-single-file distribution again.
+`__init__.py` files stay empty. Current extracted domains are `ai_lint/self_update.py`,
+`ai_lint/project_profile.py` and `ai_lint/content_validation.py`. **Why:** a full one-shot
+rewrite of the dense engine would be high-risk, but adding new behaviour to the monolith keeps
+increasing coupling. Object modules let tests target one domain without importing unrelated
+engine state. **How to apply:** extract one domain at a time, keep public CLI behaviour
+stable, and update tests/docs in the same change. **Reverse:** only if packaging constraints
+force a single-file distribution again.
 
 ## D-017 · Clone installs get an interactive release-branch update prompt
 ai-lint checks for a newer fast-forward commit on the release branch (`origin/main` by
