@@ -4,6 +4,15 @@ ai-lint must respect the standards maintained in [chrysa/shared-standards](https
 
 Canonical source: `shared-standards/standards/STANDARDS.chrysa.md` and the generated agent views in `shared-standards/standards/rules/*.md`.
 
+## Profile-aware adaptation
+
+shared-standards is normative, but ai-lint applies it through the profile of the scanned
+project. The scanner must infer whether a repository is a CLI, library, full-stack app,
+frontend, infrastructure repo, standards repo, game/tooling repo or config-only repo, then
+adapt the generated Claude rules, hooks, skills, MCP and findings accordingly. A standard that
+does not fit the detected profile is documented as not applicable or surfaced as an optional
+recommendation, never forced blindly.
+
 ## Application model
 
 | Source standard | ai-lint adaptation | Claude rule / enforcement |
