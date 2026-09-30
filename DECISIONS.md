@@ -4,6 +4,17 @@ Why the project is the way it is — the rationale an agent would otherwise re-d
 undo) each session. History of *what* changed is in [CHANGELOG.md](CHANGELOG.md); this file
 records *why*. Newest first. Each entry: decision, why, and what would reverse it.
 
+## D-017 · Clone installs get an interactive release-branch update prompt
+ai-lint checks for a newer fast-forward commit on the release branch (`origin/main` by
+default) during interactive text runs from a clean clone, then asks before running
+`git pull --ff-only`. The check is cached daily and is silent in CI, JSON output, quiet
+mode, pipes and non-interactive sessions. **Why:** ai-lint is often used as a clone-and-run
+tool; users should learn that a released update exists without the tool mutating itself or
+breaking offline use. **How to apply:** keep update checks best-effort and opt-out
+(`--no-update-check`, `AI_LINT_UPDATE_CHECK=0`); never pull without confirmation; only use
+fast-forward pulls from the release branch. **Reverse:** if ai-lint becomes package-manager
+first, replace the git prompt with package-manager upgrade instructions.
+
 ## D-016 · Reports explain adaptation and next actions
 ai-lint's human feedback must show not only findings, but the reasoning needed to act on them:
 the detected project profile, evidence, why a rule applies, whether it is auto-fixable,
