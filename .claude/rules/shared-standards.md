@@ -24,6 +24,7 @@ Apply [chrysa/shared-standards](https://github.com/chrysa/shared-standards) wher
 - Keep runtime dependencies at zero unless a decision documents why the standard-library contract changed.
 - Keep generated, external-service and secret values out of code. Use env references and documented config examples.
 - Preserve the local architecture decision: root `ai_lint/` package is acceptable while this is a repo-local CLI; revisit `src/` only if it becomes a distributed library.
+- Critical content files (`CLAUDE.md`, `AGENTS.md`, README, architecture, decisions, testing docs, standards docs and `.claude/rules/*.md`) require human validation before content changes.
 - Behaviour changes update docs in the same change: README for users, DECISIONS for rationale, ARCHITECTURE for structure, TESTING for gates.
 - CI runs Ruff, mypy, pytest, self-check and coverage directly from `pyproject.toml` tooling; local maintainer shortcuts may keep `make check` / `make selfcheck`.
 - Release work follows Conventional Commits, least-privilege workflow permissions and no plaintext secrets.
