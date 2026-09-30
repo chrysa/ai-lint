@@ -39,9 +39,24 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Install tooling
         run: python -m pip install --upgrade pytest pytest-cov ruff mypy PyYAML
-      - name: Static checks
-        run: make ci-lint
-      - name: Run tests and self-check
-        run: make ci-test
+      - name: Ruff check
+        run: python -m ruff check ai_lint ai-lint.py tests
+      - name: Ruff format check
+        run: python -m ruff format --check ai_lint ai-lint.py tests
+      - name: Type check
+        run: python -m mypy
+      - name: Run tests
+        run: python -m pytest -q
+      - name: Self-check
+        run: python tests/_selfcheck.py
       - name: Coverage (CLI subprocesses included; floor 60%)
-        run: make cov
+        run: |
+          rm -f .coverage .coverage.*
+          mkdir -p .reports
+          COVERAGE_RUN=1 COVERAGE_FILE="$PWD/.coverage" python -m coverage run \
+            --parallel-mode --rcfile="$PWD/pyproject.toml" -m pytest -q
+          COVERAGE_FILE="$PWD/.coverage" python -m coverage combine --rcfile="$PWD/pyproject.toml"
+          COVERAGE_FILE="$PWD/.coverage" python -m coverage report --rcfile="$PWD/pyproject.toml" \
+            --fail-under=60
+          COVERAGE_FILE="$PWD/.coverage" python -m coverage xml --rcfile="$PWD/pyproject.toml" \
+            -o .reports/coverage.xml
