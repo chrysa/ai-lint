@@ -4,6 +4,15 @@ ai-lint must respect the standards maintained in [chrysa/shared-standards](https
 
 Canonical source: `shared-standards/standards/STANDARDS.chrysa.md` and the generated agent views in `shared-standards/standards/rules/*.md`.
 
+## Profile-aware adaptation
+
+shared-standards is normative, but ai-lint applies it through the profile of the scanned
+project. The scanner must infer whether a repository is a CLI, library, full-stack app,
+frontend, infrastructure repo, standards repo, game/tooling repo or config-only repo, then
+adapt the generated Claude rules, hooks, skills, MCP and findings accordingly. A standard that
+does not fit the detected profile is documented as not applicable or surfaced as an optional
+recommendation, never forced blindly.
+
 ## Application model
 
 | Source standard | ai-lint adaptation | Claude rule / enforcement |
@@ -18,6 +27,20 @@ Canonical source: `shared-standards/standards/STANDARDS.chrysa.md` and the gener
 | CI/CD and pre-commit | CI and hooks should be deterministic, least-privilege and conventional. | `make check`, `make selfcheck`, pre-commit config and Conventional Commits are the gate. |
 | Docs and project state | Behaviour changes update docs in the same change. | User-facing behaviour -> README; rationale -> DECISIONS; architecture -> ARCHITECTURE. |
 | Security gates | Secret scanning, PII awareness and permission hardening are gates, not afterthoughts. | The fixer policy remains stricter than the generic standard: automatic actions never loosen. |
+
+## Feedback expectations
+
+When a shared standard is adapted, ignored or downgraded for a scanned project, ai-lint should
+say so in the report. The user should see:
+
+- detected profile and confidence;
+- standards applied as gates;
+- standards treated as advice;
+- standards considered not applicable to this repo profile;
+- local decisions that override the fleet default;
+- one concrete next action per unresolved risk.
+
+This makes adaptation auditable instead of implicit.
 
 ## Local exceptions
 
