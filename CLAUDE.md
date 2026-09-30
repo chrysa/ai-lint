@@ -21,6 +21,8 @@ config. Keep it: correct against the docs, safe by construction, cheap to run, d
 - **No assistant/AI attribution** in commits, PRs, files or docs.
 - **English on disk.** French only in user-facing strings via the `_loc(fr, en)` table.
 - **Conventional Commits.** Ask before any external action (push, release, repo rename).
+- **Respect shared-standards.** Apply [docs/SHARED_STANDARDS_MAPPING.md](docs/SHARED_STANDARDS_MAPPING.md)
+  and `.claude/rules/shared-standards.md` where they fit this repo.
 
 ## Priorities (in order)
 
@@ -29,6 +31,20 @@ config. Keep it: correct against the docs, safe by construction, cheap to run, d
 3. Token-cost signal (the budget estimate and levers stay honest).
 4. Low false-positive rate (a noisy linter gets ignored).
 5. Speed and zero runtime deps.
+
+## Claude Code operating practices
+
+Follow the official Claude Code best-practice intent without loading the full guide into
+every session. Details live in [docs/CLAUDE_CODE_BEST_PRACTICES.md](docs/CLAUDE_CODE_BEST_PRACTICES.md).
+
+- Prefer workflows with an executable verification: tests, lint, typecheck, `make selfcheck`,
+  or a deterministic guard result.
+- Explore and plan before multi-file or risky changes; implement directly only for small,
+  obvious edits.
+- Keep always-loaded instructions concise. Move long procedures to skills or docs.
+- Use subagents for noisy investigation or independent review, not for simple local edits.
+- Treat hooks, permissions, MCP, skills and subagents as code: testable, scoped, reversible
+  where possible, and never permissive by accident.
 
 ## Commands
 
@@ -74,12 +90,15 @@ leave it for the human under "not fixed". Details and the exact fixable set:
 - `make selfcheck` → `traces in repo: 0`.
 - New behaviour covered by a test; no lowered coverage floor.
 - No new runtime dependency (stdlib only; PyYAML stays optional, catalogue-only).
+- Shared-standards mapping still respected or explicitly updated.
 - No secret, no attribution, English on disk.
 
 ## Documentation rules
 
 - User-facing → `README.md`. Decisions/rationale → [DECISIONS.md](DECISIONS.md).
   Structure → [ARCHITECTURE.md](ARCHITECTURE.md). Test strategy → [TESTING.md](TESTING.md).
+  Claude Code workflow rationale → [docs/CLAUDE_CODE_BEST_PRACTICES.md](docs/CLAUDE_CODE_BEST_PRACTICES.md).
+  Shared standards adaptation → [docs/SHARED_STANDARDS_MAPPING.md](docs/SHARED_STANDARDS_MAPPING.md).
 - Keep docs operational: decisions and facts an agent can act on, not filler.
 - When behaviour changes, update the doc in the same commit.
 

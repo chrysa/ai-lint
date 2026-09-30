@@ -4,6 +4,32 @@ Why the project is the way it is — the rationale an agent would otherwise re-d
 undo) each session. History of *what* changed is in [CHANGELOG.md](CHANGELOG.md); this file
 records *why*. Newest first. Each entry: decision, why, and what would reverse it.
 
+## D-014 · shared-standards is the normative base, mapped locally
+[chrysa/shared-standards](https://github.com/chrysa/shared-standards) is the external
+normative source for repo quality, Python tooling, CI/CD, documentation, security and agent
+legibility. ai-lint records the local adaptation in
+[docs/SHARED_STANDARDS_MAPPING.md](docs/SHARED_STANDARDS_MAPPING.md) and translates the
+actionable subset into [.claude/rules/shared-standards.md](.claude/rules/shared-standards.md).
+**Why:** copying the whole standards corpus would bloat context and drift from the canon; a
+short mapping keeps the source of truth external while making the local exceptions explicit.
+The local exceptions are deliberate: root `ai_lint/` package while ai-lint is repo-local
+(D-011), zero runtime dependencies over container-first runtime, and gradual engine
+decomposition rather than a documentation-only rewrite. **Reverse:** only if ai-lint becomes
+fully scaffolded by project-init with generated standards views; then replace the hand-written
+mapping with generated views from shared-standards.
+
+## D-013 · Claude Code best practices are mapped, not copied
+The official Claude Code best-practice guidance is captured as a compact ai-lint mapping in
+[docs/CLAUDE_CODE_BEST_PRACTICES.md](docs/CLAUDE_CODE_BEST_PRACTICES.md), while
+[CLAUDE.md](CLAUDE.md) keeps only the always-needed operational rules. **Why:** the source
+document is a workflow guide, not a repo-local instruction file; copying it into
+always-loaded context would fight ai-lint's own token-cost goals. The project should
+translate those practices into checks, generation defaults, restructuring suggestions and
+maintenance rules: executable verification, concise `CLAUDE.md`, scoped permissions,
+bounded MCP, on-demand skills, focused subagents, aggressive context management and
+independent review. **Reverse:** only if the official guidance becomes directly consumable
+as a short machine-readable policy; until then, keep the mapping curated and dated.
+
 ## D-012 · Computed version + release-on-main (git-cliff)
 The version is **computed, never typed** (shared-standards CI-045): `VERSION` is
 derived at runtime from package metadata, else `git describe`, else a dev

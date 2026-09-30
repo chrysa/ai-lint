@@ -70,7 +70,9 @@ README.md · CHANGELOG.md
 - [CLAUDE.md](CLAUDE.md) — operational contract for an agent working on this repo.
 - [ARCHITECTURE.md](ARCHITECTURE.md) — engine map and data flow.
 - [docs/FIXER_POLICY.md](docs/FIXER_POLICY.md) — the "only ever tighten" safety contract.
+- [docs/CLAUDE_CODE_BEST_PRACTICES.md](docs/CLAUDE_CODE_BEST_PRACTICES.md) — how official Claude Code practices map to ai-lint checks and generation.
 - [DECISIONS.md](DECISIONS.md) — why the project is the way it is.
+- [docs/SHARED_STANDARDS_MAPPING.md](docs/SHARED_STANDARDS_MAPPING.md) — local adaptation of chrysa/shared-standards.
 - [TESTING.md](TESTING.md) — test strategy and what "green" means.
 
 ## Install
