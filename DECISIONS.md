@@ -4,6 +4,17 @@ Why the project is the way it is — the rationale an agent would otherwise re-d
 undo) each session. History of *what* changed is in [CHANGELOG.md](CHANGELOG.md); this file
 records *why*. Newest first. Each entry: decision, why, and what would reverse it.
 
+## D-015 · Scanned-project profile drives generated config
+ai-lint adapts to the project it scans before generating or judging Claude configuration.
+The project profile — CLI, library, full-stack app, frontend, infrastructure, standards repo,
+game/tooling repo, config-only repo; plus detected stack, runtime, maturity and local policy —
+decides which checks are errors, warnings or hints and which artifacts are generated. **Why:**
+the same Claude Code best practice or shared-standard rule can be correct for one repository
+and noise for another. Blindly applying every known rule would create false positives, bloated
+context and unsafe generation. **How to apply:** detect first, generate second; prefer no-op or
+info-level guidance when intent is unclear; ask interactively when the choice changes behaviour;
+never use adaptation to loosen config automatically.
+
 ## D-014 · shared-standards is the normative base, mapped locally
 [chrysa/shared-standards](https://github.com/chrysa/shared-standards) is the external
 normative source for repo quality, Python tooling, CI/CD, documentation, security and agent
