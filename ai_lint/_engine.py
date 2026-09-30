@@ -61,12 +61,12 @@ import stat
 import subprocess
 import sys
 import time
-from dataclasses import asdict
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
 
 from ai_lint.content_validation import CriticalContentValidator
+from ai_lint.feedback_renderer import FeedbackRenderer
 from ai_lint.finding import Finding
 from ai_lint.project_profile import ProjectProfiler
 from ai_lint.report import Report, configure_report_context
@@ -7610,119 +7610,32 @@ FIRST_REPORT: Report | None = None
 INTERACTIVE_RAN = False
 
 
-# Why a finding is not auto-fixed, per code. Keeps the report honest about the
-# "same output every run": these need human judgment or would change behaviour /
-# destroy content / touch history, so the tool reports instead of fixing.
-_WHY_MANUAL_FR = {
-    "IMPORT_MISSING": "l'import cible un fichier absent ; le corriger ou le retirer est un choix",
-    "SKILL_MISSING": "dossier de skill sans SKILL.md ; le compléter ou le supprimer est un choix",
-    "INSTR_LONG": "raccourcir un fichier d'instructions détruirait du contenu (à faire à la main / -i)",
-    "SKILL_LONG": "raccourcir le corps du skill détruirait du contenu",
-    "SKILL_NAME": "renommer le dossier change la commande /nom et l'historique git",
-    "PERM_EXEC_RUNNER": "impossible de deviner les commandes internes autorisées à lister",
-    "SKILL_BROAD_TOOLS": "restreindre les outils dépend de ce que le skill fait vraiment",
-    "PLUGIN_MANIFEST": "le nom du plugin est un identifiant référencé ailleurs",
-    "MISPLACED": "déplacer/supprimer le fichier est un choix",
-    "ATTR_HOOK_CONFLICT": "un hook commit-msg existe déjà ; le modifier est un choix",
-    "ATTR_HISTORY": "réécrire l'historique publié est ta décision",
-    "API_KEY_LEAK": "l'outil ne révoque ni ne supprime jamais une clé ; à révoquer à la main",
-    "SETTINGS_UNKNOWN_KEY": "clé peut-être plus récente que le schéma ; supprimer serait risqué",
-    "TOKEN_AGENT_PACK": "regrouper des subagents en plugin se fait en revue (-i)",
-    "SECRET_INLINE": "un secret en clair doit être retiré à la main (référence ${VAR}/vault)",
-}
-_WHY_MANUAL_EN = {
-    "IMPORT_MISSING": "the import targets a missing file; fixing or removing it is a choice",
-    "SKILL_MISSING": "skill directory without SKILL.md; completing or deleting it is a choice",
-    "INSTR_LONG": "shortening an instruction file would destroy content (do it by hand / -i)",
-    "SKILL_LONG": "shortening the skill body would destroy content",
-    "SKILL_NAME": "renaming the folder changes the /name command and git history",
-    "PERM_EXEC_RUNNER": "the exact inner commands to allow cannot be guessed",
-    "SKILL_BROAD_TOOLS": "narrowing tools depends on what the skill actually does",
-    "PLUGIN_MANIFEST": "the plugin name is an identifier referenced elsewhere",
-    "MISPLACED": "moving/deleting the file is a choice",
-    "ATTR_HOOK_CONFLICT": "a commit-msg hook already exists; changing it is a choice",
-    "ATTR_HISTORY": "rewriting published history is your decision",
-    "API_KEY_LEAK": "the tool never revokes or deletes a key; rotate it yourself",
-    "SETTINGS_UNKNOWN_KEY": "the key may be newer than the schema; removing it would be risky",
-    "TOKEN_AGENT_PACK": "grouping subagents into a plugin is done in review (-i)",
-    "SECRET_INLINE": "an inline secret must be removed by hand (reference ${VAR}/vault)",
-}
+def _feedback_renderer() -> FeedbackRenderer:
+    return FeedbackRenderer(LANG, brief_table(), HINTS, CATEGORIES)
 
 
 def _why_manual(code: str) -> str:
     """Short reason a code is not auto-fixed, in the active language, or ''."""
-    table = _WHY_MANUAL_EN if LANG == "en" else _WHY_MANUAL_FR
-    return table.get(code, "")
+    return _feedback_renderer().manual_reason(code)
 
 
 def _action_for(code: str) -> str:
-    """A concise, solution-oriented action for a finding code, in the active
-    language: the brief table's advice when the code has one, else the HINTS
-    'why/how' sentence. Empty when neither is known."""
-    entry = brief_table().get(code)
-    if entry:
-        return entry[2]
-    return HINTS[code][0] if code in HINTS else ""
-
-
-INTERACTIVE_FIX_CODES = {
-    "DUP_EXACT",
-    "DUP_NAME",
-    "DUP_SIMILAR",
-    "TOKEN_AGENT_PACK",
-    "TOKEN_SKILL_DESC",
-    "TOKEN_MODEL",
-}
+    """A concise, solution-oriented action for a finding code."""
+    return _feedback_renderer().action_for(code)
 
 
 def _fix_mode_for(f: Finding) -> str:
     """How this finding should be resolved by an automation consumer."""
-    if f.fixable:
-        return "auto"
-    if f.code in INTERACTIVE_FIX_CODES or f.code.startswith("DUP_"):
-        return "interactive"
-    return "manual"
+    return _feedback_renderer().fix_mode(f)
 
 
 def _next_action_for(f: Finding, status: str) -> str:
-    action = _action_for(f.code)
-    if status == "fixed":
-        return "review the applied change" if LANG == "en" else "relire le changement applique"
-    if f.fixable:
-        prefix = "run with --fix to apply" if LANG == "en" else "lancer avec --fix pour appliquer"
-        return f"{prefix}: {action}" if action else prefix
-    if _fix_mode_for(f) == "interactive":
-        prefix = "run with -i to review interactively" if LANG == "en" else "lancer avec -i pour arbitrer"
-        return f"{prefix}: {action}" if action else prefix
-    return (
-        action
-        or _why_manual(f.code)
-        or (
-            "review this finding and update the relevant configuration"
-            if LANG == "en"
-            else "examiner ce finding et ajuster la configuration concernee"
-        )
-    )
+    return _feedback_renderer().next_action(f, status)
 
 
 def finding_feedback(f: Finding, status: str = "open") -> dict:
     """Stable machine-readable feedback for CI, dashboards and follow-up agents."""
-    data = asdict(f)
-    reason = _why_manual(f.code)
-    data.update(
-        {
-            "status": status,
-            "category": category(f.code),
-            "fix_mode": _fix_mode_for(f),
-            "evidence": {
-                "path": f.path,
-                "message": f.message,
-            },
-            "manual_reason": reason or None,
-            "next_action": _next_action_for(f, status),
-        }
-    )
-    return data
+    return _feedback_renderer().finding_feedback(f, status)
 
 
 def _finding_gain(f: Finding) -> int:
@@ -7935,7 +7848,7 @@ CATEGORIES = [
 
 
 def category(code: str) -> str:
-    return next((c for p, c in CATEGORIES if code.startswith(p)), "other")
+    return _feedback_renderer().category(code)
 
 
 def grouped_findings(findings: list[Finding]) -> list[tuple[str, list[Finding]]]:
