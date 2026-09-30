@@ -352,7 +352,7 @@ class GuardChecker:
         if name in ("settings.json", "settings.local.json") or re.search(r"settings.*\.json$", name):
             label, validator = "settings", self.settings_violations
         elif name in (".mcp.json", "claude_desktop_config.json"):
-            label = ".mcp.json" if name == ".mcp.json" else "Desktop config"
+            label = "Desktop config" if name == "claude_desktop_config.json" else name
             validator = self.mcp_violations
         elif path.parent.name == ".claude-plugin":
             validator = {"plugin.json": self._plugin_violations, "marketplace.json": self._marketplace_violations}.get(
