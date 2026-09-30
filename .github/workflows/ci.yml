@@ -39,7 +39,9 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Install tooling
         run: python -m pip install --upgrade pytest pytest-cov ruff mypy PyYAML
-      - name: CI gate (lint, type-check, test, self-check)
-        run: make ci
+      - name: Static checks
+        run: make ci-lint
+      - name: Run tests and self-check
+        run: make ci-test
       - name: Coverage (CLI subprocesses included; floor 60%)
         run: make cov
