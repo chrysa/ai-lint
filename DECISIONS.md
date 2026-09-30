@@ -86,8 +86,8 @@ a repo-local CLI (D-003) run from a clone, so a **root package** keeps
 empty `__init__` follows the request/standard to keep package inits free of
 logic. **Reverse:** if published as an installable library, move to `src/` and add
 a public API in `__init__`. Other shared-standards points are met: all tool config
-in `pyproject.toml` `[tool.*]`, Conventional Commits, invariant `make` targets,
-Ruff line-length 120, caches git-ignored.
+in `pyproject.toml` `[tool.*]`, Conventional Commits, invariant local `make` shortcuts,
+CI wired directly to the tools, Ruff line-length 120, caches git-ignored.
 
 ## D-010 · Renamed `claude-lint` → `ai-lint`
 The tool checks configs for several agent tools, not just Claude Code. **Why:** the name
