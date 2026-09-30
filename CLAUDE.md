@@ -30,6 +30,20 @@ config. Keep it: correct against the docs, safe by construction, cheap to run, d
 4. Low false-positive rate (a noisy linter gets ignored).
 5. Speed and zero runtime deps.
 
+## Claude Code operating practices
+
+Follow the official Claude Code best-practice intent without loading the full guide into
+every session. Details live in [docs/CLAUDE_CODE_BEST_PRACTICES.md](docs/CLAUDE_CODE_BEST_PRACTICES.md).
+
+- Prefer workflows with an executable verification: tests, lint, typecheck, `make selfcheck`,
+  or a deterministic guard result.
+- Explore and plan before multi-file or risky changes; implement directly only for small,
+  obvious edits.
+- Keep always-loaded instructions concise. Move long procedures to skills or docs.
+- Use subagents for noisy investigation or independent review, not for simple local edits.
+- Treat hooks, permissions, MCP, skills and subagents as code: testable, scoped, reversible
+  where possible, and never permissive by accident.
+
 ## Commands
 
 - `make check` — lint + typecheck + test (run before declaring done).
@@ -80,6 +94,7 @@ leave it for the human under "not fixed". Details and the exact fixable set:
 
 - User-facing → `README.md`. Decisions/rationale → [DECISIONS.md](DECISIONS.md).
   Structure → [ARCHITECTURE.md](ARCHITECTURE.md). Test strategy → [TESTING.md](TESTING.md).
+  Claude Code workflow rationale → [docs/CLAUDE_CODE_BEST_PRACTICES.md](docs/CLAUDE_CODE_BEST_PRACTICES.md).
 - Keep docs operational: decisions and facts an agent can act on, not filler.
 - When behaviour changes, update the doc in the same commit.
 
