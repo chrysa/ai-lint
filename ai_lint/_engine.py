@@ -75,9 +75,10 @@ from ai_lint.guard_checker import GuardChecker
 from ai_lint.plugin_registry import PluginRegistry
 from ai_lint.project_profile import ProjectProfiler
 from ai_lint.report import Report, configure_report_context
-from ai_lint.restore_log import RestoreLog
+from ai_lint.restore_log import RestoreLog as RestoreLog
 from ai_lint.self_update import SelfUpdater
 from ai_lint.terminal_view import Tty
+from ai_lint.tui_app import TuiApp
 
 try:
     import tomllib
@@ -5849,7 +5850,60 @@ def _register_plugin(plugin: str, desc: str, policy: dict, restore: list[str]) -
         us.write_text(dump_json(udata), encoding="utf-8")
 
 
-def apply_proposal(p: dict, policy: dict, restore: list[str], trash_root: Path) -> str:
+def proposal_edits(p: dict, policy: dict) -> dict[Path, tuple[str, str]]:
+    """Preview exact text changes for restructuring critical instruction content."""
+    if p["kind"] not in ("rule-paths", "procedure-to-skill"):
+        return {}
+    path = Path(p["path"])
+    text = read_text(path) or ""
+    if p["kind"] == "rule-paths":
+        return {path: (text, set_frontmatter(text, {"paths": p["glob"]}))}
+    sections = _sections(text)
+    title = p["section"]
+    lines = next(lines for heading, lines in sections if heading == title)
+    slug = slugify(title)[:40]
+    cfg = config_dir()
+    root = cfg if path.parent == cfg else path.parent if path.parent.name == ".claude" else path.parent / ".claude"
+    skill = root / "skills" / slug / "SKILL.md"
+    if skill.exists():
+        raise FileExistsError(f"{skill} already exists; review it manually before extracting this procedure")
+    body = "\n".join(lines[1:]).strip()
+    content = (
+        f"---\nname: {slug}\ndescription: "
+        f"{yaml_scalar('Procedure: ' + title + '. Use when this procedure is needed.')}\n---\n\n{body}\n"
+    )
+    replacement = [
+        line
+        for heading, lines in sections
+        for line in (lines if heading != title else [f"## {title}", "", f"Follow the /{slug} skill."])
+    ]
+    return {path: (text, "\n".join(replacement) + "\n"), skill: ("", content)}
+
+
+def _apply_proposal_edits(edits: dict[Path, tuple[str, str]], restore: list[str]) -> None:
+    existing = [path for path in edits if path.exists()]
+    for path, (old, _new) in edits.items():
+        if (read_text(path) or "") != old:
+            raise OSError(f"{path} changed after the preview; review the proposal again")
+    saved = backup(existing)
+    for path, (_old, new) in edits.items():
+        if path in existing:
+            snapshot = saved / str(path.resolve()).lstrip("/")
+            restore.append(f"cp {shlex.quote(str(snapshot))} {shlex.quote(str(path))}")
+        else:
+            restore.append(f"rm -f {shlex.quote(str(path))}")
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(new, encoding="utf-8")
+
+
+def apply_proposal(
+    p: dict,
+    policy: dict,
+    restore: list[str],
+    trash_root: Path,
+    *,
+    expected_edits: dict[Path, tuple[str, str]] | None = None,
+) -> str:
     kind = p["kind"]
     mk, mname = _local_marketplace(policy)
     if kind in ("agent-pack", "skill-family"):
@@ -5934,39 +5988,14 @@ def apply_proposal(p: dict, policy: dict, restore: list[str], trash_root: Path) 
         shutil.move(str(cmd_file), str(dest))
         restore.append(f"mv '{dest}' '{cmd_file}'; rmdir '{dest.parent}'")
         return f"/{cmd_file.stem} is now a skill (same command name)"
-    if kind == "rule-paths":
-        f = p["path"]
-        text = read_text(f) or ""
-        backup([f])
-        f.write_text(set_frontmatter(text, {"paths": p["glob"]}), encoding="utf-8")
-        return f"rule loads only for {p['glob']}"
-    if kind == "procedure-to-skill":
-        c: Path = p["path"]
-        text = read_text(c) or ""
-        backup([c])
-        secs = _sections(text)
-        title = p["section"]
-        lines = next(ls for t, ls in secs if t == title)
-        slug = slugify(title)[:40]
-        root = (
-            config_dir()
-            if c.parent == config_dir()
-            else c.parent / ".claude"
-            if c.parent.name != ".claude"
-            else c.parent
-        )
-        skill = root / "skills" / slug / "SKILL.md"
-        skill.parent.mkdir(parents=True, exist_ok=True)
-        body = "\n".join(lines[1:]).strip()
-        skill.write_text(
-            f"---\nname: {slug}\ndescription: "
-            f"{yaml_scalar('Procedure: ' + title + '. Use when this procedure is needed.')}\n---\n\n{body}\n",
-            encoding="utf-8",
-        )
-        out = [l for t, ls in secs for l in (ls if t != title else [f"## {title}", "", f"Follow the /{slug} skill."])]
-        c.write_text("\n".join(out) + "\n", encoding="utf-8")
-        restore.append(f"rm -r '{skill.parent}'  # and restore {c.name} from ~/.cache/ai-lint")
-        return f"section moved to skill /{slug}; review its description"
+    if kind in ("rule-paths", "procedure-to-skill"):
+        edits = proposal_edits(p, policy)
+        if expected_edits is not None and edits != expected_edits:
+            raise OSError("proposal changed after approval; review the new diff before applying")
+        _apply_proposal_edits(edits, restore)
+        if kind == "rule-paths":
+            return f"rule loads only for {p['glob']}"
+        return f"section moved to skill /{slugify(p['section'])[:40]}; review its description"
     return "unsupported"
 
 
@@ -6628,356 +6657,40 @@ def _family_to_plugin(members: list[dict], name: str, policy: dict, restore: lis
     return f"plugin '{plugin}@{mname}' créé ; à installer (portée projet) là où il sert : /plugin → {mname}"
 
 
+def _tui_app() -> TuiApp:
+    return TuiApp(
+        home_path=home_path,
+        config_dir=config_dir,
+        session_duplicates=session_duplicates,
+        is_generated_family=is_generated_family,
+        compute_proposals=compute_proposals,
+        frontmatter_of=frontmatter_of,
+        _writable=_writable,
+        load_json_file=load_json_file,
+        _ask=_ask,
+        advice=advice,
+        _fr_plural=_fr_plural,
+        _trash=_trash,
+        _affixes=_affixes,
+        _scope_of=_scope_of,
+        _show_file=_show_file,
+        _family_to_plugin=_family_to_plugin,
+        proposal_fr=proposal_fr,
+        apply_proposal=apply_proposal,
+        read_text=read_text,
+        split_frontmatter=split_frontmatter,
+        set_frontmatter=set_frontmatter,
+        move_to_metadata=move_to_metadata,
+        backup=backup,
+        dump_json=dump_json,
+        feedback_rows=lambda report: [finding_feedback(finding) for finding in report.findings],
+        proposal_edits=proposal_edits,
+        redact=redact,
+    )
+
+
 def interactive(rep: Report, repos: list[Path], policy: dict, user_scope: bool) -> int:
-    t = Tty(home_path)
-    if not sys.stdin.isatty():
-        print("\n-i a besoin d'un vrai terminal (pas d'un pipe) : relance-le directement dans ton shell.")
-        return 0
-    cfg = config_dir()
-    roots = ([cfg] if user_scope else []) + [r / ".claude" for r in repos]
-    stamp = dt.datetime.now().strftime("%Y%m%dT%H%M%S")
-    trash_root = Path(os.path.expanduser(f"~/.cache/ai-lint/trash/{stamp}"))
-    restore = RestoreLog(trash_root / "restore.sh")
-    done: dict[str, int] = {}
-
-    def count(action: str) -> None:
-        done[action] = done.get(action, 0) + 1
-
-    # ---- inventory
-    groups = session_duplicates([cfg] if user_scope else [], [r / ".claude" for r in repos])
-    families = [(w, m) for w, m in groups if w == "DUP_SIMILAR" and is_generated_family(m)]
-    dups = [(w, m) for w, m in groups if (w, m) not in families]
-    order = {"DUP_EXACT": 0, "DUP_NAME": 1, "DUP_SIMILAR": 2}
-    dups.sort(key=lambda g: (order[g[0]], -len(g[1])))
-    props = compute_proposals(roots, repos, policy)
-    limit = policy["tokens"]["skill_description_chars"]
-    long_desc = []
-    long_desc_ro = 0  # read-only skills skipped (symlinked / synced stores)
-    for r in roots:
-        for sk in sorted(r.glob("skills/*/SKILL.md")):
-            meta = frontmatter_of(sk)
-            if len((meta or {}).get("description", "")) > limit and (meta or {}).get(
-                "disable-model-invocation", ""
-            ).lower() not in ("true", "yes", "on", "1"):
-                if _writable(sk):
-                    long_desc.append(sk)
-                else:
-                    long_desc_ro += 1
-    udata = load_json_file(cfg / "settings.json")
-    misc = []
-    if "opus" in str(udata.get("model", "")).lower():
-        misc.append("model")
-    misc += [f for f in rep.findings if f.code == "GENERATE_USER_MCP"]
-
-    sections = [
-        (
-            "dups",
-            f"Doublons chargés ensemble ({sum(1 for g in dups if g[0] != 'DUP_SIMILAR')} "
-            f"sûrs, {sum(1 for g in dups if g[0] == 'DUP_SIMILAR')} à juger)",
-            len(dups),
-        ),
-        (
-            "families",
-            f"Familles générées ({len(families)}) : même modèle, noms différents",
-            len(families),
-        ),
-        (
-            "restructure",
-            f"Restructurations ({len(props)}), ~{sum(p['gain'] for p in props)} tokens/session en jeu",
-            len(props),
-        ),
-        ("descriptions", f"Descriptions de skills trop longues ({len(long_desc)})", len(long_desc)),
-        ("misc", f"Modèle par défaut et serveurs MCP ({len(misc)})", len(misc)),
-    ]
-    sections = [s for s in sections if s[2]]
-    if not sections:
-        print(f"\n{t.grn}Rien à revoir.{t.r}")
-        return 0
-    t.rule("REVUE INTERACTIVE")
-    print(f"Rien n'est supprimé : ce que tu retires part dans {t.cyan}{home_path(str(trash_root))}{t.r},")
-    print("et un script restore.sh annule toute la session. À chaque question : ? pour l'aide.\n")
-    for i, (_, label, _) in enumerate(sections, 1):
-        print(f"  {t.b}{i}{t.r}. {label}")
-    pick = _ask("\nSections à revoir (ex. 1,3 ; Entrée = toutes ; q = quitter) : ")
-    if pick.lower() == "q":
-        return 0
-    chosen = [sections[int(x) - 1][0] for x in re.findall(r"\d+", pick) if 0 < int(x) <= len(sections)] or [
-        s[0] for s in sections
-    ]
-
-    # ---- duplicates
-    if "dups" in chosen:
-        t.rule(f"DOUBLONS ({_fr_plural(len(dups), 'groupe')})")
-        print(
-            f"{t.dim}Un doublon, c'est deux éléments chargés dans la même session : Claude "
-            f"n'en utilise qu'un,\n"
-            f"ou hésite entre les deux. Les groupes sûrs viennent en premier.{t.r}"
-        )
-        auto_all = False
-        for n, (why, members) in enumerate(dups, 1):
-            members = [m for m in members if Path(m["path"]).exists()]
-            if len(members) < 2:
-                continue
-            try:
-                remove, reason = advice(why, members)
-            except OSError:
-                continue
-            label = {
-                "DUP_EXACT": "copies identiques",
-                "DUP_NAME": "même nom",
-                "DUP_SIMILAR": "quasi-doublons",
-            }[why]
-            # Once "apply to all" is on, don't reprint the full listing for every
-            # group (dozens of identical project-vs-user pairs); one receipt line each.
-            if auto_all and remove:
-                for k in remove:
-                    if Path(members[k]["path"]).exists():
-                        _trash(Path(members[k]["path"]), trash_root, restore)
-                        count("doublons retirés")
-                        print(
-                            f"  {t.grn}✓{t.r} [{n}/{len(dups)}] {label} · {members[0]['name']} → "
-                            f"{t.dim}retiré {t.short(str(members[k]['path']), t.width - 24)}{t.r}"
-                        )
-                continue
-            print(f"\n{t.b}[{n}/{len(dups)}] {label}{t.r} · {_fr_plural(len(members), members[0]['kind'])}")
-            descs = [m["desc"] for m in members]
-            pre, suf = _affixes(descs)
-            if len(pre) + len(suf) > 30:
-                print(f"  {t.dim}description commune : « {pre}…{suf} »{t.r}")
-            wname = max(len(m["name"]) for m in members)
-            for i, m in enumerate(members):
-                mark = f"{t.red}✗{t.r}" if i in remove else f"{t.grn}✓{t.r}"
-                mtime = dt.datetime.fromtimestamp(m["file"].stat().st_mtime).strftime("%d/%m/%y")
-                var = (
-                    m["desc"][len(pre) : len(m["desc"]) - len(suf) if suf else None]
-                    if len(pre) + len(suf) > 30
-                    else m["desc"]
-                )
-                print(
-                    f"  {mark} {t.b}{i + 1:>2}{t.r} {m['name']:<{wname}}  {_scope_of(m):<11} "
-                    f"{m['lines']:>4} l.  {mtime}  "
-                    f"{t.dim}{t.short(str(m['path']), t.width - wname - 40)}{t.r}"
-                )
-                if var.strip():
-                    print(f"       {t.dim}{var.strip()[: t.width - 8]}{t.r}")
-            print(
-                f"  {t.yel}Conseil :{t.r} {reason}"
-                + (f" → retirer {', '.join(str(i + 1) for i in remove)}" if remove else "")
-            )
-            if auto_all and remove:
-                ans = ""
-            else:
-                default = "appliquer le conseil" if remove else "tout garder"
-                while True:
-                    ans = _ask(
-                        f"  Entrée = {default} · g = tout garder · 2,3 = retirer ces numéros "
-                        f"· v2 = voir le n°2 · "
-                        f"A = conseil pour tous les groupes sûrs · s = passer · q = fin des "
-                        f"doublons : ",
-                        "",
-                    )
-                    low = ans.lower()
-                    if low.startswith("v") and low[1:].isdigit() and 0 < int(low[1:]) <= len(members):
-                        _show_file(Path(members[int(low[1:]) - 1]["path"]), t)
-                        continue
-                    if ans == "?":
-                        print("  Retirer = déplacer dans la corbeille de la session (restore.sh pour annuler).")
-                        continue
-                    break
-            low = ans.lower()
-            if low == "q":
-                break
-            if low in ("s", "g"):
-                count("groupes gardés tels quels")
-                continue
-            if ans == "A":  # apply the advice to every safe group from here on
-                auto_all = True
-                ans = ""
-            targets = (
-                remove if ans == "" else [int(x) - 1 for x in re.findall(r"\d+", ans) if 0 < int(x) <= len(members)]
-            )
-            for k in targets:
-                if not Path(members[k]["path"]).exists():
-                    continue
-                _trash(Path(members[k]["path"]), trash_root, restore)
-                count("doublons retirés")
-                print(f"     {t.grn}retiré{t.r} {t.short(str(members[k]['path']), t.width - 12)}")
-            if not targets:
-                count("groupes gardés tels quels")
-
-    # ---- generated families
-    if "families" in chosen:
-        t.rule(f"FAMILLES GÉNÉRÉES ({len(families)})")
-        print(
-            f"{t.dim}Ces éléments suivent le même modèle (seuls le nom ou le modèle d'IA "
-            f"changent) : ce ne sont pas des\n"
-            f"doublons. Ils coûtent des tokens à chaque requête ; si tu ne t'en sers que "
-            f"dans certains projets, un\n"
-            f"plugin à activer là-bas est plus léger.{t.r}"
-        )
-        for n, (_, members) in enumerate(families, 1):
-            members = [m for m in members if Path(m["path"]).exists()]
-            if len(members) < 2:
-                continue
-            names = [m["name"] for m in members]
-            stem = os.path.commonprefix(names).rstrip("-_") or names[0]
-            toks = sum((len(m["desc"]) + 40) // 4 for m in members)
-            print(
-                f"\n{t.b}[{n}/{len(families)}] {stem}-*{t.r} · "
-                f"{_fr_plural(len(members), members[0]['kind'])} · ~{toks} tokens/session"
-            )
-            print("  " + ", ".join(nm[len(stem) :].lstrip("-_") or nm for nm in names))
-            ans = _ask(
-                "  Entrée = garder · p = en faire un plugin · k = mettre de côté (parked/) · q = fin : ",
-                "",
-            ).lower()
-            if ans == "q":
-                break
-            if ans == "p":
-                print("     " + _family_to_plugin(members, stem, policy, restore))
-                count("familles transformées en plugin")
-            elif ans == "k":
-                for m in members:
-                    root = next(r for r in roots if str(m["path"]).startswith(str(r)))
-                    dest = root / "parked" / Path(m["path"]).relative_to(root)
-                    dest.parent.mkdir(parents=True, exist_ok=True)
-                    shutil.move(str(m["path"]), str(dest))
-                    restore.append(f"mv '{dest}' '{m['path']}'")
-                count("familles mises de côté")
-
-    # ---- restructuring
-    if "restructure" in chosen:
-        t.rule(f"RESTRUCTURATIONS ({len(props)})")
-        explain = {
-            "agent-pack": "Les agents d'un pack sont listés à chaque requête. En plugin, ils ne se chargent que dans les projets où tu l'installes.",
-            "skill-family": "Des skills d'un même domaine, regroupés en plugin : chargés seulement là où ils servent.",
-            "split-skill": "Un SKILL.md trop long est lu en entier à chaque usage ; les sections de référence iront dans references/, lues au besoin.",
-            "command-to-skill": "Les commandes sont l'ancien format ; un skill garde le même /nom et gagne les options des skills.",
-            "rule-paths": "Une règle sans 'paths:' se charge partout ; avec, seulement quand Claude touche ces fichiers.",
-            "procedure-to-skill": "Une procédure dans CLAUDE.md est relue à chaque session ; en skill, seulement quand elle sert.",
-        }
-        accept_kind: set[str] = set()
-        skip_kind: set[str] = set()
-        last_kind = None
-        for n, p in enumerate(props, 1):
-            k = p["kind"]
-            if k in skip_kind:
-                continue
-            if k != last_kind:
-                print(f"\n{t.dim}{explain[k]}{t.r}")
-                last_kind = k
-            gain = f"~{p['gain']} tokens/session" if p["gain"] else "chargé seulement à l'usage"
-            print(f"{t.b}[{n}/{len(props)}]{t.r} {proposal_fr(p)} {t.dim}({gain}){t.r}")
-            if k in accept_kind:
-                ans = "y"
-            else:
-                extra = " · k = mettre de côté" if k == "agent-pack" else ""
-                ans = _ask(
-                    f"  o = appliquer{extra} · Entrée = passer · A = appliquer tous les "
-                    f"'{k}' · S = passer tous les '{k}' · q = fin : ",
-                    "",
-                )
-                if ans == "A":  # apply every proposal of this kind
-                    accept_kind.add(k)
-                    ans = "o"
-                elif ans == "S":  # skip every proposal of this kind
-                    skip_kind.add(k)
-                    continue
-            if ans.lower() == "q":
-                break
-            if k == "agent-pack" and ans.lower() == "k":
-                root = p["root"]
-                dest = root / "parked" / p["path"].relative_to(root)
-                dest.parent.mkdir(parents=True, exist_ok=True)
-                shutil.move(str(p["path"]), str(dest))
-                restore.append(f"mv '{dest}' '{p['path']}'")
-                count("packs mis de côté")
-            elif ans.lower() in ("o", "y"):
-                try:
-                    print(f"     {t.grn}{apply_proposal(p, policy, restore, trash_root)}{t.r}")
-                    count("restructurations appliquées")
-                except (OSError, StopIteration) as e:
-                    print(f"     {t.red}échec : {e}{t.r}")
-
-    # ---- long descriptions
-    if "descriptions" in chosen:
-        t.rule(f"DESCRIPTIONS TROP LONGUES ({len(long_desc)})")
-        print(
-            f"{t.dim}La description de chaque skill est relue à chaque tour. Version courte "
-            f"proposée ; le texte complet\n"
-            f"reste dans metadata.full_description.{t.r}"
-        )
-        if long_desc_ro:
-            print(
-                f"{t.dim}({_fr_plural(long_desc_ro, 'skill')} en lecture seule "
-                f"ignoré{'s' if long_desc_ro > 1 else ''} : liens vers un store synchronisé.){t.r}"
-            )
-        for n, sk in enumerate(long_desc, 1):
-            text = read_text(sk) or ""
-            desc = (split_frontmatter(text)[0] or {}).get("description", "")
-            short, acc = [], 0
-            for s in re.split(r"(?<=[.!?])\s+", desc):
-                if acc + len(s) > limit and short:
-                    break
-                short.append(s)
-                acc += len(s) + 1
-            proposal = " ".join(short)[:limit]
-            print(
-                f"\n{t.b}[{n}/{len(long_desc)}] {sk.parent.name}{t.r} {t.dim}{len(desc)} → "
-                f"{len(proposal)} caractères{t.r}"
-            )
-            print(f"  {t.dim}avant :{t.r} {desc[:200]}{'…' if len(desc) > 200 else ''}")
-            print(f"  {t.grn}après :{t.r} {proposal}")
-            ans = _ask("  o = appliquer · Entrée = passer · q = fin : ", "").lower()
-            if ans == "q":
-                break
-            if ans == "o":
-                new = set_frontmatter(text, {"description": proposal})
-                new = move_to_metadata(set_frontmatter(new, {"full_description": desc}), ["full_description"])
-                try:
-                    backup([sk])
-                    sk.write_text(new, encoding="utf-8")
-                except OSError as e:
-                    print(f"     {t.red}échec : {home_path(str(sk))} ({e}){t.r}")
-                    continue
-                count("descriptions raccourcies")
-
-    # ---- model and MCP
-    if "misc" in chosen:
-        t.rule("MODÈLE ET MCP")
-        for item in misc:
-            if item == "model":
-                print(
-                    f"Modèle par défaut : {t.b}{udata['model']}{t.r}. Opus sert à chaque "
-                    f"session et aux subagents qui en héritent."
-                )
-                if (
-                    _ask(
-                        "  o = passer à Sonnet par défaut (/model opus quand il le faut) · Entrée = garder : ",
-                        "",
-                    ).lower()
-                    == "o"
-                ):
-                    backup([cfg / "settings.json"])
-                    udata["model"] = "sonnet"
-                    (cfg / "settings.json").write_text(dump_json(udata), encoding="utf-8")
-                    count("modèle changé")
-            elif m := re.search(r"(claude mcp add .+)$", item.message):
-                print(f"Serveur MCP proposé : {t.b}{m.group(1)}{t.r}")
-                if _ask("  o = lancer la commande · Entrée = passer : ", "").lower() == "o":
-                    subprocess.run(shlex.split(m.group(1)), check=False)
-                    count("serveurs MCP ajoutés")
-
-    # ---- summary
-    t.rule("BILAN")
-    if done:
-        for action, n in done.items():
-            print(f"  {n:>4}  {action}")
-    else:
-        print("  aucune modification")
-    if restore:
-        print(f"\n  Pour tout annuler : {t.cyan}{home_path(str(restore.script))}{t.r}  (ou : ai-lint.py --restore)")
-    return sum(v for k, v in done.items() if "gardés" not in k)
+    return _tui_app().run(rep, repos, policy, user_scope)
 
 
 def restore_trash(target: str | None) -> int:
