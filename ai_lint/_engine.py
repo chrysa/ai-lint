@@ -6336,7 +6336,6 @@ def proposal_desc(p: dict) -> str:
     return p["title"]
 
 
-
 def _confidence_label(confidence: str) -> str:
     return {
         "high": _loc("confiance haute", "high confidence"),
@@ -7695,10 +7694,14 @@ def _next_action_for(f: Finding, status: str) -> str:
     if _fix_mode_for(f) == "interactive":
         prefix = "run with -i to review interactively" if LANG == "en" else "lancer avec -i pour arbitrer"
         return f"{prefix}: {action}" if action else prefix
-    return action or _why_manual(f.code) or (
-        "review this finding and update the relevant configuration"
-        if LANG == "en"
-        else "examiner ce finding et ajuster la configuration concernee"
+    return (
+        action
+        or _why_manual(f.code)
+        or (
+            "review this finding and update the relevant configuration"
+            if LANG == "en"
+            else "examiner ce finding et ajuster la configuration concernee"
+        )
     )
 
 
@@ -9000,7 +9003,9 @@ def main(argv: list[str] | None = None) -> int:
                     "findings": [finding_feedback(f) for f in rep.findings],
                     "fixed": [finding_feedback(f, "fixed") for f in fixed],
                     "not_fixed": [finding_feedback(f) for f in rep.findings if args.fix or not f.fixable],
-                    "would_fix": [] if args.fix else [finding_feedback(f, "would_fix") for f in rep.findings if f.fixable],
+                    "would_fix": []
+                    if args.fix
+                    else [finding_feedback(f, "would_fix") for f in rep.findings if f.fixable],
                     "applied": applied,
                     "pending_changes": [str(p) for p in [*rep.edits, *rep.new_files, *rep.chmods]]
                     + [f"{s} -> {d}" for s, d in rep.moves],

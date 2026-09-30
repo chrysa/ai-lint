@@ -56,9 +56,9 @@ class ProjectProfiler:
         self._note(signals, standards, "shared-standards")
         workflows = (self.repo / ".github" / "workflows").is_dir()
         self._note(signals, workflows, "github-actions")
-        agent_config = (self.repo / ".claude").exists() or (self.repo / "CLAUDE.md").exists() or (
-            self.repo / "AGENTS.md"
-        ).exists()
+        agent_config = (
+            (self.repo / ".claude").exists() or (self.repo / "CLAUDE.md").exists() or (self.repo / "AGENTS.md").exists()
+        )
         self._note(signals, agent_config, "agent-config")
 
         kind, confidence = self._classify(stack, pyproject, standards)

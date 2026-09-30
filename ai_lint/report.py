@@ -66,7 +66,14 @@ class Report:
     proposals: list = field(default_factory=list)
     project_profiles: list = field(default_factory=list)
 
-    def add(self, level: str, code: str, path: Path | str, msg: str, fixable: bool = False) -> None:
+    def add(
+        self,
+        level: str,
+        code: str,
+        path: Path | str,
+        msg: str,
+        fixable: bool = False,
+    ) -> None:
         if code in _disabled_codes_provider():
             return
         level = _severity_overrides_provider().get(code, level)
