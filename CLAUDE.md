@@ -91,8 +91,9 @@ leave it for the human under "not fixed". Details and the exact fixable set:
 
 ## Quality gate before delivery
 
-- `make check` green (ruff, mypy, pytest).
-- `make selfcheck` → `traces in repo: 0`.
+- Local delivery: `make check` and `make selfcheck` green.
+- CI delivery: keep `.github/workflows/ci.yml` on direct `python -m ruff`, `python -m mypy`,
+  `python -m pytest`, `python tests/_selfcheck.py` and coverage commands, not `make`.
 - New behaviour covered by a test; no lowered coverage floor.
 - No new runtime dependency (stdlib only; PyYAML stays optional, catalogue-only).
 - Shared-standards mapping still respected or explicitly updated.

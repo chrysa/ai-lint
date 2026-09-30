@@ -38,3 +38,25 @@ def test_json_output_includes_project_profiles(env):
     assert data["project_profiles"]
     assert data["project_profiles"][0]["kind"]
     assert "signals" in data["project_profiles"][0]
+
+
+def test_finding_feedback_contract(linter_module):
+    finding = linter_module.Finding(
+        "warn",
+        "DUP_EXACT",
+        "CLAUDE.md",
+        "duplicate always-loaded instruction",
+        False,
+    )
+
+    data = linter_module.finding_feedback(finding)
+
+    assert data["code"] == "DUP_EXACT"
+    assert data["status"] == "open"
+    assert data["fix_mode"] == "interactive"
+    assert data["category"]
+    assert data["evidence"] == {
+        "path": "CLAUDE.md",
+        "message": "duplicate always-loaded instruction",
+    }
+    assert data["next_action"]

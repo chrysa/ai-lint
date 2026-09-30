@@ -4,6 +4,28 @@ Why the project is the way it is — the rationale an agent would otherwise re-d
 undo) each session. History of *what* changed is in [CHANGELOG.md](CHANGELOG.md); this file
 records *why*. Newest first. Each entry: decision, why, and what would reverse it.
 
+## D-018 · New domains move into object-oriented modules
+ai-lint is being decomposed gradually: new isolated domains should live outside
+`ai_lint/_engine.py` as thematic modules with small objects and explicit methods. Package
+`__init__.py` files stay empty. The first extraction is `ai_lint/self_update.py`, which owns
+`SelfUpdater`, `SelfUpdateConfig` and `GitRunner`. **Why:** a full one-shot rewrite of the
+dense engine would be high-risk, but adding new behaviour to the monolith keeps increasing
+coupling. Object modules let tests target one domain without importing unrelated engine
+state. **How to apply:** extract one domain at a time, keep public CLI behaviour stable, and
+update tests/docs in the same change. **Reverse:** only if packaging constraints force a
+single-file distribution again.
+
+## D-017 · Clone installs get an interactive release-branch update prompt
+ai-lint checks for a newer fast-forward commit on the release branch (`origin/main` by
+default) during interactive text runs from a clean clone, then asks before running
+`git pull --ff-only`. The check is cached daily and is silent in CI, JSON output, quiet
+mode, pipes and non-interactive sessions. **Why:** ai-lint is often used as a clone-and-run
+tool; users should learn that a released update exists without the tool mutating itself or
+breaking offline use. **How to apply:** keep update checks best-effort and opt-out
+(`--no-update-check`, `AI_LINT_UPDATE_CHECK=0`); never pull without confirmation; only use
+fast-forward pulls from the release branch. **Reverse:** if ai-lint becomes package-manager
+first, replace the git prompt with package-manager upgrade instructions.
+
 ## D-016 · Reports explain adaptation and next actions
 ai-lint's human feedback must show not only findings, but the reasoning needed to act on them:
 the detected project profile, evidence, why a rule applies, whether it is auto-fixable,
@@ -75,8 +97,8 @@ a repo-local CLI (D-003) run from a clone, so a **root package** keeps
 empty `__init__` follows the request/standard to keep package inits free of
 logic. **Reverse:** if published as an installable library, move to `src/` and add
 a public API in `__init__`. Other shared-standards points are met: all tool config
-in `pyproject.toml` `[tool.*]`, Conventional Commits, invariant `make` targets,
-Ruff line-length 120, caches git-ignored.
+in `pyproject.toml` `[tool.*]`, Conventional Commits, invariant local `make` shortcuts,
+CI wired directly to the tools, Ruff line-length 120, caches git-ignored.
 
 ## D-010 · Renamed `claude-lint` → `ai-lint`
 The tool checks configs for several agent tools, not just Claude Code. **Why:** the name

@@ -58,6 +58,9 @@ Report requirements:
   project intent.
 - End with a short next-step block: commands to run, files to review, and decisions needed.
 - Keep machine-readable JSON stable for CI while keeping human output brief and prioritized.
+- In JSON, enrich each finding with `status`, `category`, `fix_mode`, `evidence`,
+  `manual_reason` and `next_action` so another agent or dashboard can continue from the
+  report without re-parsing prose.
 
 ## What ai-lint should check or encourage
 

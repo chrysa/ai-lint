@@ -66,6 +66,8 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
 
+from ai_lint.self_update import SelfUpdater
+
 try:
     import tomllib
 except ModuleNotFoundError:  # Python < 3.11: policy files unsupported, defaults apply
@@ -7851,6 +7853,62 @@ def _action_for(code: str) -> str:
     return HINTS[code][0] if code in HINTS else ""
 
 
+INTERACTIVE_FIX_CODES = {
+    "DUP_EXACT",
+    "DUP_NAME",
+    "DUP_SIMILAR",
+    "TOKEN_AGENT_PACK",
+    "TOKEN_SKILL_DESC",
+    "TOKEN_MODEL",
+}
+
+
+def _fix_mode_for(f: Finding) -> str:
+    """How this finding should be resolved by an automation consumer."""
+    if f.fixable:
+        return "auto"
+    if f.code in INTERACTIVE_FIX_CODES or f.code.startswith("DUP_"):
+        return "interactive"
+    return "manual"
+
+
+def _next_action_for(f: Finding, status: str) -> str:
+    action = _action_for(f.code)
+    if status == "fixed":
+        return "review the applied change" if LANG == "en" else "relire le changement applique"
+    if f.fixable:
+        prefix = "run with --fix to apply" if LANG == "en" else "lancer avec --fix pour appliquer"
+        return f"{prefix}: {action}" if action else prefix
+    if _fix_mode_for(f) == "interactive":
+        prefix = "run with -i to review interactively" if LANG == "en" else "lancer avec -i pour arbitrer"
+        return f"{prefix}: {action}" if action else prefix
+    return action or _why_manual(f.code) or (
+        "review this finding and update the relevant configuration"
+        if LANG == "en"
+        else "examiner ce finding et ajuster la configuration concernee"
+    )
+
+
+def finding_feedback(f: Finding, status: str = "open") -> dict:
+    """Stable machine-readable feedback for CI, dashboards and follow-up agents."""
+    data = asdict(f)
+    reason = _why_manual(f.code)
+    data.update(
+        {
+            "status": status,
+            "category": category(f.code),
+            "fix_mode": _fix_mode_for(f),
+            "evidence": {
+                "path": f.path,
+                "message": f.message,
+            },
+            "manual_reason": reason or None,
+            "next_action": _next_action_for(f, status),
+        }
+    )
+    return data
+
+
 def _finding_gain(f: Finding) -> int:
     """Estimated tokens saved per session if this finding is acted on. Uses the
     figure already in the message when present, else a per-code estimate. Only the
@@ -8893,6 +8951,16 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--no-history", action="store_true", help="skip git history scan")
     ap.add_argument("--no-cli", action="store_true", help="do not call the claude / rtk CLIs")
     ap.add_argument(
+        "--no-update-check",
+        action="store_true",
+        help="skip the interactive ai-lint self-update prompt",
+    )
+    ap.add_argument(
+        "--update-check",
+        action="store_true",
+        help="check the release branch for an ai-lint update, prompt if possible, then exit",
+    )
+    ap.add_argument(
         "--generate",
         action="store_true",
         help="generate missing config for the detected stack: settings, hooks, skills, "
@@ -8987,9 +9055,12 @@ def main(argv: list[str] | None = None) -> int:
     # Progress bar by default: interactive stderr, no -v (which logs per repo),
     # no -q, text output only. Keeps pipes, JSON and CI silent.
     PROGRESS = sys.stderr.isatty() and args.verbose == 0 and not args.quiet and args.format == "text"
+    LANG = args.lang or ("fr" if os.environ.get("LANG", "").lower().startswith("fr") else "en")
+    if args.update_check:
+        SelfUpdater().check(args, force=True)
+        return 0
     if args.catalog:
         load_catalog(args.catalog)
-    LANG = args.lang or ("fr" if os.environ.get("LANG", "").lower().startswith("fr") else "en")
     load_plugins(args.plugin_dir)
     if args.list_plugins:
         dirs = ", ".join(str(d) for d in plugin_dirs(args.plugin_dir)) or "(none)"
@@ -9031,6 +9102,8 @@ def main(argv: list[str] | None = None) -> int:
     if not args.no_cli:
         CLI_VERSION = detect_cli_version()
         log(1, "claude CLI: " + (".".join(map(str, CLI_VERSION)) if CLI_VERSION else "not found"))
+
+    SelfUpdater().check(args)
 
     run_started = time.perf_counter()
     targets = [] if args.user_only else [r.expanduser().resolve() for r in (args.repos or [Path.cwd()])]
@@ -9105,12 +9178,13 @@ def main(argv: list[str] | None = None) -> int:
             json.dumps(
                 {
                     "cli_version": ".".join(map(str, CLI_VERSION)) if CLI_VERSION else None,
+                    "feedback_schema_version": 1,
                     "repositories": [str(r) for r in repos],
                     "project_profiles": getattr(rep, "project_profiles", []),
-                    "findings": [asdict(f) for f in rep.findings],
-                    "fixed": [asdict(f) for f in fixed],
-                    "not_fixed": [asdict(f) for f in rep.findings if args.fix or not f.fixable],
-                    "would_fix": [] if args.fix else [asdict(f) for f in rep.findings if f.fixable],
+                    "findings": [finding_feedback(f) for f in rep.findings],
+                    "fixed": [finding_feedback(f, "fixed") for f in fixed],
+                    "not_fixed": [finding_feedback(f) for f in rep.findings if args.fix or not f.fixable],
+                    "would_fix": [] if args.fix else [finding_feedback(f, "would_fix") for f in rep.findings if f.fixable],
                     "applied": applied,
                     "pending_changes": [str(p) for p in [*rep.edits, *rep.new_files, *rep.chmods]]
                     + [f"{s} -> {d}" for s, d in rep.moves],
