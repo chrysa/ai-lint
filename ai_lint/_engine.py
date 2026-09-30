@@ -65,6 +65,7 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
 
+from ai_lint.agent_converter import AgentConverter
 from ai_lint.content_validation import CriticalContentValidator as CriticalContentValidator
 from ai_lint.feedback_renderer import FeedbackRenderer
 from ai_lint.finding import Finding
@@ -8079,6 +8080,12 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("repos", nargs="*", type=Path, help="repositories or folders of repositories (default: cwd)")
     ap.add_argument("--user", action="store_true", help="also check user scope")
     ap.add_argument("--user-only", action="store_true", help="check user scope only")
+    ap.add_argument(
+        "--convert-to",
+        choices=("claude", "codex", "agents"),
+        help="preview an agent contract conversion; never writes files",
+    )
+    ap.add_argument("--convert-from", choices=("claude", "codex", "agents"), help="source ecosystem for --convert-to")
     ap.add_argument("--fix", action="store_true", help="apply repairs (with backup)")
     ap.add_argument("--no-scaffold", action="store_true", help="do not create missing files")
     ap.add_argument("--format", choices=("text", "json"), default="text", help="output format (default: text)")
@@ -8181,6 +8188,24 @@ def main(argv: list[str] | None = None) -> int:
         ap.print_help()
         return 0
     args = ap.parse_args(argv)
+    if args.convert_from and not args.convert_to:
+        ap.error("--convert-from requires --convert-to")
+    if args.convert_to:
+        if args.fix or args.generate or args.user or args.user_only or args.guard or args.restore is not None:
+            ap.error("conversion preview cannot be combined with writing or user/guard/restore modes")
+        converter = AgentConverter(redact)
+        source = args.convert_from or ("agents" if args.convert_to == "claude" else "claude")
+        roots = [p.expanduser().absolute() for p in (args.repos or [Path.cwd()])]
+        if any(not root.is_dir() for root in roots):
+            ap.error("conversion requires existing project directories")
+        plans = [converter.plan(root, source, args.convert_to) for root in roots]
+        if args.format == "json":
+            print(json.dumps({"conversion_schema_version": 1, "conversion_plans": plans}, indent=2))
+        elif args.interactive:
+            _tui_app().preview_conversion(plans, converter.render_text)
+        else:
+            print(converter.render_text(plans))
+        return 1 if any(p["diagnostics"] for p in plans) else 0
     global VERBOSITY, SCAFFOLD, CLI_VERSION, SHOW_ALL, FIRST_REPORT, LANG, PROGRESS, MIN_LEVEL, SHOW_DIFF
     if args.restore is not None:
         return restore_trash(args.restore or None)
