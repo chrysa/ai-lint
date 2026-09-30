@@ -164,6 +164,8 @@ class ProjectProfiler:
                 ["git", "-C", str(self.repo), *args],
                 capture_output=True,
                 text=True,
+                encoding="utf-8",
+                errors="replace",
                 timeout=30,
                 check=False,
             )
