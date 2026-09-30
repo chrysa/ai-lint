@@ -25,5 +25,6 @@ Apply [chrysa/shared-standards](https://github.com/chrysa/shared-standards) wher
 - Keep generated, external-service and secret values out of code. Use env references and documented config examples.
 - Preserve the local architecture decision: root `ai_lint/` package is acceptable while this is a repo-local CLI; revisit `src/` only if it becomes a distributed library.
 - Behaviour changes update docs in the same change: README for users, DECISIONS for rationale, ARCHITECTURE for structure, TESTING for gates.
-- CI and release work follows Conventional Commits, `make check`, `make selfcheck`, pre-commit, least-privilege workflow permissions and no plaintext secrets.
+- CI runs Ruff, mypy, pytest, self-check and coverage directly from `pyproject.toml` tooling; local maintainer shortcuts may keep `make check` / `make selfcheck`.
+- Release work follows Conventional Commits, least-privilege workflow permissions and no plaintext secrets.
 - Do not copy the full shared standards corpus into this repo; link to the canonical source and keep only actionable local rules here.
