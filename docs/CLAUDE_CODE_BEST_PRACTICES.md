@@ -42,6 +42,23 @@ Adaptation rules:
 - Keep fixes conservative across every profile: adaptation may reduce scope or ask the human,
   but it may never loosen config automatically.
 
+## Feedback quality
+
+ai-lint reports should be decision-ready, not just diagnostic. A useful report tells the
+operator what ai-lint inferred, what it changed or refused to change, and what to do next.
+
+Report requirements:
+
+- Show the detected project profile and the main signals behind it.
+- Separate errors, warnings, info and restructure proposals.
+- For each high-impact finding, include evidence, risk, recommended action and whether it is
+  auto-fixable, interactive-only or manual-only.
+- Explain skipped or not-applicable standards so the user can tell adaptation from omission.
+- Surface uncertainty explicitly and ask a focused question when the next action depends on
+  project intent.
+- End with a short next-step block: commands to run, files to review, and decisions needed.
+- Keep machine-readable JSON stable for CI while keeping human output brief and prioritized.
+
 ## What ai-lint should check or encourage
 
 | Best practice | ai-lint surface | Expected behaviour |
