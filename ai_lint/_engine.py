@@ -6088,6 +6088,8 @@ def render_proposals(props: list[dict], color: bool) -> str:
 
 BRIEF_FR = {
     # code: (section, what it means, what to do)
+    "GRAPHIFY_MISSING": ("other", "CLI Graphify absente", "installer Graphify ou retirer --graphify"),
+    "GRAPHIFY_FAILED": ("other", "échec de l'exécution Graphify", "voir la sortie Graphify et relancer"),
     "API_KEY_LEAK": (
         "security",
         "clé API Anthropic en clair",
@@ -6249,6 +6251,8 @@ SECTION_TITLES = {
     "dups": "4. DOUBLONS",
 }
 BRIEF_EN = {
+    "GRAPHIFY_MISSING": ("other", "Graphify CLI not found", "install Graphify or drop --graphify"),
+    "GRAPHIFY_FAILED": ("other", "Graphify run failed", "check the Graphify output and retry"),
     "API_KEY_LEAK": (
         "security",
         "plaintext Anthropic API key",
