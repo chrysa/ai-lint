@@ -592,6 +592,12 @@ example is in [`examples/plugins/example_check.py`](examples/plugins/example_che
 
 ## CI
 
+CI runs the Python toolchain **directly** — no `make`. The GitHub Actions workflow installs
+the dev tooling from `pyproject.toml` (`[project.optional-dependencies].dev`) and invokes
+ruff, mypy, pytest, the self-check and coverage as explicit steps, so a failure points
+straight at the failing tool. The `Makefile` is a **local developer shortcut only** (`make
+ci` wraps the same commands); it is never invoked from CI.
+
 ```sh
 python -m ruff check ai_lint ai-lint.py tests
 python -m ruff format --check ai_lint ai-lint.py tests

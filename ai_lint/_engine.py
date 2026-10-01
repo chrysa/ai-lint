@@ -8270,13 +8270,14 @@ def main(argv: list[str] | None = None) -> int:
     global VERBOSITY, SCAFFOLD, CLI_VERSION, SHOW_ALL, FIRST_REPORT, LANG, PROGRESS, MIN_LEVEL, SHOW_DIFF
     global DEBUG_LOG_PATH, DEBUG_LOG_FH
     if args.debug_log:
-        DEBUG_LOG_PATH = args.debug_log.expanduser().resolve()
+        debug_path = args.debug_log.expanduser().resolve()
+        DEBUG_LOG_PATH = debug_path
         try:
-            DEBUG_LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
-            DEBUG_LOG_FH = DEBUG_LOG_PATH.open("w", encoding="utf-8")
+            debug_path.parent.mkdir(parents=True, exist_ok=True)
+            DEBUG_LOG_FH = debug_path.open("w", encoding="utf-8")
         except OSError as error:
-            ap.error(f"cannot open debug log {DEBUG_LOG_PATH}: {error}")
-        log(1, f"debug log started: {DEBUG_LOG_PATH}")
+            ap.error(f"cannot open debug log {debug_path}: {error}")
+        log(1, f"debug log started: {debug_path}")
     if args.restore is not None:
         return restore_trash(args.restore or None)
     VERBOSITY, SCAFFOLD, SHOW_ALL = args.verbose, not args.no_scaffold, args.all
