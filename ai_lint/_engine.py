@@ -1244,6 +1244,8 @@ HINTS: dict[str, tuple[str, str]] = {  # code -> (why/how, reference)
 
 VERBOSITY = 0
 SHOW_DIFF = False  # --diff: print a unified diff of every changed file
+DEBUG_LOG_PATH: Path | None = None
+DEBUG_LOG_FH: Any = None
 # Every (path, before, after) actually written, accumulated across --fix passes
 # (each pass re-scans with a fresh Report, so this must outlive the report).
 CHANGE_LOG: list[tuple[str, str, str]] = []
@@ -1262,9 +1264,21 @@ LEVELS = ("error", "warn", "info")
 
 
 def log(level: int, msg: str, indent: int = 0) -> None:
+    if DEBUG_LOG_FH is not None:
+        timestamp = dt.datetime.now().isoformat(timespec="milliseconds")
+        DEBUG_LOG_FH.write(f"{timestamp} [{level}] {'  ' * indent}{msg}\n")
+        DEBUG_LOG_FH.flush()
     if VERBOSITY >= level:
         line = f"{'  ' * indent}{ {1: '·', 2: '»', 3: 'debug'}.get(level, '·') } {msg}"
         print(f"\033[2m{line}\033[0m" if _COLOR_ERR else line, file=sys.stderr)
+
+
+def close_debug_log() -> None:
+    global DEBUG_LOG_FH
+    if DEBUG_LOG_PATH and DEBUG_LOG_FH is not None:
+        print(f"Debug log: {DEBUG_LOG_PATH}")
+        DEBUG_LOG_FH.close()
+        DEBUG_LOG_FH = None
 
 
 # Progress bar on stderr for the repo scan: only on an interactive stderr, at the
@@ -1273,7 +1287,7 @@ def log(level: int, msg: str, indent: int = 0) -> None:
 PROGRESS = False  # set in main() once flags are known
 
 
-def progress(done: int, total: int, label: str = "") -> None:
+def progress(done: int, total: int, label: str = "", phase: str = "scan") -> None:
     if not PROGRESS or total <= 0:
         return
     width = 24
@@ -1282,7 +1296,7 @@ def progress(done: int, total: int, label: str = "") -> None:
     end = "\n" if done >= total else ""
     lbl = (label[:40] + "…") if len(label) > 41 else label
     print(
-        f"\r\033[2m  scan [{bar}] {done}/{total} {lbl}\033[0m\033[K{end}",
+        f"\r\033[2m  {phase} [{bar}] {done}/{total} {lbl}\033[0m\033[K{end}",
         end=end or "",
         file=sys.stderr,
         flush=True,
@@ -6749,6 +6763,7 @@ def _tui_app() -> TuiApp:
 def interactive(rep: Report, repos: list[Path], policy: dict, user_scope: bool, full_yes: bool = False) -> int:
     app = _tui_app()
     app.full_yes = full_yes
+    app.debug_log = lambda message: log(3, f"interactive action failed: {message}")
     return app.run(rep, repos, policy, user_scope)
 
 
@@ -6837,6 +6852,7 @@ def check_attribution(repo: Path, policy: dict, rep: Report, history: bool) -> N
         ".tox",
         "Pods",
         ".obj",
+        "graphify-out",
     }
     self_path = Path(__file__).resolve()
     self_name = self_path.name
@@ -7243,7 +7259,8 @@ def discover_repos(root: Path, max_depth: int = 3) -> list[Path]:
     return [root]
 
 
-def run_lint(repos: list[Path], policy: dict, args: argparse.Namespace, history: bool) -> Report:
+def run_lint(repos: list[Path], policy: dict, args: argparse.Namespace, history: bool, phase: str = "scan") -> Report:
+    log(1, f"{phase}: starting across {len(repos)} repositories")
     rep = Report()
     user_text = lint_user(policy, rep, repos) if (args.user or args.user_only) else None
     if args.user or args.user_only:
@@ -7269,11 +7286,12 @@ def run_lint(repos: list[Path], policy: dict, args: argparse.Namespace, history:
             else:
                 log(1, f"{r}: not a git repository, nothing generated")
     for n, r in enumerate(repos, 1):
-        progress(n - 1, len(repos), r.name)
+        progress(n - 1, len(repos), r.name, phase)
         t0, before = time.perf_counter(), len(rep.findings)
         lint_repo(r, policy, rep, history, user_text)
         log(1, f"{r}: {len(rep.findings) - before} finding(s) in {time.perf_counter() - t0:.2f}s")
-    progress(len(repos), len(repos), "done")
+    progress(len(repos), len(repos), "done", phase)
+    log(1, f"{phase}: completed")
     if isinstance(rep.budget, dict):
         rep.budget["potential"] = sum(_finding_gain(f) for f in rep.findings) + sum(p["gain"] for p in rep.proposals)
     return rep
@@ -8122,9 +8140,10 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--policy", type=Path, help="policy TOML (default: <repo>/.ai-lint.toml)")
     ap.add_argument("--strict", action="store_true", help="fail on warnings too")
     ap.add_argument("--no-history", action="store_true", help="skip git history scan")
+    ap.add_argument("--debug-log", type=Path, metavar="FILE", help="write detailed diagnostic logs to FILE")
     ap.add_argument("--no-cli", action="store_true", help="do not call the claude / rtk CLIs")
     ap.add_argument("--no-rtk", action="store_true", help="do not call the rtk CLI (use static fallbacks)")
-    ap.add_argument("--graphify", action="store_true", help="build a local code graph for each scanned repository")
+    ap.add_argument("--graphify", action="store_true", help="refresh each code graph locally without an LLM")
     ap.add_argument(
         "--no-update-check",
         action="store_true",
@@ -8245,6 +8264,15 @@ def main(argv: list[str] | None = None) -> int:
             print(converter.render_text(plans))
         return 1 if any(p["diagnostics"] for p in plans) else 0
     global VERBOSITY, SCAFFOLD, CLI_VERSION, SHOW_ALL, FIRST_REPORT, LANG, PROGRESS, MIN_LEVEL, SHOW_DIFF
+    global DEBUG_LOG_PATH, DEBUG_LOG_FH
+    if args.debug_log:
+        DEBUG_LOG_PATH = args.debug_log.expanduser().resolve()
+        try:
+            DEBUG_LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
+            DEBUG_LOG_FH = DEBUG_LOG_PATH.open("w", encoding="utf-8")
+        except OSError as error:
+            ap.error(f"cannot open debug log {DEBUG_LOG_PATH}: {error}")
+        log(1, f"debug log started: {DEBUG_LOG_PATH}")
     if args.restore is not None:
         return restore_trash(args.restore or None)
     VERBOSITY, SCAFFOLD, SHOW_ALL = args.verbose, not args.no_scaffold, args.all
@@ -8255,6 +8283,7 @@ def main(argv: list[str] | None = None) -> int:
     # no -q, text output only. Keeps pipes, JSON and CI silent.
     PROGRESS = sys.stderr.isatty() and args.verbose == 0 and not args.quiet and args.format == "text"
     LANG = args.lang or ("fr" if os.environ.get("LANG", "").lower().startswith("fr") else "en")
+    log(1, f"arguments: {argv if argv is not None else sys.argv[1:]!r}")
     if args.update_check:
         SelfUpdater().check(args, force=True)
         return 0
@@ -8315,9 +8344,12 @@ def main(argv: list[str] | None = None) -> int:
             return 2
     DISCOVERY.clear()
     repos = [repo for t in targets for repo in discover_repos(t)]
+    log(1, f"discovered {len(repos)} repositories")
     policy = load_policy(args.policy, repos)
     history = not args.no_history
-    first = rep = run_lint(repos, policy, args, history)
+    log(1, f"history scan enabled: {history}")
+    log(1, "starting initial scan")
+    first = rep = run_lint(repos, policy, args, history, phase="scan initial")
     FIRST_REPORT = first
     applied: list[str] = []
     failures: list[tuple[str, str]] = []
@@ -8325,6 +8357,7 @@ def main(argv: list[str] | None = None) -> int:
     fixed: list[Finding] = []
 
     if args.fix:
+        log(1, "starting automatic fix passes")
         for n in range(1, 6):
             if not (rep.edits or rep.new_files or rep.chmods or rep.moves):
                 break
@@ -8337,7 +8370,7 @@ def main(argv: list[str] | None = None) -> int:
             failures += failed
             if where:
                 backups.append(str(where))
-            rep = run_lint(repos, policy, args, history)
+            rep = run_lint(repos, policy, args, history, phase=f"scan after fix {n}")
             if failed:
                 break
         remaining = {(f.code, f.path) for f in rep.findings}
@@ -8351,26 +8384,30 @@ def main(argv: list[str] | None = None) -> int:
             rep.add("error", "WRITE_FAILED", p, msg)
 
     if args.interactive and args.format == "text":
+        log(1, "starting interactive review")
         global INTERACTIVE_RAN
         INTERACTIVE_RAN = True
         if interactive(rep, repos, policy, bool(args.user or args.user_only), full_yes=args.full_yes):
-            rep = run_lint(repos, policy, args, history)
+            rep = run_lint(repos, policy, args, history, phase="scan after interactive review")
     if args.graphify:
+        log(1, f"starting Graphify for {len(repos)} repositories")
         graphify = shutil.which("graphify")
         if not graphify:
             rep.add("error", "GRAPHIFY_MISSING", "graphify", "--graphify requires the Graphify CLI on PATH")
         else:
             for repo in repos:
                 result = subprocess.run(
-                    [graphify, "extract", str(repo), "--code-only"],
+                    [graphify, "update", str(repo), "--no-cluster"],
                     check=False,
                     text=True,
                     capture_output=True,
                 )
                 if result.returncode:
                     message = (result.stderr or result.stdout or f"exit status {result.returncode}").strip()
+                    log(2, f"Graphify failed for {repo}: {message[:1000]}")
                     rep.add("error", "GRAPHIFY_FAILED", repo, message[:1000])
                 else:
+                    log(1, f"Graphify indexed {repo}")
                     print(f"Graphify: indexed {repo}")
     if args.format == "text":
         disc = render_discovery(sys.stdout.isatty())
@@ -8390,6 +8427,7 @@ def main(argv: list[str] | None = None) -> int:
             time.perf_counter() - run_started,
             code,
         )
+        close_debug_log()
         return code
     if args.format == "json":
         codes = {f.code for f in rep.findings} | {f.code for f in fixed}
@@ -8443,6 +8481,7 @@ def main(argv: list[str] | None = None) -> int:
             print("\n== rtk report\n" + (report or "rtk not available"))
     code = 1 if rep.count("error") or (args.strict and rep.count("warn")) else 0
     write_run_log(argv or sys.argv[1:], repos, rep, fixed, applied, time.perf_counter() - run_started, code)
+    close_debug_log()
     return code
 
 

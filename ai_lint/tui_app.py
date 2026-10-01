@@ -29,6 +29,7 @@ class TuiApp:
     def __init__(self, services: TuiServices, full_yes: bool = False) -> None:
         self.services = services
         self.full_yes = full_yes
+        self.debug_log = None
         self.t = Tty(services.home_path)
         self.position: int = 0
         self.chosen: list[str] = []
@@ -229,6 +230,8 @@ class TuiApp:
             self._failure(error)
 
     def _failure(self, error: Exception) -> None:
+        if self.debug_log:
+            self.debug_log(repr(error))
         print(f"  {self.t.red}Action failed: {error}{self.t.r}")
         self._count("failed actions")
 

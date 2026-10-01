@@ -148,7 +148,7 @@ The full report ends with:
 |---|---|
 | `--fix` | Apply repairs (and generation) in passes until stable, then re-lint |
 | `--optimize-config` | Alias for `--fix`: apply safe configuration repairs with backups |
-| `--graphify` | Run `graphify extract <repo> --code-only` for each scanned repository |
+| `--graphify` | Run `graphify update <repo> --no-cluster` for each scanned repository (AST only; no API key required) |
 | `--generate` | Generate missing configuration for the detected stack (see below) |
 | `--user`, `--user-only` | Include / restrict to user scope |
 | `--no-scaffold` | Do not create missing files |
@@ -156,6 +156,7 @@ The full report ends with:
 | `--strict` | Exit 1 on warnings too (CI) |
 | `--policy FILE` | Policy file (default `<repo>/.ai-lint.toml`) |
 | `--no-history` | Skip the git history scan for attribution |
+| `--debug-log FILE` | Write timestamped diagnostic and debug messages to `FILE` |
 | `--no-cli` | Do not call the `claude` / `rtk` CLIs (static fallbacks are used) |
 | `--no-rtk` | Do not call the `rtk` CLI; keep static fallbacks and other CLI checks |
 | `--no-update-check` | Skip the interactive ai-lint self-update prompt |
