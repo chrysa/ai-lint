@@ -7,7 +7,7 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True)
 class CriticalContentPolicy:
-    root_files: frozenset[str] = frozenset(
+    instruction_files: frozenset[str] = frozenset(
         {
             "CLAUDE.md",
             "AGENTS.md",
@@ -22,6 +22,15 @@ class CriticalContentPolicy:
             "CLAUDE_CODE_BEST_PRACTICES.md",
             "FIXER_POLICY.md",
             "SHARED_STANDARDS_MAPPING.md",
+        }
+    )
+    config_files: frozenset[str] = frozenset(
+        {
+            ".ai-lint.toml",
+            "pyproject.toml",
+            ".mcp.json",
+            ".claude-lint.toml",
+            ".agent-lint.toml",
         }
     )
     rule_dir_parts: tuple[str, str] = (".claude", "rules")

@@ -22,8 +22,11 @@ class CriticalContentValidator:
         rel = self._relative_path(path)
         if rel is None:
             return False
-        if len(rel.parts) == 1 and rel.name in self.policy.root_files:
-            return True
+        if len(rel.parts) == 1:
+            if rel.name in self.policy.instruction_files:
+                return True
+            if rel.name in self.policy.config_files:
+                return True
         if len(rel.parts) == 2 and rel.parts[0] == "docs" and rel.name in self.policy.docs_files:
             return True
         return self._is_rule_file(rel)
