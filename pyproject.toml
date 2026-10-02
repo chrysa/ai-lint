@@ -47,6 +47,10 @@ disable_error_code = [
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+# Put the repo root on sys.path so `ai_lint` imports under any invocation
+# (`pytest`, `pytest tests/test_x.py`, a single node), not only a bare run from
+# the root. Keeps the no-install, run-from-clone workflow working.
+pythonpath = ["."]
 # Disable globally-installed pytest plugins that assume a Django app; this
 # project is a standalone script with no framework.
 addopts = "-ra -p no:query_optimizer -p no:django -p no:qt -p no:asyncio -p no:cacheprovider"
