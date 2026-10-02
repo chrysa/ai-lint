@@ -1,31 +1,61 @@
----
-paths:
-  - "**/*.py"
-  - "pyproject.toml"
-  - "Makefile"
-  - ".pre-commit-config.yaml"
-  - ".github/workflows/**"
-  - "CLAUDE.md"
-  - "AGENTS.md"
-  - "README.md"
-  - "ARCHITECTURE.md"
-  - "DECISIONS.md"
-  - "TESTING.md"
-  - "docs/**"
-  - ".claude/**"
----
+# shared-standards compliance for ai-lint
 
-# Shared standards for ai-lint
+ai-lint validates, repairs and guards agent configurations. These rules prevent regressions:
 
-Apply [chrysa/shared-standards](https://github.com/chrysa/shared-standards) where it fits this repo. The local mapping is in [docs/SHARED_STANDARDS_MAPPING.md](../../docs/SHARED_STANDARDS_MAPPING.md).
+## Never loosen
 
-- Keep `pyproject.toml` as the single source for Python tooling; do not add `setup.py`, Python `setup.cfg`, `ruff.toml`, `mypy.ini` or `pytest.ini`.
-- Use pytest tests only; do not add `unittest.TestCase` or `unittest.mock` imports.
-- Keep runtime dependencies at zero unless a decision documents why the standard-library contract changed.
-- Keep generated, external-service and secret values out of code. Use env references and documented config examples.
-- Preserve the local architecture decision: root `ai_lint/` package is acceptable while this is a repo-local CLI; revisit `src/` only if it becomes a distributed library.
-- Critical content files (`CLAUDE.md`, `AGENTS.md`, README, architecture, decisions, testing docs, standards docs and `.claude/rules/*.md`) require human validation before content changes.
-- Behaviour changes update docs in the same change: README for users, DECISIONS for rationale, ARCHITECTURE for structure, TESTING for gates.
-- CI runs Ruff, mypy, pytest, self-check and coverage directly from `pyproject.toml` tooling; local maintainer shortcuts may keep `make check` / `make selfcheck`.
-- Release work follows Conventional Commits, least-privilege workflow permissions and no plaintext secrets.
-- Do not copy the full shared standards corpus into this repo; link to the canonical source and keep only actionable local rules here.
+- No fix adds an `allow` rule or widens a matcher.
+- No change removes a `deny` or disables a control.
+- Security gates (secrets, attribution, permissions) block before repair.
+- The fixer applies tightening repairs only; loosening findings are reported, not fixed.
+
+See [docs/FIXER_POLICY.md](../../docs/FIXER_POLICY.md).
+
+## Tests ship with behaviour changes
+
+- Every feature, fix or refactor includes a pytest test.
+- `make check` must pass (lint + typecheck + test, no skips).
+- Coverage floor not lowered. New code has focused test cases.
+
+## Docs and code stay in sync
+
+- User-facing behaviour changes → [README.md](../../README.md)
+- Rationale, decisions → [DECISIONS.md](../../DECISIONS.md)
+- Architecture, data flow → [ARCHITECTURE.md](../../ARCHITECTURE.md)
+- Test strategy → [TESTING.md](../../TESTING.md)
+- Changes committed in the same PR/commit as code.
+
+## Critical content requires human validation
+
+- `CLAUDE.md`, `AGENTS.md`, `README.md`, architecture/decision/testing docs, `.claude/rules/*.md`
+- Config files: `.ai-lint.toml`, `pyproject.toml`, `.mcp.json`
+- Guard blocks unvalidated writes. `--approve-conversion` required for agent-config edits.
+
+## Python packaging single-source
+
+- `pyproject.toml` is the source of truth for:
+  - Build config (`[build-system]`)
+  - Project metadata (name, version, description, authors, urls)
+  - Ruff, mypy, pytest, coverage config
+  - Dependencies and optional groups
+- No `setup.py`, `setup.cfg`, `ruff.toml`, `mypy.ini` or `pytest.ini` side config.
+
+## CI deterministic and least-privilege
+
+- CI runs Python tools **directly**: `ruff check`, `mypy`, `pytest`, `coverage`.
+- No `make` in CI (local developer shortcut only).
+- Release on main via git-cliff + Conventional Commits. One commit = one release.
+- Permissions: `contents: write` (tags/releases only), no secrets in workflow unless guarded.
+
+## No hardcoded external endpoints or secrets
+
+- Credentials, API keys, host paths come from env vars or config files, never inline.
+- Secrets scanning catches `.env`, SSH keys, tokens, PEM files.
+- Generated MCP and settings use `env:VAR` refs, never literal secrets.
+- Pre-commit hook strips assistant attribution.
+
+## Refactoring targets
+
+- Reduce `ai_lint/_engine.py` gradually; currently ~8500 lines (procedural, by design).
+- One class per file when extracting thematic modules (see `content_validation.py`, `project_profile.py`).
+- Always backward-compatible public API (`ai-lint.py` entry point, `main()` function).
