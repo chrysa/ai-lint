@@ -58,3 +58,9 @@ jobs:
           git tag -a "$TAG" -m "Release $TAG"
           git push origin "$TAG"
           gh release create "$TAG" --title "$TAG" --notes-file RELEASE_NOTES.md
+
+      - name: Publish to PyPI
+        if: ${{ steps.version.outputs.tag != '' && !contains(steps.version.outputs.tag, 'dev') }}
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          password: ${{ secrets.PYPI_API_TOKEN }}

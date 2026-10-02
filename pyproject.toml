@@ -1,9 +1,26 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "ai-lint"
 version = "2026.09.28-22"
 description = "Validate, repair and harden Claude Code configurations. Single file, no runtime dependencies."
+readme = "README.md"
+license = {text = "MIT"}
+authors = [{name = "chrysa", email = "dev@chrysa.dev"}]
+keywords = ["claude", "ai-agent", "linter", "security", "configuration"]
 requires-python = ">=3.9"
 dependencies = []  # the linter runs with the standard library alone
+
+[project.urls]
+Homepage = "https://github.com/chrysa/ai-lint"
+Repository = "https://github.com/chrysa/ai-lint"
+Issues = "https://github.com/chrysa/ai-lint/issues"
+Changelog = "https://github.com/chrysa/ai-lint/releases"
+
+[project.scripts]
+ai-lint = "ai_lint._engine:main"
 
 [project.optional-dependencies]
 # Only needed for the editable catalog (--print-catalog / --catalog). The linter
@@ -71,3 +88,7 @@ ignore = ["E501", "B008", "E741", "E731", "UP034"]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = ["B011"]
+
+[tool.setuptools]
+packages = ["ai_lint"]
+package-data = {"ai_lint" = ["py.typed"]}
