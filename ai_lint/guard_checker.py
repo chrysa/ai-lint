@@ -301,9 +301,6 @@ class GuardChecker:
         for pat in self._attribution_patterns:
             if pat.search(new) and not pat.search(old):
                 return "guard: assistant attribution is forbidden"
-        content_reason = CriticalContentValidator([cwd]).validation_reason(path, old, new)
-        if content_reason:
-            return f"guard: {path} needs validation ({content_reason})"
         violations = self._file_violations(path, old, new)
         if isinstance(violations, str):
             return violations
@@ -313,6 +310,9 @@ class GuardChecker:
                 + "; ".join(violations)
                 + ". Leave it for the human and list it under 'not fixed'."
             )
+        content_reason = CriticalContentValidator([cwd]).validation_reason(path, old, new)
+        if content_reason:
+            return f"guard: {path} needs validation ({content_reason})"
         return None
 
     def _command_reason(self, cmd: str) -> str | None:
