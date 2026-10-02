@@ -65,7 +65,8 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
 
-from ai_lint.agent_converter import AgentConverter
+from ai_lint.agent_contract import AgentContract
+from ai_lint.agent_converter import ADAPTERS, AgentConverter
 from ai_lint.content_validation import CriticalContentValidator as CriticalContentValidator
 from ai_lint.desktop_checker import DesktopChecker
 from ai_lint.feedback_renderer import FeedbackRenderer
@@ -8085,6 +8086,40 @@ def load_catalog(path: Path) -> None:
     log(1, f"catalog {path}: +{len(SEVERITY_OVERRIDES)} severity, {len(DISABLED_CODES)} disabled")
 
 
+def _apply_conversions(converter: AgentConverter, roots: list[Path], source: str, args: argparse.Namespace) -> int:
+    """Apply --convert-to to each root, only with --approve-conversion. Backs up
+    the replaced target under ~/.cache/ai-lint/trash/<stamp>/ with a restore.sh,
+    so the write is undoable. Critical target files require approval (issue #16)."""
+    approved = bool(args.approve_conversion)
+    if not approved:
+        print("Refusing to apply: --apply-conversion writes a critical instruction file; pass --approve-conversion.")
+        return 2
+    stamp = dt.datetime.now().strftime("%Y%m%dT%H%M%S")
+    trash_root = Path(os.path.expanduser(f"~/.cache/ai-lint/trash/{stamp}"))
+    restore = RestoreLog(trash_root / "restore.sh")
+
+    def backup(path: Path, old: str) -> None:
+        dest = trash_root / str(path.resolve()).lstrip("/")
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        dest.write_text(old, encoding="utf-8")
+        restore.append(f"cp '{dest}' '{path.resolve()}'  # undo conversion of {path.name}")
+
+    any_applied = failed = False
+    for root in roots:
+        target_path = root / ADAPTERS[args.convert_to].target
+        existing = converter._read(root, target_path, AgentContract())
+        outcome = converter.apply(
+            root, source, args.convert_to, approved=approved, preview_existing=existing, backup=backup
+        )
+        tag = "applied" if outcome["applied"] else "skipped"
+        print(f"{short_path(str(target_path))}: {tag}" + ("" if outcome["applied"] else f" — {outcome['reason']}"))
+        any_applied = any_applied or outcome["applied"]
+        failed = failed or (not outcome["applied"] and "write failed" in outcome.get("reason", ""))
+    if any_applied:
+        print(f"Backup + undo: {home_path(str(restore.script))}  (run it to revert)")
+    return 1 if failed else 0
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(
         description="Validate, repair and optimize coding-agent configurations "
@@ -8133,6 +8168,16 @@ def main(argv: list[str] | None = None) -> int:
         help="preview an agent contract conversion; never writes files",
     )
     ap.add_argument("--convert-from", choices=("claude", "codex", "agents"), help="source ecosystem for --convert-to")
+    ap.add_argument(
+        "--apply-conversion",
+        action="store_true",
+        help="write the converted target file (needs --approve-conversion; backs up and is undoable)",
+    )
+    ap.add_argument(
+        "--approve-conversion",
+        action="store_true",
+        help="explicit human approval to write critical instruction files during --apply-conversion",
+    )
     ap.add_argument(
         "--fix", "--optimize-config", dest="fix", action="store_true", help="apply config repairs (with backup)"
     )
@@ -8260,6 +8305,8 @@ def main(argv: list[str] | None = None) -> int:
         if any(not root.is_dir() for root in roots):
             ap.error("conversion requires existing project directories")
         plans = [converter.plan(root, source, args.convert_to) for root in roots]
+        if args.apply_conversion:
+            return _apply_conversions(converter, roots, source, args)
         if args.format == "json":
             print(json.dumps({"conversion_schema_version": 1, "conversion_plans": plans}, indent=2))
         elif args.interactive:
