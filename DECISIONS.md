@@ -4,6 +4,28 @@ Why the project is the way it is — the rationale an agent would otherwise re-d
 undo) each session. History of *what* changed is in [CHANGELOG.md](CHANGELOG.md); this file
 records *why*. Newest first. Each entry: decision, why, and what would reverse it.
 
+## D-021 · Configuration files are critical content
+Project configuration files (`.ai-lint.toml`, `pyproject.toml`, `.mcp.json`) are
+critical content like instruction files and docs. Guarded sessions block unvalidated
+edits. **Why:** configuration defines how the project runs; a change without human
+review could silently introduce errors (malformed TOML), security gaps (exposed
+MCP credentials), or inconsistency. Critical validation gates prevent unattended
+rewrites. **How to apply:** `CriticalContentValidator` treats config files the same
+as `CLAUDE.md`, `AGENTS.md`, and `.claude/rules/*.md`; guard blocks writes and
+prompts for approval. **Reverse:** only if configuration becomes auto-generated
+from a trusted schema with validation, making human review redundant.
+
+## D-020 · PyPI publication for wider adoption
+ai-lint is published to PyPI (`pip install ai-lint`) alongside git-clone installs.
+The wheel includes the full engine package and CLI entry point, built from
+`pyproject.toml` as the single source of truth. **Why:** clone-and-run works for
+development, but users want package-manager install for CI/CD, reproducible
+environments and version pinning. PyPI publication removes friction for adoption.
+**How to apply:** `pyproject.toml` declares project metadata, setuptools config and
+the console script entry point; CI release workflow builds and publishes the wheel
+(requires `PYPI_API_TOKEN` secret). **Reverse:** only if distribution constraints
+or licensing change; until then, both install paths (git clone and pip) coexist.
+
 ## D-019 · Critical content changes require human validation
 Guarded sessions block edits to critical content files: repo contracts (`CLAUDE.md`,
 `AGENTS.md`), public/project docs (`README.md`, `ARCHITECTURE.md`, `DECISIONS.md`,

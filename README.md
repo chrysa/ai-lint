@@ -80,15 +80,25 @@ README.md · CHANGELOG.md
 
 ## Install
 
-No install needed and no runtime dependencies (Python >= 3.9). Clone the repo (the CLI
-`ai-lint.py` imports the engine from the `ai_lint` package) and run it:
+No runtime dependencies (Python >= 3.9). Install from PyPI or clone the repo.
+
+### From PyPI (recommended)
+
+```sh
+pip install ai-lint
+ai-lint --help
+```
+
+### From source (git clone)
+
+Clone the repo (the CLI `ai-lint.py` imports the engine from the `ai_lint` package) and run it:
 
 ```sh
 git clone https://github.com/chrysa/ai-lint && cd ai-lint
 ./ai-lint.py --help
 ```
 
-For a shorter invocation from anywhere, add an alias:
+For a shorter invocation from anywhere when running from source, add an alias:
 
 ```sh
 alias ai-lint='python3 /path/to/ai-lint/ai-lint.py'
