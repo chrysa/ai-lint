@@ -8,12 +8,29 @@ python3 ai-lint.py . --convert-from codex --convert-to claude --interactive
 python3 ai-lint.py . --convert-from claude --convert-to agents
 ```
 
-This command is strictly read-only. It exits before linting, scaffolding, plugins,
-CLI detection, update checks and history logging. It never writes instruction
-files or permission settings, including when used without a terminal. `--fix`,
-`--generate`, user scope, guard and restore cannot be combined with conversion.
-The terminal UI displays the plan; application requires a future, separately
-validated interactive step. No approval is implied by viewing the preview.
+The preview is strictly read-only. It exits before linting, scaffolding, plugins,
+CLI detection, update checks and history logging. `--fix`, `--generate`, user
+scope, guard and restore cannot be combined with conversion. No approval is implied
+by viewing the preview.
+
+## Applying a conversion
+
+The target instruction file (`CLAUDE.md` / `AGENTS.md`) is **critical content**, so
+writing it requires explicit human approval (see issue #16):
+
+```sh
+python3 ai-lint.py . --convert-from claude --convert-to codex \
+  --apply-conversion --approve-conversion
+```
+
+- Without `--approve-conversion`, `--apply-conversion` refuses and exits non-zero.
+- The previous target content is backed up under `~/.cache/ai-lint/trash/<stamp>/`
+  with a `restore.sh`, so the write is undoable.
+- A **stale preview** is refused: if the target changed on disk since it was read,
+  nothing is written — re-run to see the new diff first.
+- Application is **idempotent**: when the target already matches the conversion,
+  nothing is written.
+- Unresolved diagnostics (conflicts, unmapped scope) block application until resolved.
 
 | Ecosystem | Selected root sources | Proposed target |
 | --- | --- | --- |
