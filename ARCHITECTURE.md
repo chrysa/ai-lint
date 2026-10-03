@@ -38,9 +38,16 @@ section banners:
 | `# Guard` | `guard_check`, `run_guard` — the PreToolUse hook. |
 | `# Plugin system` | `CheckContext`, `PluginAPI`, `load_plugins`, `run_plugin_checks`. |
 | catalogue | `catalog_data`, `dump_catalog`, `load_catalog`. |
-| `ai_lint/content_validation.py` | `CriticalContentValidator.validation_reason()` blocks critical content edits until human validation. |
-| `ai_lint/project_profile.py` | `ProjectProfiler.detect_stack()` and `.detect_profile()` classify the scanned repo. |
+| `ai_lint/content_validation.py` | `CriticalContentValidator.validation_reason()` blocks critical content edits until human validation. Covers instruction, doc, config and rule files. |
+| `ai_lint/project_profile.py` | `ProjectProfiler.detect_stack()` and `.detect_profile()` classify the scanned repo (CLI, library, app, etc.). |
 | `ai_lint/self_update.py` | `SelfUpdater.check()` handles release-branch update detection, confirmation and `git pull --ff-only`; config is in `SelfUpdateConfig`. |
+| `ai_lint/config_flags.py` | `CLIFlags` dataclass and `apply_config_flags()` load CLI defaults from `[flags]` section in TOML. Allows per-project flag presets. |
+| `ai_lint/agent_converter.py` | `AgentConverter` and per-tool adapters (`ClaudeAdapter`, `CodexAdapter`, `AgentsAdapter`) for lossless agent-config conversion (Claude ↔ Codex ↔ AGENTS). |
+| `ai_lint/guard_checker.py` | `GuardChecker` extracts guard logic from engine: PreToolUse checks for loosening config, removed deny rules, attribution, critical content. |
+| `ai_lint/tui_app.py` | `TuiApp` (interactive terminal review) and `TuiServices` provide structured feedback, section selection, critical-diff approval, conversion flows and readiness signals. |
+| `ai_lint/plugin_registry.py` | `CheckContext`, `PluginAPI`, `PluginRegistry` for user-defined checks via plugins. |
+| `ai_lint/finding.py`, `report.py`, `feedback_renderer.py` | Core finding/report model + rendering layer. |
+| `ai_lint/desktop_checker.py` | `DesktopChecker` detects desktop-app frameworks (Electron, Tauri, .NET, Java) and OS-specific config paths. |
 
 ## Core types
 
@@ -53,18 +60,26 @@ section banners:
 
 ## Data flow
 
-1. `main` parses args, sets globals (`VERBOSITY`, `SHOW_DIFF`, `SCAFFOLD`, `LANG`,
-   `MIN_LEVEL`...), loads the policy and optional catalogue/plugins.
-2. `run_lint` builds a fresh `Report`, runs `lint_user` (user scope) and `lint_repo` per
-   repo. Checks only **record** findings and proposed mutations — they never write.
-3. Read-only run → render (`render_brief` by default, `render_text` for `--details`).
-4. `--fix`: loop up to 5 passes — `apply(rep)` writes `edits`/`new_files`/`chmods`/`moves`
-   (after a timestamped backup in `~/.cache/ai-lint/`), then **re-scan** with a new
-   `Report`. Fixes can unlock further fixes; the loop stops when nothing is pending.
-   Because each pass re-scans, the module-level `CHANGE_LOG` accumulates
-   `(path, before, after)` so `-v` / `--diff` can report what changed.
-5. `-i` interactive: judgment-call proposals (duplicates, packs, long descriptions, model)
-   applied one at a time, reversible via a trash dir (`--restore`).
+1. `main` parses args via argparse. `apply_config_flags()` loads `[flags]` from `.ai-lint.toml`
+   as baseline (args override). Sets globals (`VERBOSITY`, `SHOW_DIFF`, `SCAFFOLD`, `LANG`,
+   `MIN_LEVEL`...), loads policy, catalogue, plugins.
+2. `--convert-to` / `--convert-from`: `AgentConverter` plans lossless conversion between
+   Claude/Codex/AGENTS formats. `--approve-conversion` + `apply_conversion()` write the target.
+   Guard checks conversion writes via `GuardChecker.mcp_violations()` before critical
+   validation blocks (content-violations-first order).
+3. `run_lint` builds fresh `Report`, runs `lint_user` (user scope) and `lint_repo` per repo.
+   Checks only **record** findings and mutations — never write. `ProjectProfiler` detects stack.
+4. `--guard` PreToolUse: `GuardChecker` runs first, checks content violations (MCP, perms, etc),
+   then `CriticalContentValidator` blocks unvalidated edits to config/instruction/doc/rule files.
+   Guard fails closed on any error.
+5. Read-only run → render (`render_brief` default, `render_text` for `--details`).
+6. `--fix`: loop ≤5 passes — `apply(rep)` writes `edits`/`new_files`/`chmods`/`moves` (backup
+   to `~/.cache/ai-lint/<stamp>/`), then re-scan. Fixes unlock further fixes; stops when nothing
+   pending. `CHANGE_LOG` accumulates `(path, before, after)` for `-v`/`--diff`.
+7. `-i` interactive / `--full-yes`: `TuiApp` guides judgment calls (duplicates, families,
+   restructure, descriptions, model). `preview_conversion()` shows plans; `apply_conversion_interactive()`
+   prompts approval before writing. `_overview()` and expanded readiness signals show project
+   autonomy status (tests, CI, docs, tooling).
 
 ## The two safety mechanisms
 
