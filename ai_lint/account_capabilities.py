@@ -62,7 +62,7 @@ class AccountCapabilitiesChecker:
                     return "sonnet"
                 elif "haiku" in output:
                     return "haiku"
-        except Exception:
+        except (OSError, subprocess.TimeoutExpired):
             pass
         return None
 
@@ -87,5 +87,5 @@ class AccountCapabilitiesChecker:
                 "has_hooks": bool(settings.get("hooks")),
                 "has_subagents": bool(settings.get("subagents")),
             }
-        except Exception:
+        except (OSError, json.JSONDecodeError, UnicodeDecodeError):
             return {}

@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from pathlib import Path
-
 
 class ProjectAdaptationRecommender:
     """Generate config recommendations based on detected project profile."""

@@ -26,7 +26,7 @@ class LlmtrimChecker:
             mcp = settings.get("mcpServers", {})
             subagents = settings.get("subagents", {})
             return bool(mcp) or any("llmtrim" in str(s).lower() for s in subagents.values())
-        except Exception:
+        except (OSError, json.JSONDecodeError, UnicodeDecodeError):
             return False
 
     def get_status(self) -> str | None:
@@ -44,7 +44,7 @@ class LlmtrimChecker:
                 # Extract first line (savings summary)
                 lines = result.stdout.strip().split("\n")
                 return lines[0] if lines else None
-        except Exception:
+        except (OSError, subprocess.TimeoutExpired):
             pass
         return None
 
