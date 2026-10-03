@@ -46,6 +46,40 @@ class TuiApp:
         self.t.rule("AGENT CONVERSION")
         print(render(plans))
 
+    def apply_conversion_interactive(self, plan: dict, converter) -> bool:
+        """Guide user through conversion approval and application."""
+        self.t.rule("APPLY AGENT CONVERSION")
+        print(f"Target: {plan['target']}")
+        print(f"From: {plan['source']} → To: {plan['target_tool']}")
+        if plan.get("diagnostics"):
+            print("\nWarnings:")
+            for diag in plan["diagnostics"]:
+                print(f"  · {diag}")
+        print("\nReview the conversion plan above before proceeding.")
+        while True:
+            response = input("Apply this conversion? [y/n/details]: ").strip().lower()
+            if response == "y":
+                return True
+            elif response == "n":
+                return False
+            elif response == "details":
+                print("\nFull plan:")
+                print(converter.render_text([plan]))
+            else:
+                print("Enter 'y', 'n', or 'details'.")
+
+    def setup_flow(self, report: Report, scaffold_mode: bool) -> None:
+        """Guide user through setup generation (--generate flow)."""
+        self.t.rule("SETUP GENERATION")
+        if not scaffold_mode:
+            print("  Run with --generate to preview setup, or --generate --fix to apply.")
+            return
+        print("  The following configuration will be generated:")
+        print(f"    · Instructions: {sum(1 for f in report.new_files if f.endswith('.md'))}")
+        print(f"    · Settings: {sum(1 for f in report.new_files if 'settings' in f)}")
+        print(f"    · Hooks: {sum(1 for f in report.new_files if 'hooks' in f)}")
+        print("  Review --diff to inspect each file before applying.")
+
     def _count(self, action: str) -> None:
         self.done[action] = self.done.get(action, 0) + 1
 
@@ -70,6 +104,25 @@ class TuiApp:
             docs = "detected" if (repo / "README.md").is_file() else NOT_DETECTED
             print(f"  {self.services.home_path(str(repo))}: tests {tests}; CI {ci}; README {docs}")
         print("  These are filesystem signals, not a verification that tests or CI pass.")
+
+        # Expanded readiness checks
+        for repo in self.repos:
+            has_precommit = (repo / ".pre-commit-config.yaml").is_file()
+            has_makefile = (repo / "Makefile").is_file()
+            has_pyproject = (repo / "pyproject.toml").is_file()
+            has_claude = (repo / "CLAUDE.md").is_file()
+            signals = []
+            if has_precommit:
+                signals.append("pre-commit hooks")
+            if has_makefile:
+                signals.append("Makefile")
+            if has_pyproject:
+                signals.append("pyproject.toml")
+            if has_claude:
+                signals.append("CLAUDE.md")
+            if signals:
+                print(f"    Tooling: {', '.join(signals)}")
+
         for desktop in report.desktop_compatibility:
             if not desktop["detected"]:
                 continue
