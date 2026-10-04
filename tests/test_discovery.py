@@ -25,7 +25,7 @@ def test_single_git_repo_is_quiet(linter_module, tmp_path):
     (tmp_path / ".git").mkdir()
     m.DISCOVERY.clear()
     m.discover_repos(tmp_path)
-    m.VERBOSITY = 0
+    m.state.verbosity = 0
     assert m.render_discovery(color=False) == ""  # nothing to say for one repo
 
 

@@ -9,7 +9,7 @@ def _finding(mod, code="DUP_EXACT", level="warn"):
 
 def test_brief_english(linter_module, monkeypatch):
     m = linter_module
-    monkeypatch.setattr(m, "LANG", "en")
+    monkeypatch.setattr(m.state, "lang", "en")
     rep = m.Report()
     rep.findings.append(_finding(m))
     text = m.render_brief(rep, [], fix=False, repos_count=1, color=False)
@@ -21,7 +21,7 @@ def test_brief_english(linter_module, monkeypatch):
 
 def test_brief_french(linter_module, monkeypatch):
     m = linter_module
-    monkeypatch.setattr(m, "LANG", "fr")
+    monkeypatch.setattr(m.state, "lang", "fr")
     rep = m.Report()
     rep.findings.append(_finding(m))
     text = m.render_brief(rep, [], fix=False, repos_count=1, color=False)

@@ -38,6 +38,7 @@ section banners:
 | `# Guard` | `guard_check`, `run_guard` — the PreToolUse hook. |
 | `# Plugin system` | `CheckContext`, `PluginAPI`, `load_plugins`, `run_plugin_checks`. |
 | catalogue | `catalog_data`, `dump_catalog`, `load_catalog`. |
+| `ai_lint/_runtime.py` | `RunState` (`state`): per-run options set by `main()`, plus base helpers `log`, `read_text`, `_loc`, `dedupe`. Extracted check modules import these from here, never from `_engine` (D-022). |
 | `ai_lint/content_validation.py` | `CriticalContentValidator.validation_reason()` blocks critical content edits until human validation. Covers instruction, doc, config and rule files. |
 | `ai_lint/project_profile.py` | `ProjectProfiler.detect_stack()` and `.detect_profile()` classify the scanned repo (CLI, library, app, etc.). |
 | `ai_lint/self_update.py` | `SelfUpdater.check()` handles release-branch update detection, confirmation and `git pull --ff-only`; config is in `SelfUpdateConfig`. |
@@ -61,8 +62,8 @@ section banners:
 ## Data flow
 
 1. `main` parses args via argparse. `apply_config_flags()` loads `[flags]` from `.ai-lint.toml`
-   as baseline (args override). Sets globals (`VERBOSITY`, `SHOW_DIFF`, `SCAFFOLD`, `LANG`,
-   `MIN_LEVEL`...), loads policy, catalogue, plugins.
+   as baseline (args override). Sets run options on `ai_lint._runtime.state` (`verbosity`,
+   `show_diff`, `scaffold`, `lang`, `min_level`...), loads policy, catalogue, plugins.
 2. `--convert-to` / `--convert-from`: `AgentConverter` plans lossless conversion between
    Claude/Codex/AGENTS formats. `--approve-conversion` + `apply_conversion()` write the target.
    Guard checks conversion writes via `GuardChecker.mcp_violations()` before critical

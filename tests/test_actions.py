@@ -6,7 +6,7 @@ from __future__ import annotations
 
 def test_action_for_headline_and_tail(linter_module, monkeypatch):
     m = linter_module
-    monkeypatch.setattr(m, "LANG", "en")
+    monkeypatch.setattr(m.state, "lang", "en")
     # headline code from the brief table
     assert m._action_for("SKILL_NAME")
     assert "rename" in m._action_for("SKILL_NAME").lower()

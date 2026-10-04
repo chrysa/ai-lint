@@ -65,6 +65,7 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
 
+from ai_lint._runtime import _loc, dedupe, log, read_text, state
 from ai_lint.agent_contract import AgentContract
 from ai_lint.agent_converter import ADAPTERS, AgentConverter
 from ai_lint.content_validation import CriticalContentValidator as CriticalContentValidator
@@ -1243,53 +1244,28 @@ HINTS: dict[str, tuple[str, str]] = {  # code -> (why/how, reference)
 # Logging and findings
 # --------------------------------------------------------------------------- #
 
-VERBOSITY = 0
-SHOW_DIFF = False  # --diff: print a unified diff of every changed file
-DEBUG_LOG_PATH: Path | None = None
-DEBUG_LOG_FH: Any = None
 # Every (path, before, after) actually written, accumulated across --fix passes
 # (each pass re-scans with a fresh Report, so this must outlive the report).
 CHANGE_LOG: list[tuple[str, str, str]] = []
-SCAFFOLD = True
-CLI_VERSION: tuple[int, ...] | None = None
-LANG = "fr"  # brief-report language: "fr" or "en" (set from --lang / $LANG)
 
 
-def _loc(fr: str, en: str) -> str:
-    """Pick the brief-report string for the active language."""
-    return en if LANG == "en" else fr
-
-
-_COLOR_ERR = sys.stderr.isatty()
 LEVELS = ("error", "warn", "info")
 
 
-def log(level: int, msg: str, indent: int = 0) -> None:
-    if DEBUG_LOG_FH is not None:
-        timestamp = dt.datetime.now().isoformat(timespec="milliseconds")
-        DEBUG_LOG_FH.write(f"{timestamp} [{level}] {'  ' * indent}{msg}\n")
-        DEBUG_LOG_FH.flush()
-    if VERBOSITY >= level:
-        line = f"{'  ' * indent}{ {1: '·', 2: '»', 3: 'debug'}.get(level, '·') } {msg}"
-        print(f"\033[2m{line}\033[0m" if _COLOR_ERR else line, file=sys.stderr)
-
-
 def close_debug_log() -> None:
-    global DEBUG_LOG_FH
-    if DEBUG_LOG_PATH and DEBUG_LOG_FH is not None:
-        print(f"Debug log: {DEBUG_LOG_PATH}")
-        DEBUG_LOG_FH.close()
-        DEBUG_LOG_FH = None
+    if state.debug_log_path and state.debug_log_fh is not None:
+        print(f"Debug log: {state.debug_log_path}")
+        state.debug_log_fh.close()
+        state.debug_log_fh = None
 
 
 # Progress bar on stderr for the repo scan: only on an interactive stderr, at the
 # default verbosity (a -v run prints per-repo lines instead, and -q / a pipe / CI
 # stay silent). It writes to stderr so stdout (the report, JSON) is never polluted.
-PROGRESS = False  # set in main() once flags are known
 
 
 def progress(done: int, total: int, label: str = "", phase: str = "scan") -> None:
-    if not PROGRESS or total <= 0:
+    if not state.progress or total <= 0:
         return
     width = 24
     filled = int(width * done / total)
@@ -1343,28 +1319,6 @@ def load_policy(path: Path | None, repos: list[Path]) -> dict:
     )
     log(3, "resolved policy: " + json.dumps(policy, ensure_ascii=False))
     return policy
-
-
-_READ_CACHE: dict = {}  # (path, mtime_ns, size) -> text; keyed on stat so a write misses
-
-
-def read_text(p: Path) -> str | None:
-    try:
-        st = p.stat()
-        key = (str(p), st.st_mtime_ns, st.st_size)
-    except OSError:
-        return None
-    hit = _READ_CACHE.get(key)
-    if hit is not None:
-        return hit
-    try:
-        text = p.read_text(encoding="utf-8")
-    except (OSError, UnicodeDecodeError):
-        return None
-    if len(_READ_CACHE) > 20000:  # bound memory on huge scans
-        _READ_CACHE.clear()
-    _READ_CACHE[key] = text
-    return text
 
 
 configure_report_context(
@@ -1659,11 +1613,6 @@ def rtk_twin(rule: str, exempt: list[str]) -> str | None:
     if not first or first in exempt or first.startswith("*"):
         return None
     return f"Bash(rtk {spec})"
-
-
-def dedupe(seq: list[str]) -> list[str]:
-    seen: set[str] = set()
-    return [x for x in seq if not (x in seen or seen.add(x))]  # type: ignore[func-returns-value]
 
 
 def repair_rule(rule: Any, key: str, scope: str, path: Path, rep: Report, policy: dict) -> str | None:
@@ -2765,16 +2714,16 @@ def check_agents_md(repo: Path, policy: dict, rep: Report) -> None:
                 "AGENTS_SHADOWED_LOCAL",
                 repo,
                 "CLAUDE.local.md stops AGENTS.md from loading (CLAUDE.md importing it created)",
-                SCAFFOLD,
+                state.scaffold,
             )
-            if SCAFFOLD:
+            if state.scaffold:
                 rep.new_files[repo / "CLAUDE.md"] = ("@AGENTS.md\n", 0o644)
-        elif CLI_VERSION and CLI_VERSION < (2, 1, 277):
+        elif state.cli_version and state.cli_version < (2, 1, 277):
             rep.add(
                 "warn",
                 "AGENTS_OLD_CLI",
                 repo,
-                f"claude {'.'.join(map(str, CLI_VERSION))} does not read AGENTS.md",
+                f"claude {'.'.join(map(str, state.cli_version))} does not read AGENTS.md",
             )
         return
     if claude.is_symlink():
@@ -3596,7 +3545,7 @@ def check_plugin_dir(root: Path, rep: Report, policy: dict) -> None:
     check_output_styles(root, rep)
     if new != data or repaired:
         rep.edit(mf, raw, dump_json(new))
-    if CLI_VERSION and shutil.which("claude"):
+    if state.cli_version and shutil.which("claude"):
         try:
             res = subprocess.run(
                 ["claude", "plugin", "validate", str(root)],
@@ -4334,7 +4283,7 @@ def render_discovery(color: bool) -> str:
         return ""
     total = sum(len(d["repos"]) for d in DISCOVERY)
     single = len(DISCOVERY) == 1 and DISCOVERY[0]["kind"] == "git-repo"
-    if single and VERBOSITY == 0:
+    if single and state.verbosity == 0:
         return ""
     b, dim, r0 = ("\033[1m", "\033[2m", "\033[0m") if color else ("", "", "")
     lines = [f"{b}Discovered {total} repository(ies) from {len(DISCOVERY)} target(s){r0}"]
@@ -4347,7 +4296,7 @@ def render_discovery(color: bool) -> str:
         else:
             note = f"{len(d['repos'])} repo(s), depth <= {d.get('max_depth', 3)}, {d['pruned']} dir(s) pruned"
             lines.append(f"  {root} {dim}({note}){r0}")
-            show = d["repos"] if VERBOSITY >= 1 else d["repos"][:10]
+            show = d["repos"] if state.verbosity >= 1 else d["repos"][:10]
             lines += [f"    - {short_path(str(r))}" for r in show]
             if len(d["repos"]) > len(show):
                 lines.append(f"    {dim}... and {len(d['repos']) - len(show)} more (-v to list all){r0}")
@@ -6393,11 +6342,11 @@ SECTION_TITLES_EN = {
 
 
 def brief_table() -> dict:
-    return BRIEF_EN if LANG == "en" else BRIEF_FR
+    return BRIEF_EN if state.lang == "en" else BRIEF_FR
 
 
 def section_titles() -> dict:
-    return SECTION_TITLES_EN if LANG == "en" else SECTION_TITLES
+    return SECTION_TITLES_EN if state.lang == "en" else SECTION_TITLES
 
 
 def home_path(p: str) -> str:
@@ -6425,7 +6374,7 @@ def proposal_fr(p: dict) -> str:
 
 def proposal_desc(p: dict) -> str:
     """Language-aware proposal description for the brief report."""
-    if LANG != "en":
+    if state.lang != "en":
         return proposal_fr(p)
     path = home_path(str(p.get("path", "")))
     k = p["kind"]
@@ -6494,11 +6443,11 @@ def render_brief(rep: Report, fixed: list[Finding], fix: bool, repos_count: int,
             else _loc("Rien à corriger automatiquement.", "Nothing to fix automatically.")
         )
         # -v / --diff: say what changed in each file, not just the count.
-        if CHANGE_LOG and (VERBOSITY >= 1 or SHOW_DIFF):
+        if CHANGE_LOG and (state.verbosity >= 1 or state.show_diff):
             for spath, before, after in CHANGE_LOG:
                 path = Path(spath)
                 out.append(f"  {dim}{short_path(spath)}{r0}")
-                if SHOW_DIFF:
+                if state.show_diff:
                     out += [f"    {dl}" for dl in _unified_diff(path, before, after)]
                 else:
                     out += [f"    {dim}{d}{r0}" for d in _change_details(path, before, after)]
@@ -7145,7 +7094,7 @@ def scaffold_user(policy: dict, rep: Report) -> None:
 def lint_user(policy: dict, rep: Report, repos: list[Path]) -> str | None:
     home = config_dir()
     log(1, f"user scope: {home}")
-    if SCAFFOLD:
+    if state.scaffold:
         scaffold_user(policy, rep)
     if not home.is_dir():
         rep.add("info", "USER_SCOPE_ABSENT", home, "no user-scope configuration")
@@ -7164,7 +7113,7 @@ def lint_user(policy: dict, rep: Report, repos: list[Path]) -> str | None:
 def lint_repo(repo: Path, policy: dict, rep: Report, history: bool, user_text: str | None) -> None:
     log(1, f"project scope: {repo}")
     check_misplaced(repo, rep)
-    if SCAFFOLD and (repo / ".git").exists():
+    if state.scaffold and (repo / ".git").exists():
         scaffold_project(repo, policy, rep)
         scaffold_security(repo, policy, rep)
     dot = repo / ".claude"
@@ -7407,12 +7356,8 @@ def redact(text: str) -> str:
     return SECRET_REDACT_RE.sub(lambda m: m.group(1) + "***REDACTED***", text)
 
 
-FIRST_REPORT: Report | None = None
-INTERACTIVE_RAN = False
-
-
 def _feedback_renderer() -> FeedbackRenderer:
-    return FeedbackRenderer(LANG, brief_table(), HINTS, CATEGORIES)
+    return FeedbackRenderer(state.lang, brief_table(), HINTS, CATEGORIES)
 
 
 def _why_manual(code: str) -> str:
@@ -7532,12 +7477,12 @@ def render_text(
             for spath, before, after in CHANGE_LOG:
                 if str(Path(spath).resolve()) != target:
                     continue
-                if SHOW_DIFF:
+                if state.show_diff:
                     out += [f"      {dl}" for dl in _unified_diff(Path(spath), before, after)]
-                elif VERBOSITY >= 1:
+                elif state.verbosity >= 1:
                     out += [f"{dim}      {d}{r0}" for d in _change_details(Path(spath), before, after)]
     # Detailed findings: always in read-only mode; with --fix only at -v (the summary lists them).
-    if not fix or VERBOSITY >= 1:
+    if not fix or state.verbosity >= 1:
         if fix and rep.findings:
             out.append("== Remaining findings (details)")
         lvl_c = {k: (COLORS[k] if color else "") for k in LEVELS}
@@ -7559,7 +7504,7 @@ def render_text(
             action = _action_for(f.code)
             if action:
                 out.append(f"{g}      {_loc('→ solution', '→ fix')} : {r0}{action}")
-            if VERBOSITY >= 1 and f.code in HINTS:
+            if state.verbosity >= 1 and f.code in HINTS:
                 why, ref = HINTS[f.code]
                 if not _action_for(f.code) or ref:
                     out.append(f"{dim}      ref: {HINTS[f.code][1]}{r0}")
@@ -7594,12 +7539,10 @@ def short_path(p: str) -> str:
 
 
 GROUP_THRESHOLD = 5
-SHOW_ALL = False
-MIN_LEVEL = "info"  # hide findings below this level in the report (--min-level)
 
 
 def _below_min(level: str) -> bool:
-    return LEVELS.index(level) > LEVELS.index(MIN_LEVEL)
+    return LEVELS.index(level) > LEVELS.index(state.min_level)
 
 
 def visible_findings(findings: list[Finding]) -> list[Finding]:
@@ -7661,7 +7604,7 @@ def grouped_findings(findings: list[Finding]) -> list[tuple[str, list[Finding]]]
     order = {lvl: i for i, lvl in enumerate(LEVELS)}
     out: list[tuple[str, list[Finding]]] = []
     for (_lvl, _code), items in sorted(by.items(), key=lambda kv: (order[kv[0][0]], -len(kv[1]), kv[0][1])):
-        if SHOW_ALL or len(items) <= GROUP_THRESHOLD:
+        if state.show_all or len(items) <= GROUP_THRESHOLD:
             out += [("one", [f]) for f in sorted(items, key=lambda f: f.path)]
         else:
             out.append(("group", items))
@@ -7682,7 +7625,7 @@ def render_group(items: list[Finding], lvl_color: dict, r0: str, indent: str = "
         f"{indent}        most common ({n_common}): {items[0].message if len(msgs) == 1 else common}",
         f"{indent}        in: {', '.join(files[:3])}"
         + (f" +{len(files) - 3} more" if len(files) > 3 else "")
-        + ("  (--all to list every one)" if not SHOW_ALL else ""),
+        + ("  (--all to list every one)" if not state.show_all else ""),
     ]
 
 
@@ -7791,19 +7734,19 @@ def render_summary(
 
     lines.append(rule)
     tb = render_token_budget(
-        getattr(rep, "budget", None), color, getattr(FIRST_REPORT, "budget", None) if fix else None
+        getattr(rep, "budget", None), color, getattr(state.first_report, "budget", None) if fix else None
     )
     if tb:
         lines += [tb, rule]
     rp = render_proposals(getattr(rep, "proposals", []), color)
     if rp:
         lines += [rp, rule]
-    lines += [render_stats(rep, FIRST_REPORT, fixed if fix else [], color), rule]
+    lines += [render_stats(rep, state.first_report, fixed if fix else [], color), rule]
     counts = f"{rep.count('error')} error(s), {rep.count('warn')} warning(s), {rep.count('info')} info"
     dups = sum(1 for f in rep.findings if f.code.startswith("DUP_"))
     packs = [f for f in rep.findings if f.code == "TOKEN_AGENT_PACK"]
     longdesc = sum(1 for f in rep.findings if f.code == "TOKEN_SKILL_DESC")
-    if (dups or packs or longdesc or getattr(rep, "proposals", [])) and not INTERACTIVE_RAN:
+    if (dups or packs or longdesc or getattr(rep, "proposals", [])) and not state.interactive_ran:
         pack_tokens = sum(int(m.group(1)) for f in packs if (m := re.search(r"~(\d+) tokens", f.message)))
         lines.append(
             f"NEXT: run again with -i to review {dups} duplicate group(s), "
@@ -8314,27 +8257,25 @@ def main(argv: list[str] | None = None) -> int:
         else:
             print(converter.render_text(plans))
         return 1 if any(p["diagnostics"] for p in plans) else 0
-    global VERBOSITY, SCAFFOLD, CLI_VERSION, SHOW_ALL, FIRST_REPORT, LANG, PROGRESS, MIN_LEVEL, SHOW_DIFF
-    global DEBUG_LOG_PATH, DEBUG_LOG_FH
     if args.debug_log:
         debug_path = args.debug_log.expanduser().resolve()
-        DEBUG_LOG_PATH = debug_path
+        state.debug_log_path = debug_path
         try:
             debug_path.parent.mkdir(parents=True, exist_ok=True)
-            DEBUG_LOG_FH = debug_path.open("w", encoding="utf-8")
+            state.debug_log_fh = debug_path.open("w", encoding="utf-8")
         except OSError as error:
             ap.error(f"cannot open debug log {debug_path}: {error}")
         log(1, f"debug log started: {debug_path}")
     if args.restore is not None:
         return restore_trash(args.restore or None)
-    VERBOSITY, SCAFFOLD, SHOW_ALL = args.verbose, not args.no_scaffold, args.all
-    SHOW_DIFF = args.diff
+    state.verbosity, state.scaffold, state.show_all = args.verbose, not args.no_scaffold, args.all
+    state.show_diff = args.diff
     CHANGE_LOG.clear()
-    MIN_LEVEL = args.min_level
+    state.min_level = args.min_level
     # Progress bar by default: interactive stderr, no -v (which logs per repo),
     # no -q, text output only. Keeps pipes, JSON and CI silent.
-    PROGRESS = sys.stderr.isatty() and args.verbose == 0 and not args.quiet and args.format == "text"
-    LANG = args.lang or ("fr" if os.environ.get("LANG", "").lower().startswith("fr") else "en")
+    state.progress = sys.stderr.isatty() and args.verbose == 0 and not args.quiet and args.format == "text"
+    state.lang = args.lang or ("fr" if os.environ.get("LANG", "").lower().startswith("fr") else "en")
     log(1, f"arguments: {argv if argv is not None else sys.argv[1:]!r}")
     if args.update_check:
         SelfUpdater().check(args, force=True)
@@ -8380,8 +8321,8 @@ def main(argv: list[str] | None = None) -> int:
     detect_llmtrim(not args.no_cli)
     RTK["checked_cli"] = not args.no_cli and not args.no_rtk
     if not args.no_cli:
-        CLI_VERSION = detect_cli_version()
-        log(1, "claude CLI: " + (".".join(map(str, CLI_VERSION)) if CLI_VERSION else "not found"))
+        state.cli_version = detect_cli_version()
+        log(1, "claude CLI: " + (".".join(map(str, state.cli_version)) if state.cli_version else "not found"))
 
     updater = SelfUpdater()
     updater.check(args)
@@ -8402,7 +8343,7 @@ def main(argv: list[str] | None = None) -> int:
     log(1, f"history scan enabled: {history}")
     log(1, "starting initial scan")
     first = rep = run_lint(repos, policy, args, history, phase="scan initial")
-    FIRST_REPORT = first
+    state.first_report = first
     applied: list[str] = []
     failures: list[tuple[str, str]] = []
     backups: list[str] = []
@@ -8437,8 +8378,7 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.interactive and args.format == "text":
         log(1, "starting interactive review")
-        global INTERACTIVE_RAN
-        INTERACTIVE_RAN = True
+        state.interactive_ran = True
         if interactive(rep, repos, policy, bool(args.user or args.user_only), full_yes=args.full_yes):
             rep = run_lint(repos, policy, args, history, phase="scan after interactive review")
     if args.graphify:
@@ -8486,7 +8426,7 @@ def main(argv: list[str] | None = None) -> int:
         print(
             json.dumps(
                 {
-                    "cli_version": ".".join(map(str, CLI_VERSION)) if CLI_VERSION else None,
+                    "cli_version": ".".join(map(str, state.cli_version)) if state.cli_version else None,
                     "feedback_schema_version": 1,
                     "repositories": [str(r) for r in repos],
                     "project_profiles": getattr(rep, "project_profiles", []),

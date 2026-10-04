@@ -6,7 +6,7 @@ from __future__ import annotations
 
 def test_progress_silent_when_disabled(linter_module, capsys, monkeypatch):
     m = linter_module
-    monkeypatch.setattr(m, "PROGRESS", False)
+    monkeypatch.setattr(m.state, "progress", False)
     m.progress(1, 10, "repo")
     err = capsys.readouterr()
     assert err.out == "" and err.err == ""
@@ -14,7 +14,7 @@ def test_progress_silent_when_disabled(linter_module, capsys, monkeypatch):
 
 def test_progress_writes_stderr_when_enabled(linter_module, capsys, monkeypatch):
     m = linter_module
-    monkeypatch.setattr(m, "PROGRESS", True)
+    monkeypatch.setattr(m.state, "progress", True)
     m.progress(3, 10, "myrepo")
     cap = capsys.readouterr()
     assert cap.out == "", "progress must never touch stdout"

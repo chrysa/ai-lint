@@ -4,6 +4,18 @@ Why the project is the way it is — the rationale an agent would otherwise re-d
 undo) each session. History of *what* changed is in [CHANGELOG.md](CHANGELOG.md); this file
 records *why*. Newest first. Each entry: decision, why, and what would reverse it.
 
+## D-022 · Run state lives in one object, not module globals
+Options set by `main()` (verbosity, language, debug log, scaffold, min level...) live in
+`ai_lint._runtime.state` (`RunState`), next to the base helpers `log`, `read_text`,
+`_loc` and `dedupe`. **Why:** `main()` used to rebind `_engine` module globals, so any
+function moved out of `_engine.py` would read stale values; the only way out was
+duplicating code, which splits security checks into two diverging copies. One shared
+state object lets checks move into thematic modules with a plain import and no cycle.
+**How to apply:** read and set options through `state.<name>`; tests patch
+`monkeypatch.setattr(m.state, "<name>", value)`. Extracted modules import from
+`ai_lint._runtime`, never from `ai_lint._engine`. **Reverse:** only if the engine becomes a
+single object that carries its own options.
+
 ## D-021 · Configuration files are critical content
 Project configuration files (`.ai-lint.toml`, `pyproject.toml`, `.mcp.json`) are
 critical content like instruction files and docs. Guarded sessions block unvalidated
