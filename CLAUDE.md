@@ -32,7 +32,7 @@ config. Keep it: correct against the docs, safe by construction, cheap to run, d
 ## Priorities (in order)
 
 1. Security correctness (never loosen; catch real leaks; guard fails closed).
-2. Faithfulness to the official docs (snapshot in `ai_lint/_engine.py`, `# Reference data`).
+2. Faithfulness to the official docs (snapshot in `ai_lint/_reference.py`).
 3. Token-cost signal (the budget estimate and levers stay honest).
 4. Low false-positive rate (a noisy linter gets ignored).
 5. Speed and zero runtime deps.
@@ -74,13 +74,13 @@ every session. Details live in [docs/CLAUDE_CODE_BEST_PRACTICES.md](docs/CLAUDE_
 
 ## Sensitive zones (extra care)
 
-- **Permission logic** (`# Reference data`, permission checks, `settings_violations`,
+- **Permission logic** (`ai_lint/_reference.py`, permission checks, `settings_violations`,
   `rtk_twin`) — the core "never loosen" surface.
 - **`guard_check` / `run_guard`** — a wrong "allow" here defeats the guard. Fail closed.
 - **`API_KEY_LEAK` / secret scan** — a false negative ships a leaked key.
 - **`apply()` + the re-scan fix loop** — writes files; a bug corrupts user config. Backups
   go to `~/.cache/ai-lint/`.
-- **Docs snapshot** (`# Reference data`) — only change with a doc reference; note the date.
+- **Docs snapshot** (`ai_lint/_reference.py`) — only change with a doc reference; note the date.
 
 ## Security policy
 

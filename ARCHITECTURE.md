@@ -29,8 +29,8 @@ section banners:
 | Region (approx.) | Contents |
 |---|---|
 | `# Policy` | `DEFAULT_POLICY` (nested dict), `load_policy` (TOML overlay via `deep_merge`), `to_toml`. Every knob defaults here. |
-| `# Reference data (docs snapshot)` | Known settings keys, hook events, tools, skill/agent fields, dead keys. The source of truth the checks compare against; carries the doc date. |
-| `# Hints and references` | `HINTS[code] = (why/how, doc_url)`; the attribution patterns and the scaffold templates (`COMMIT_MSG_HOOK`, `PRE_COMPACT_HOOK`, `SECRETS_GITIGNORE`). |
+| `ai_lint/_reference.py` (docs snapshot) | Known settings keys, hook events, tools, skill/agent fields, dead keys; also the attribution patterns and the scaffold templates (`COMMIT_MSG_HOOK`, `PRE_COMPACT_HOOK`, `SECRETS_GITIGNORE`, `AGENTS_SKELETON`). Pure data shared by every module. The source of truth the checks compare against; carries the doc date. |
+| `# Hints and references` | `HINTS[code] = (why/how, doc_url)`. |
 | checks | `check_*` functions (settings, permissions, hooks, MCP, skills, subagents, rules, instructions, plugins, workflows, secrets). Each appends `Finding`s to a `Report`. |
 | `# Token budget` | `token_budget`, `check_token_levers`, `check_effort_levels`, `render_token_budget` — the always-loaded weight estimate and its levers. |
 | `# Scaffolding` | `scaffold_project`, `scaffold_user`, `scaffold_security`, `gen_new_file` — files `--generate` proposes. |
