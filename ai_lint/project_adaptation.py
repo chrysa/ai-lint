@@ -63,7 +63,7 @@ class ProjectAdaptationRecommender:
     def generate_settings_template(self) -> dict:
         """Generate recommended settings.json structure."""
         return {
-            "model": "claude-opus-4",  # default to strongest
+            "model": "sonnet",  # matches the tokens.preferred_model default
             "hooks": self.recommend_hooks(),
             "skills": self.recommend_skills(),
             "mcpServers": {srv: {} for srv in self.recommend_mcp_servers()},

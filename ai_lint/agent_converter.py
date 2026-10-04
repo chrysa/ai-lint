@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import difflib
 import re
+from collections.abc import Callable
 from pathlib import Path
-from typing import Callable
 
 from ai_lint.agent_contract import AgentContract
 from ai_lint.agents_adapter import AgentsAdapter

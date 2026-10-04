@@ -10,7 +10,7 @@ readme = "README.md"
 license = {text = "MIT"}
 authors = [{name = "chrysa", email = "dev@chrysa.dev"}]
 keywords = ["claude", "ai-agent", "linter", "security", "configuration"]
-requires-python = ">=3.9"
+requires-python = ">=3.13"
 dependencies = []  # the linter runs with the standard library alone
 
 [project.urls]
@@ -42,7 +42,7 @@ show_missing = true
 
 [tool.mypy]
 files = ["ai_lint", "ai-lint.py"]
-python_version = "3.10"
+python_version = "3.13"
 # Type-checking catches real bugs here (arg-type, index, return types). Full
 # `strict` on this dense single file is deferred: the bare-generic and
 # untyped-def noise it raises is stylistic, not correctness. These checks are the
@@ -74,7 +74,7 @@ addopts = "-ra -p no:query_optimizer -p no:django -p no:qt -p no:asyncio -p no:c
 
 [tool.ruff]
 line-length = 120  # shared-standards: max 120 chars
-target-version = "py39"
+target-version = "py313"
 
 [tool.ruff.lint]
 # shared-standards code-style: E, W, I, N, UP, B, plus BLE (never bare

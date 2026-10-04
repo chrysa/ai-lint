@@ -15,7 +15,8 @@ from ai_lint.content_validation import CriticalContentValidator
 GUARD_MARKER = "--guard"
 CONFIG_HINT = re.compile(
     r"(settings(\.local)?\.json|\.mcp\.json|\.claude\.json|/\.claude/|\.claude/|"
-    r"\.agent-lint\.toml|\.git/hooks|ai-lint|SKILL\.md|CLAUDE(\.local)?\.md|AGENTS\.md)"
+    r"\.agent-lint\.toml|\.claude-lint\.toml|\.git/hooks|ai-lint|ai_lint[/\\]|\.ai-lint\b|"
+    r"SKILL\.md|CLAUDE(\.local)?\.md|AGENTS\.md)"
 )
 BASH_WRITE_HINT = re.compile(
     r"(>|\btee\b|\bsed\s+-i|\bperl\s+-[a-z]*i|\bmv\b|\bcp\b|\brm\b|\bln\b|\bchmod\b|"
@@ -223,7 +224,7 @@ class GuardChecker:
 
     def lint_toml_violations(self, old: str, new: str) -> list[str]:
         if self.tomllib is None:
-            return ["cannot verify .ai-lint.toml without Python 3.11"]
+            return ["cannot verify .ai-lint.toml: no TOML parser available"]
         try:
             o = self.tomllib.loads(old) if old.strip() else {}
             n = self.tomllib.loads(new)
@@ -319,11 +320,14 @@ class GuardChecker:
         return None
 
     def _command_reason(self, cmd: str) -> str | None:
-        if re.fullmatch(r"\s*(rtk\s+)?(python3?\s+)?\S*ai-lint\.py(\s+[\w\-./=~:]+)*\s*", cmd):
-            if re.search(r"--session-settings\b|--policy\b|\s-i\b|--interactive\b", cmd) or (
-                re.search(r"--generate\b", cmd) and re.search(r"--fix\b", cmd)
-            ):
-                return "guard: --generate --fix, --session-settings and --policy add permissions: the human runs them (a --generate preview is allowed)"
+        linter = r"\S*(ai-lint\.py|ai_lint[/\\]_engine\.py)"
+        if re.fullmatch(rf"\s*(rtk\s+)?(\S*python[\d.]*\s+)?{linter}(\s+[\w\-./=~:]+)*\s*", cmd):
+            human_only = r"--session-settings\b|--policy\b|\s-i\b|--interactive\b|--full-yes\b|--plugin-dir\b"
+            if re.search(human_only, cmd) or (re.search(r"--generate\b", cmd) and re.search(r"--fix\b", cmd)):
+                return (
+                    "guard: --generate --fix, --session-settings, --policy, -i/--full-yes and --plugin-dir "
+                    "add permissions or run code: the human runs them (a --generate preview is allowed)"
+                )
             return None  # the linter only tightens
         if CONFIG_HINT.search(cmd) and BASH_WRITE_HINT.search(cmd):
             return (

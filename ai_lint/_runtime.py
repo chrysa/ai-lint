@@ -6,10 +6,14 @@ import datetime as dt
 import json
 import os
 import re
+import subprocess
 import sys
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from ai_lint.report import Report
 
 
 @dataclass
@@ -117,3 +121,61 @@ def lenient_json(raw: str) -> tuple[Any, bool]:
             return json.loads(re.sub(r",(\s*[}\]])", r"\1", "".join(out))), True
         except json.JSONDecodeError:
             raise first_error from None
+
+
+def git(repo: Path, *args: str) -> str | None:
+    log(3, "git -C " + str(repo) + " " + " ".join(args))
+    try:
+        res = subprocess.run(
+            ["git", "-C", str(repo), *args],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=30,
+            check=False,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    return res.stdout if res.returncode == 0 else None
+
+
+def is_ignored(repo: Path, rel: str) -> bool:
+    return git(repo, "check-ignore", "-q", rel) is not None
+
+
+def is_tracked(repo: Path, rel: str) -> bool:
+    return git(repo, "ls-files", "--error-unmatch", rel) is not None
+
+
+def add_gitignore(repo: Path, entry: str, rep: Report) -> None:
+    gi = repo / ".gitignore"
+    cur = rep.current(gi) or ""
+    if entry in cur.splitlines():
+        return
+    new = cur + ("" if not cur or cur.endswith("\n") else "\n") + entry + "\n"
+    if gi.exists() or gi in rep.edits:
+        rep.edit(gi, read_text(gi) or "", new)
+    else:
+        rep.new_files[gi] = (new, 0o644)
+    log(2, f".gitignore: add {entry}", 2)
+
+
+def _writable(path: Path) -> bool:
+    """True if this path (a file, or a dir to create inside) can be modified.
+    Symlinked / synced skills point at a read-only store; editing them raises
+    PermissionError, so the interactive review skips them instead of crashing."""
+    try:
+        # A skill reached through a symlink lives in a managed/synced store; treat it
+        # as read-only whatever the file mode says, and check any symlinked ancestor
+        # up to the skills root too (skills/<name> is often the link, not the file).
+        probe = path
+        for _ in range(6):
+            if probe.is_symlink():
+                return False
+            if probe.name in ("skills", "agents", "commands") or probe == probe.parent:
+                break
+            probe = probe.parent
+        return os.access(path.parent, os.W_OK)
+    except OSError:
+        return False

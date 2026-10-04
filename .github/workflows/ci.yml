@@ -40,7 +40,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # ai-lint supports Python 3.13 and 3.14 (3.11+ to read a policy file).
+        # ai-lint supports Python 3.13 and newer, never lower.
         python-version: ["3.13", "3.14"]
     steps:
       - uses: actions/checkout@v4
