@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """ai-lint: validate, repair and optimize coding-agent configurations.
 
-Single file, no third-party dependencies. Python >= 3.9 (>= 3.11 for policy files).
+No third-party dependencies. Python >= 3.13.
 
 Rules follow the official Claude Code documentation (settings, permissions,
 hooks, memory, skills, tools reference) as of 2026-09, plus known upstream
@@ -70,6 +70,8 @@ from urllib.parse import urlparse
 # non-blocking. Make the package importable so the guard can run and fail closed.
 if not __package__:
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+import tomllib  # noqa: E402
 
 from ai_lint._markup import (  # noqa: E402
     frontmatter_block,
@@ -146,11 +148,6 @@ from ai_lint.skill_agent_checker import SkillAgentChecker
 from ai_lint.terminal_view import Tty
 from ai_lint.tui_app import TuiApp
 from ai_lint.tui_services import TuiServices
-
-try:
-    import tomllib
-except ModuleNotFoundError:  # Python < 3.11: policy files unsupported, defaults apply
-    tomllib = None
 
 
 def _detect_version() -> str:
@@ -883,9 +880,6 @@ def load_policy(path: Path | None, repos: list[Path]) -> dict:
     policy, source = copy.deepcopy(DEFAULT_POLICY), "built-in defaults"
     for c in candidates:
         if c and c.is_file():
-            if tomllib is None:
-                print(f"warning: {c} ignored (needs Python >= 3.11)", file=sys.stderr)
-                break
             with c.open("rb") as fh:
                 policy = deep_merge(policy, tomllib.load(fh))
             source = str(c)
@@ -1271,7 +1265,7 @@ def optimize_permissions(perms: dict, policy: dict, path: Path, rep: Report, sco
         wrapped = [
             rtk_wrap(r, pol["rtk_exempt"]) if (c := command_of(r)) is None or rtk_rewrites(c) else r for r in allow
         ]
-        changed = [(a, b) for a, b in zip(allow, wrapped) if a != b]
+        changed = [(a, b) for a, b in zip(allow, wrapped, strict=True) if a != b]
         for a, b in changed:
             log(2, f"rtk: {a} -> {b}", 2)
         if changed:

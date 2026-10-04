@@ -238,7 +238,7 @@ def test_guard_frontmatter_extension(linter_module):
 
 def test_guard_toml_parser_unavailable(linter_module, monkeypatch):
     monkeypatch.setattr(linter_module, "tomllib", None)
-    assert linter_module.lint_toml_violations("", "") == ["cannot verify .ai-lint.toml without Python 3.11"]
+    assert linter_module.lint_toml_violations("", "") == ["cannot verify .ai-lint.toml: no TOML parser available"]
 
 
 @pytest.mark.parametrize(

@@ -224,7 +224,7 @@ class GuardChecker:
 
     def lint_toml_violations(self, old: str, new: str) -> list[str]:
         if self.tomllib is None:
-            return ["cannot verify .ai-lint.toml without Python 3.11"]
+            return ["cannot verify .ai-lint.toml: no TOML parser available"]
         try:
             o = self.tomllib.loads(old) if old.strip() else {}
             n = self.tomllib.loads(new)

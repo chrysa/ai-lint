@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import tomllib
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -57,13 +58,6 @@ def load_flags_from_config(config_path: Path) -> dict | None:
     """Load [flags] section from TOML config file."""
     if not config_path.exists():
         return None
-    try:
-        import tomllib
-    except ImportError:
-        try:
-            import tomli as tomllib
-        except ImportError:
-            return None
     try:
         with open(config_path, "rb") as f:
             data = tomllib.load(f)

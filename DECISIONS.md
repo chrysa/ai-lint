@@ -202,7 +202,7 @@ hyphenated filename is not importable, so mypy/coverage/tests could not attach t
 
 ## D-003 · Standard library only; PyYAML optional
 No runtime dependency. PyYAML gates only the editable catalogue and degrades gracefully.
-**Why:** the tool must run anywhere with a bare Python ≥ 3.9, including CI, with no install
+**Why:** the tool must run anywhere with a bare Python ≥ 3.13 (never lower), including CI, with no install
 step. A new dependency needs a strong, documented justification.
 
 ## D-002 · Faithful to a dated docs snapshot; unknown ≠ error

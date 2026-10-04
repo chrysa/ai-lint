@@ -6,11 +6,11 @@ import importlib.util
 from collections.abc import Callable
 from pathlib import Path
 from types import SimpleNamespace
-from typing import Any, Optional
+from typing import Any
 
 from ai_lint.report import Report
 
-ReadTextFn = Callable[[Path], Optional[str]]
+ReadTextFn = Callable[[Path], str | None]
 ConfigDirFn = Callable[[], Path]
 LogFn = Callable[[int, str], None]
 

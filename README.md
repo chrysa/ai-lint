@@ -19,7 +19,7 @@ Settings, permissions, hooks, helpers, MCP servers, instruction files (`CLAUDE.m
 
 Two layers: `ai-lint.py` for deterministic checks (safe to run in CI), and an optional guarded agent session (`/config-audit`) for judgment calls.
 
-**Pure Python, no runtime dependencies.** Python >= 3.9 (3.11+ to read policies); PyYAML optional.
+**Pure Python, no runtime dependencies.** Python >= 3.13; PyYAML optional.
 
 ## File layout
 
@@ -40,7 +40,7 @@ Two layers: `ai-lint.py` for deterministic checks (safe to run in CI), and an op
 
 ## Install
 
-No runtime dependencies (Python >= 3.9). Install from this repository, pinned to a release tag.
+No runtime dependencies (Python >= 3.13). Install from this repository, pinned to a release tag.
 
 > The `ai-lint` name on PyPI belongs to an unrelated project. Do not `pip install ai-lint`;
 > install from GitHub as shown below.
@@ -69,8 +69,7 @@ alias ai-lint='python3 /path/to/ai-lint/ai-lint.py'
 
 Running it with no arguments prints the help, including the effective defaults.
 Optional companions it uses when present: the `claude` CLI and `llmtrim` (`--no-cli`
-to skip both), and `rtk` (`--no-rtk` skips only RTK). Python >= 3.11 is only needed
-to read a policy file.
+to skip both), and `rtk` (`--no-rtk` skips only RTK).
 
 ## Quick start
 
