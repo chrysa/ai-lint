@@ -42,3 +42,11 @@ def test_catalog_missing_file_is_safe(linter_module, tmp_path, monkeypatch):
     monkeypatch.setattr(m, "DISABLED_CODES", set())
     m.load_catalog(tmp_path / "nope.yaml")  # must not raise
     assert m.DISABLED_CODES == set()
+
+
+def test_catalog_defaults_cover_checks_outside_the_engine(linter_module, monkeypatch):
+    m = linter_module
+    monkeypatch.setattr(m, "SEVERITY_OVERRIDES", {})
+    checks = m.catalog_data()["checks"]
+    for code in ("SECRET_INLINE", "MCP_SHAPE", "HOOK_SHAPE", "JSON_INVALID"):
+        assert checks[code]["severity"] == "error", code

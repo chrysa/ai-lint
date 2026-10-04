@@ -310,3 +310,80 @@ def test_guard_protects_every_module_of_the_linter_package(linter_module, tmp_pa
         assert checker.protected_path(package / name) == "the linter itself", name
     assert checker.protected_path(package.parent / "ai-lint.py") == "the linter itself"
     assert checker.protected_path(Path(tmp_path) / "notes.md") is None
+
+
+def test_guard_runs_as_the_session_hook_launches_it(tmp_path):
+    """The session hook runs `python ai_lint/_engine.py --guard` from the agent's cwd.
+    An import failure there exits 1, which Claude Code treats as non-blocking."""
+    import json
+    import subprocess
+    import sys
+    from pathlib import Path
+
+    engine = Path(__file__).resolve().parent.parent / "ai_lint" / "_engine.py"
+    settings = tmp_path / ".claude" / "settings.json"
+    settings.parent.mkdir()
+    settings.write_text(json.dumps({"permissions": {"deny": ["Read(./.env)"]}}))
+    payload = {
+        "tool_name": "Write",
+        "tool_input": {"file_path": str(settings), "content": json.dumps({"permissions": {"deny": []}})},
+    }
+    res = subprocess.run(
+        [sys.executable, str(engine), "--guard"],
+        input=json.dumps(payload),
+        capture_output=True,
+        text=True,
+        cwd=tmp_path,
+        env={"PATH": "/usr/bin:/bin", "HOME": str(tmp_path)},
+        timeout=60,
+    )
+    assert "ModuleNotFoundError" not in res.stderr
+    assert res.returncode == 2, res.stderr
+
+
+def test_guard_blocks_on_a_broken_policy_and_skips_repo_plugins(tmp_path):
+    import json
+    import subprocess
+    import sys
+    from pathlib import Path
+
+    engine = Path(__file__).resolve().parent.parent / "ai_lint" / "_engine.py"
+    (tmp_path / ".claude-lint.toml").write_text("not = [valid toml\n")
+    plugins = tmp_path / ".ai-lint" / "plugins"
+    plugins.mkdir(parents=True)
+    marker = tmp_path / "plugin-ran"
+    (plugins / "evil.py").write_text(f"open({str(marker)!r}, 'w').write('x')\n")
+    payload = {"tool_name": "Read", "tool_input": {"file_path": str(tmp_path / "a.txt")}}
+    res = subprocess.run(
+        [sys.executable, str(engine), "--guard"],
+        input=json.dumps(payload),
+        capture_output=True,
+        text=True,
+        cwd=tmp_path,
+        env={"PATH": "/usr/bin:/bin", "HOME": str(tmp_path)},
+        timeout=60,
+    )
+    assert res.returncode == 2, res.stderr
+    assert not marker.exists()
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "sed -i s/x/y/ ai_lint/guard_checker.py",
+        "echo x > ai_lint/_reference.py",
+        "cp evil.py .ai-lint/plugins/evil.py",
+        "echo 'x=1' > .claude-lint.toml",
+    ],
+)
+def test_bash_cannot_rewrite_the_linter_or_its_policy(guard_module, command):
+    assert g(guard_module, tool_name="Bash", tool_input={"command": command}) is not None
+
+
+def test_linter_runs_through_the_engine_path_follow_the_same_rules(guard_module):
+    engine = "/opt/x/.venv/bin/python3 /opt/x/ai_lint/_engine.py"
+    assert g(guard_module, tool_name="Bash", tool_input={"command": f"{engine} . --details"}) is None
+    assert g(guard_module, tool_name="Bash", tool_input={"command": f"{engine} . --fix"}) is None
+    for flag in ("--policy p.toml", "--full-yes", "--plugin-dir /tmp/p", "-i"):
+        cmd = f"{engine} . {flag}"
+        assert g(guard_module, tool_name="Bash", tool_input={"command": cmd}) is not None, flag

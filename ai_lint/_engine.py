@@ -65,7 +65,13 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
 
-from ai_lint._markup import (
+# The --guard hook runs this file as a script (`python …/ai_lint/_engine.py --guard`), so the
+# package root is not on sys.path; a failed import would exit 1, which Claude Code treats as
+# non-blocking. Make the package importable so the guard can run and fail closed.
+if not __package__:
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from ai_lint._markup import (  # noqa: E402
     frontmatter_block,
     frontmatter_of,
     import_targets,
@@ -6276,11 +6282,11 @@ def catalog_data() -> dict:
     """The full built-in catalog: reference sets plus one entry per known finding
     code (its default severity is filled in from where it is emitted, best-effort;
     an explicit severity in the catalog wins)."""
-    src = ""
-    try:
-        src = read_text(Path(__file__)) or ""
-    except OSError:
-        pass
+    # Checks live in several modules of the package; the engine is read first so its
+    # first-seen severity keeps precedence.
+    here = Path(__file__).resolve()
+    sources = [here, *sorted(p for p in here.parent.glob("*.py") if p != here)]
+    src = "\n".join(read_text(p) or "" for p in sources)
     emitted = {}
     for lvl, code in re.findall(r'rep\.add\(\s*"([a-z]+)",\s*"([A-Z_]+)"', src):
         emitted.setdefault(code, lvl)  # first-seen severity as the default
@@ -6612,6 +6618,15 @@ def main(argv: list[str] | None = None) -> int:
     state.progress = sys.stderr.isatty() and args.verbose == 0 and not args.quiet and args.format == "text"
     state.lang = args.lang or ("fr" if os.environ.get("LANG", "").lower().startswith("fr") else "en")
     log(1, f"arguments: {argv if argv is not None else sys.argv[1:]!r}")
+    if args.guard:
+        # Fail closed and run nothing from the repository (no catalog, no plugins): this
+        # runs before every agent tool call, and exit 1 would let the call through.
+        try:
+            load_policy(None, [Path(os.getcwd())])
+        except Exception as e:  # noqa: BLE001
+            print(f"guard: internal error, blocking by default ({e})", file=sys.stderr)
+            return 2
+        return run_guard()
     if args.update_check:
         SelfUpdater().check(args, force=True)
         return 0
@@ -6630,9 +6645,6 @@ def main(argv: list[str] | None = None) -> int:
     if args.print_policy:
         print(to_toml(DEFAULT_POLICY))
         return 0
-    if args.guard:
-        load_policy(None, [Path(os.getcwd())])
-        return run_guard()
     if args.print_catalog:
         if args.catalog:
             load_catalog(args.catalog)

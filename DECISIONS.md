@@ -4,6 +4,16 @@ Why the project is the way it is — the rationale an agent would otherwise re-d
 undo) each session. History of *what* changed is in [CHANGELOG.md](CHANGELOG.md); this file
 records *why*. Newest first. Each entry: decision, why, and what would reverse it.
 
+## D-024 · The guard must survive how Claude Code launches it
+The session hook runs `python …/ai_lint/_engine.py --guard` from the agent's working
+directory. The engine puts its package root on `sys.path` when run as a script, and in guard
+mode `main()` loads the policy inside a fail-closed `try` and dispatches before any catalogue
+or plugin loading. **Why:** a script run could not import `ai_lint` (exit 1, which Claude Code
+treats as non-blocking, so every edit went through), a malformed legacy policy file had the
+same effect, and loading `.ai-lint/plugins/*.py` there ran repository code before each tool
+call. **How to apply:** keep guard mode free of repository-provided code; any new early
+failure must return 2. A test launches the guard as the hook does. **Reverse:** never.
+
 ## D-023 · The guard protects the whole linter package
 `GuardChecker.protected_path` treats every file under the `ai_lint/` package, plus the
 `ai-lint.py` wrapper next to it, as "the linter itself". **Why:** it used to protect only
