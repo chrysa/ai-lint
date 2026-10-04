@@ -48,3 +48,15 @@ def test_files_filter_targets_agent_config_only():
         assert pattern.search(path), path
     for path in ("src/app.py", "README.md", "docs/CLAUDE.md.bak", "package.json"):
         assert not pattern.search(path), path
+
+
+def test_print_policy_matches_the_committed_example_byte_for_byte():
+    """The example is regenerated with --print-policy; it must pass end-of-file-fixer as is."""
+    import subprocess
+    import sys
+
+    out = subprocess.run(
+        [sys.executable, str(ROOT / "ai-lint.py"), "--print-policy"], capture_output=True, text=True, check=True
+    ).stdout
+    assert out.endswith("\n") and not out.endswith("\n\n")
+    assert out == (ROOT / "ai-lint.example.toml").read_text(encoding="utf-8")
