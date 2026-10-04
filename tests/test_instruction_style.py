@@ -3,6 +3,8 @@ bullets and polite/filler wording, both info-level and toggleable via policy."""
 
 from __future__ import annotations
 
+from ai_lint.instruction_checker import InstructionChecker
+
 PROSE = (
     "# Rules\n\n"
     "The service reads its configuration from environment variables at startup time here.\n"
@@ -15,7 +17,7 @@ PROSE = (
 def _check(m, repo, text):
     (repo / "CLAUDE.md").write_text(text)
     rep = m.Report()
-    m.check_instruction_file(repo / "CLAUDE.md", "project", m.load_policy(None, [repo]), rep, repo)
+    InstructionChecker().check_instruction_file(repo / "CLAUDE.md", "project", m.load_policy(None, [repo]), rep, repo)
     return {f.code for f in rep.findings}
 
 
@@ -49,5 +51,5 @@ def test_style_checks_disabled_by_policy(linter_module, tmp_path):
     pol = m.load_policy(None, [tmp_path])
     pol["instructions"]["style_checks"] = False
     rep = m.Report()
-    m.check_instruction_file(tmp_path / "CLAUDE.md", "project", pol, rep, tmp_path)
+    InstructionChecker().check_instruction_file(tmp_path / "CLAUDE.md", "project", pol, rep, tmp_path)
     assert not any(f.code in ("INSTR_PROSE", "INSTR_FILLER") for f in rep.findings)

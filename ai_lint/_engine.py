@@ -65,6 +65,15 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
 
+from ai_lint._markup import (
+    frontmatter_block,
+    import_targets,
+    set_frontmatter,
+    split_frontmatter,
+    strip_code,
+    strip_html_comments,
+    yaml_scalar,
+)
 from ai_lint._reference import (
     ABS_ROOTS,
     AGENT_FIELDS,
@@ -84,7 +93,6 @@ from ai_lint._reference import (
     PROJECT_DEAD_KEYS,
     READONLY_BUILTINS,
     RULE_ONLY_TOOLS,
-    RULE_TYPOS,
     SECRET_REDACT_RE,
     SECRETS_GITIGNORE,
     SECRETS_GITIGNORE_HEADER,
@@ -94,7 +102,20 @@ from ai_lint._reference import (
     SPECIFIER_TOOLS,
     _is_attribution,
 )
-from ai_lint._runtime import _loc, config_dir, dedupe, dump_json, lenient_json, log, read_text, state
+from ai_lint._runtime import (
+    _loc,
+    add_gitignore,
+    config_dir,
+    dedupe,
+    dump_json,
+    git,
+    is_ignored,
+    is_tracked,
+    lenient_json,
+    log,
+    read_text,
+    state,
+)
 from ai_lint.agent_contract import AgentContract
 from ai_lint.agent_converter import ADAPTERS, AgentConverter
 from ai_lint.content_validation import CriticalContentValidator as CriticalContentValidator
@@ -106,6 +127,7 @@ from ai_lint.guard_checker import CONFIG_HINT as CONFIG_HINT
 from ai_lint.guard_checker import GUARD_MARKER as GUARD_MARKER
 from ai_lint.guard_checker import GuardChecker
 from ai_lint.hook_checker import HookChecker
+from ai_lint.instruction_checker import InstructionChecker
 from ai_lint.mcp_checker import McpChecker
 from ai_lint.plugin_registry import PluginRegistry
 from ai_lint.project_profile import ProjectProfiler
@@ -886,29 +908,6 @@ def slugify(name: str) -> str:
     return re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")[:64] or "unnamed"
 
 
-def yaml_scalar(value: str) -> str:
-    if re.search(r"(:\s|^[\s\-?\[\]{}#&*!|>'\"%@`]|\s#|\s$)", value):
-        return json.dumps(value, ensure_ascii=False)
-    return value
-
-
-def split_frontmatter(text: str) -> tuple[dict[str, str] | None, int]:
-    """Return (flat top-level keys, offset). offset > 0 means the block doesn't start on line 1."""
-    stripped = text.lstrip("\ufeff \t\r\n")
-    offset = len(text) - len(stripped)
-    if not stripped.startswith("---"):
-        return None, 0
-    end = stripped.find("\n---", 3)
-    if end == -1:
-        return None, 0
-    meta: dict[str, str] = {}
-    for line in stripped[3:end].splitlines():
-        m = re.match(r"^([A-Za-z_][\w-]*)\s*:\s*(.*)$", line)
-        if m:
-            meta[m.group(1)] = m.group(2).strip().strip("'\"")
-    return meta, offset
-
-
 def load_json_file(path: Path) -> dict:
     """Read a JSON file and return a dict, or {} when it is missing or invalid.
     Centralises the read_text + json.loads + JSONDecodeError guard used throughout."""
@@ -925,42 +924,6 @@ def frontmatter_of(path: Path) -> dict[str, str]:
     return meta or {}
 
 
-def frontmatter_block(text: str) -> str:
-    stripped = text.lstrip("\ufeff \t\r\n")
-    end = stripped.find("\n---", 3)
-    return stripped[3:end] if stripped.startswith("---") and end != -1 else ""
-
-
-def set_frontmatter(text: str, updates: dict[str, str], renames: dict[str, str] | None = None) -> str:
-    text = text.lstrip("\ufeff \t\r\n") if text.lstrip("\ufeff \t\r\n").startswith("---") else text
-    if text.startswith("---") and (end := text.find("\n---", 3)) != -1:
-        head, body = text[3:end].strip("\n").splitlines(), text[end + 4 :]
-        for old, new in (renames or {}).items():
-            head = [re.sub(rf"^{re.escape(old)}(\s*:)", rf"{new}\1", l) for l in head]
-        for key, val in updates.items():
-            line = f"{key}: {yaml_scalar(val)}"
-            idx = next((i for i, l in enumerate(head) if re.match(rf"^{re.escape(key)}\s*:", l)), None)
-            if idx is None:
-                head.insert(0 if key == "name" else len(head), line)
-            else:
-                head[idx] = line
-        return "---\n" + "\n".join(head) + "\n---" + body
-    lines = [f"{k}: {yaml_scalar(v)}" for k, v in updates.items()]
-    return "---\n" + "\n".join(lines) + "\n---\n\n" + text.lstrip("\n")
-
-
-def strip_code(text: str) -> str:
-    """Remove fenced blocks and inline code spans (imports inside them are literal).
-    Fences may be indented (e.g. nested in a numbered list), so allow leading
-    whitespace on the opening and closing lines."""
-    text = re.sub(r"(?ms)^[ \t]*(```+|~~~+)[^\n]*\n.*?^[ \t]*\1[ \t]*$", "", text)
-    return re.sub(r"`[^`\n]*`", "", text)
-
-
-def strip_html_comments(text: str) -> str:
-    return re.sub(r"<!--.*?-->", "", text, flags=re.S)
-
-
 def derive_description(text: str) -> str | None:
     body = text
     stripped = body.lstrip("\ufeff \t\r\n")
@@ -975,44 +938,6 @@ def derive_description(text: str) -> str | None:
         if len(para) >= 20:
             return re.split(r"(?<=[.!?])\s", para)[0][:300]
     return None
-
-
-def git(repo: Path, *args: str) -> str | None:
-    log(3, "git -C " + str(repo) + " " + " ".join(args))
-    try:
-        res = subprocess.run(
-            ["git", "-C", str(repo), *args],
-            capture_output=True,
-            text=True,
-            encoding="utf-8",
-            errors="replace",
-            timeout=30,
-            check=False,
-        )
-    except (OSError, subprocess.TimeoutExpired):
-        return None
-    return res.stdout if res.returncode == 0 else None
-
-
-def is_ignored(repo: Path, rel: str) -> bool:
-    return git(repo, "check-ignore", "-q", rel) is not None
-
-
-def is_tracked(repo: Path, rel: str) -> bool:
-    return git(repo, "ls-files", "--error-unmatch", rel) is not None
-
-
-def add_gitignore(repo: Path, entry: str, rep: Report) -> None:
-    gi = repo / ".gitignore"
-    cur = rep.current(gi) or ""
-    if entry in cur.splitlines():
-        return
-    new = cur + ("" if not cur or cur.endswith("\n") else "\n") + entry + "\n"
-    if gi.exists() or gi in rep.edits:
-        rep.edit(gi, read_text(gi) or "", new)
-    else:
-        rep.new_files[gi] = (new, 0o644)
-    log(2, f".gitignore: add {entry}", 2)
 
 
 def detect_cli_version() -> tuple[int, ...] | None:
@@ -1638,6 +1563,9 @@ def check_settings(path: Path, base: Path, scope: str, policy: dict, rep: Report
     return new
 
 
+_INSTRUCTIONS = InstructionChecker()
+
+
 _MCP = McpChecker(_SECRETS)
 
 
@@ -1649,264 +1577,6 @@ _MCP = McpChecker(_SECRETS)
 # --------------------------------------------------------------------------- #
 # Instruction files, rules, auto memory
 # --------------------------------------------------------------------------- #
-
-IMPORT_RE = re.compile(r"(?<![\w@`])@((?:~/|\.{1,2}/|/)?[\w.\-/]+[\w/])")
-
-
-def import_targets(path: Path, text: str) -> list[tuple[str, Path]]:
-    refs = []
-    for m in IMPORT_RE.finditer(strip_html_comments(strip_code(text))):
-        ref = m.group(1)
-        target = Path(os.path.expanduser(ref))
-        if not target.is_absolute():
-            target = path.parent / target
-        explicit = ref.startswith(("~/", "./", "../", "/")) or re.search(r"\.\w{1,6}$", ref)
-        if target.exists() or explicit:
-            refs.append((ref, target))
-    return refs
-
-
-def check_imports(
-    path: Path,
-    text: str,
-    rep: Report,
-    policy: dict,
-    root: Path | None,
-    depth: int = 1,
-    seen: set | None = None,
-) -> None:
-    seen = seen if seen is not None else {path.resolve()}
-    for ref, target in import_targets(path, text):
-        log(2, f"import @{ref} (depth {depth})", 2)
-        if not target.exists():
-            rep.add("error", "IMPORT_MISSING", path, f"@{ref} does not resolve")
-            continue
-        if depth > policy["instructions"]["max_import_depth"]:
-            rep.add("error", "IMPORT_DEPTH", path, f"@{ref} is {depth} hops deep (max 4): not loaded")
-            continue
-        if root is not None:
-            try:
-                target.resolve().relative_to(root.resolve())
-            except ValueError:
-                rep.add(
-                    "info",
-                    "IMPORT_EXTERNAL",
-                    path,
-                    f"@{ref} is outside the project (approval prompt)",
-                )
-        resolved = target.resolve()
-        if resolved in seen or target.is_dir():
-            continue
-        seen.add(resolved)
-        sub = read_text(target)
-        if sub:
-            check_imports(target, sub, rep, policy, root, depth + 1, seen)
-
-
-def check_instruction_style(path: Path, effective: str, pol: dict, rep: Report) -> None:
-    """Suggest terser, list-shaped, imperative wording for always-loaded
-    instructions. All info-level: style, never correctness."""
-    if not pol.get("style_checks", True):
-        return
-    body = strip_code(effective)  # do not lint prose inside fenced code blocks
-    # Prose blocks: a run of long, non-list, non-heading, non-table lines that
-    # would read faster as bullet points.
-    run = 0
-    min_lines = pol.get("prose_block_lines", 4)
-    min_chars = pol.get("prose_line_min_chars", 60)
-    flagged_prose = False
-    for line in body.splitlines():
-        s = line.strip()
-        is_prose = bool(s) and len(s) >= min_chars and not re.match(r"^([-*+]|\d+[.)]|#{1,6}\s|\||>)", s)
-        run = run + 1 if is_prose else 0
-        if run >= min_lines and not flagged_prose:
-            rep.add(
-                "info",
-                "INSTR_PROSE",
-                path,
-                f"{run}+ prose lines in a row: bullet points read faster and cost fewer tokens",
-            )
-            flagged_prose = True
-    # Filler / polite wording: drop it for the imperative.
-    low = body.lower()
-    hits = [w for w in pol.get("filler_phrases", []) if re.search(rf"\b{re.escape(w)}\b", low)]
-    if hits:
-        rep.add(
-            "info",
-            "INSTR_FILLER",
-            path,
-            f"filler wording ({', '.join(sorted(set(hits))[:4])}...): write direct imperatives",
-        )
-
-
-def check_instruction_file(path: Path, scope: str, policy: dict, rep: Report, root: Path | None) -> str | None:
-    try:
-        size = path.stat().st_size
-    except OSError:
-        log(2, f"{path}: absent", 1)
-        return None
-    if size > 4 * 1024 * 1024:
-        rep.add("error", "INSTR_TOO_LARGE", path, f"{size} bytes: skipped entirely by Claude Code")
-        return None
-    text = read_text(path)
-    if text is None:
-        return None
-    rep.stats["instruction files"] = rep.stats.get("instruction files", 0) + 1
-    pol = policy["instructions"]
-    effective = strip_html_comments(text)
-    lines, tokens = effective.count("\n") + 1, len(effective.encode()) // 4
-    log(1, f"{path}: {lines} lines, ~{tokens} tokens (HTML comments excluded)", 1)
-    if scope == "user" and lines > pol["user_max_lines"]:
-        rep.add(
-            "warn",
-            "INSTR_USER_TOO_LONG",
-            path,
-            f"{lines} lines (~{tokens} tokens) in every session",
-        )
-    elif lines > pol["project_warn_lines"] or tokens > pol["warn_tokens"]:
-        rep.add("warn", "INSTR_LONG", path, f"{lines} lines (~{tokens} tokens)")
-    check_instruction_style(path, effective, pol, rep)
-    check_imports(path, text, rep, policy, root)
-    return text
-
-
-def check_agents_md(repo: Path, policy: dict, rep: Report) -> None:
-    agents = next((p for p in (repo / "AGENTS.md", repo / ".claude/AGENTS.md") if p.exists()), None)
-    claude = next((p for p in (repo / "CLAUDE.md", repo / ".claude/CLAUDE.md") if p.exists()), None)
-    local = repo / "CLAUDE.local.md"
-    doctrine = (repo / policy["instructions"]["doctrine_dir"]).is_dir()
-    marker = policy["instructions"]["generated_marker"]
-    if local.exists() and (repo / ".git").exists():
-        if is_tracked(repo, "CLAUDE.local.md"):
-            rep.add(
-                "warn",
-                "LOCAL_MD_NOT_IGNORED",
-                local,
-                "CLAUDE.local.md is committed: git rm --cached CLAUDE.local.md",
-            )
-        elif not is_ignored(repo, "CLAUDE.local.md"):
-            rep.add("warn", "LOCAL_MD_NOT_IGNORED", local, "CLAUDE.local.md is not gitignored", True)
-            add_gitignore(repo, "CLAUDE.local.md", rep)
-    if not agents:
-        return
-    if claude is None:
-        if local.exists():
-            rep.add(
-                "warn",
-                "AGENTS_SHADOWED_LOCAL",
-                repo,
-                "CLAUDE.local.md stops AGENTS.md from loading (CLAUDE.md importing it created)",
-                state.scaffold,
-            )
-            if state.scaffold:
-                rep.new_files[repo / "CLAUDE.md"] = ("@AGENTS.md\n", 0o644)
-        elif state.cli_version and state.cli_version < (2, 1, 277):
-            rep.add(
-                "warn",
-                "AGENTS_OLD_CLI",
-                repo,
-                f"claude {'.'.join(map(str, state.cli_version))} does not read AGENTS.md",
-            )
-        return
-    if claude.is_symlink():
-        rep.add("info", "AGENTS_SYMLINK", claude, "CLAUDE.md is a symlink")
-        return
-    text = read_text(claude) or ""
-    rel = os.path.relpath(agents, claude.parent)
-    imports = {ref for ref, _ in import_targets(claude, text)}
-    if rel in imports or "AGENTS.md" in imports or f"./{rel}" in imports:
-        return
-    if doctrine or marker in "\n".join(text.splitlines()[:5]):
-        return  # both are renders of the same source
-    code = "AGENTS_MENTION" if "AGENTS.md" in text else "AGENTS_IGNORED"
-    rep.add("warn", code, claude, f"AGENTS.md is not imported (added @{rel} at the top)", True)
-    rep.edit(claude, text, f"@{rel}\n\n{text}")
-
-
-def check_rendered(repo: Path, policy: dict, rep: Report) -> None:
-    pol = policy["instructions"]
-    if not (repo / pol["doctrine_dir"]).is_dir():
-        return
-    for rel in pol["rendered_files"]:
-        f = repo / rel
-        head = "\n".join((read_text(f) or "").splitlines()[:5])
-        if f.exists() and pol["generated_marker"] not in head and head.strip() != "@AGENTS.md":
-            rep.add(
-                "warn",
-                "RENDER_HAND_EDITED",
-                f,
-                f"no '{pol['generated_marker']}' header: hand-edited render",
-            )
-
-
-def check_rules(root: Path, rep: Report, project_root: Path | None) -> None:
-    rules = root / "rules"
-    if not rules.is_dir():
-        return
-    files = sorted(rules.rglob("*.md"))
-    log(1, f"{rules}: {len(files)} rule file(s)", 1)
-    for f in files:
-        rep.stats["rules"] = rep.stats.get("rules", 0) + 1
-        if f.is_symlink() and project_root is not None:
-            try:
-                f.resolve().relative_to(project_root.resolve())
-            except ValueError:
-                rep.add("info", "RULE_EXTERNAL", f, "symlinked outside the project")
-        text = read_text(f) or ""
-        meta, offset = split_frontmatter(text)
-        if meta is None:
-            rep.add("info", "RULE_UNSCOPED", f, "no 'paths': loads in every session")
-            continue
-        new = text
-        if offset:
-            rep.add(
-                "warn",
-                "FRONTMATTER_OFFSET",
-                f,
-                "frontmatter not on line 1 (leading lines removed)",
-                True,
-            )
-            new = text.lstrip("\ufeff \t\r\n")
-        renames = {k: RULE_TYPOS[k] for k in meta if k in RULE_TYPOS and "paths" not in meta}
-        if renames:
-            rep.add("warn", "RULE_FIELD", f, f"{', '.join(renames)} renamed to 'paths'", True)
-            new = set_frontmatter(new, {}, renames)
-        ignored = [k for k in meta if k != "paths" and k not in renames]
-        if ignored:
-            rep.add("info", "RULE_FIELD", f, f"ignored field(s): {', '.join(ignored)}")
-        block = frontmatter_block(new)
-        for pat in re.findall(r"[\"']([^\"']+)[\"']", block):
-            if pat.count("[") != pat.count("]") and "\\[" not in pat:
-                rep.add(
-                    "error",
-                    "RULE_PATTERN",
-                    f,
-                    f"pattern {pat!r} has an unbalanced '[': matches nothing",
-                )
-        if "paths" not in meta and not renames:
-            rep.add("info", "RULE_UNSCOPED", f, "no 'paths': loads in every session")
-        if new != text:
-            rep.edit(f, text, new)
-
-
-def check_auto_memory(cfg: Path, policy: dict, rep: Report) -> None:
-    proj = cfg / "projects"
-    if not proj.is_dir():
-        return
-    pol = policy["memory"]
-    for idx in sorted(proj.glob("*/memory/MEMORY.md")):
-        try:
-            size = idx.stat().st_size
-        except OSError:
-            continue
-        lines = (read_text(idx) or "").count("\n") + 1
-        if lines > pol["max_lines"] or size > pol["max_bytes"]:
-            rep.add(
-                "warn",
-                "MEMORY_INDEX",
-                idx,
-                f"{lines} lines / {size} bytes: content past the limit is not loaded",
-            )
 
 
 # --------------------------------------------------------------------------- #
@@ -2201,7 +1871,7 @@ def check_agent_assets(root: Path, policy: dict, rep: Report, scope: str, projec
             meta = frontmatter_of(f)
             if not (meta or {}).get("description"):
                 rep.add("info", "COMMAND_FRONTMATTER", f, "no description (first line is used)")
-    check_rules(root, rep, project_root)
+    _INSTRUCTIONS.check_rules(root, rep, project_root)
 
 
 def check_subagent(f: Path, rep: Report) -> None:
@@ -6186,10 +5856,10 @@ def lint_user(policy: dict, rep: Report, repos: list[Path]) -> str | None:
         s = check_settings(home / name, home, "user", policy, rep)
         user_settings = user_settings or s
     check_agent_assets(home, policy, rep, "user", None)
-    check_auto_memory(home, policy, rep)
+    _INSTRUCTIONS.check_auto_memory(home, policy, rep)
     _MCP.check_claude_json(rep, repos)
     check_user_extras(rep)
-    return check_instruction_file(home / "CLAUDE.md", "user", policy, rep, None)
+    return _INSTRUCTIONS.check_instruction_file(home / "CLAUDE.md", "user", policy, rep, None)
 
 
 def lint_repo(repo: Path, policy: dict, rep: Report, history: bool, user_text: str | None) -> None:
@@ -6235,11 +5905,11 @@ def lint_repo(repo: Path, policy: dict, rep: Report, history: bool, user_text: s
         "CLAUDE.local.md",
         *policy["instructions"]["rendered_files"][2:],
     ]:
-        t = check_instruction_file(repo / rel, "project", policy, rep, repo)
+        t = _INSTRUCTIONS.check_instruction_file(repo / rel, "project", policy, rep, repo)
         if t:
             texts.append(t)
-    check_agents_md(repo, policy, rep)
-    check_rendered(repo, policy, rep)
+    _INSTRUCTIONS.check_agents_md(repo, policy, rep)
+    _INSTRUCTIONS.check_rendered(repo, policy, rep)
     if user_text and texts:
         min_len = policy["instructions"]["min_duplicate_line_len"]
         norm = lambda t: {l.strip().lower() for l in strip_code(t).splitlines() if len(l.strip()) >= min_len}

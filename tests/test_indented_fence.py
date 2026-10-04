@@ -4,6 +4,8 @@ CLAUDE.md @import (IMPORT_MISSING false positive)."""
 
 from __future__ import annotations
 
+from ai_lint.instruction_checker import InstructionChecker
+
 MD = """# Guide
 
 1. **Create the page** (`page.tsx`):
@@ -26,7 +28,7 @@ def test_indented_code_import_not_flagged(linter_module, tmp_path):
     p = tmp_path / "copilot-instructions.md"
     p.write_text(MD)
     rep = m.Report()
-    m.check_imports(p, MD, rep, m.load_policy(None, [tmp_path]), tmp_path)
+    InstructionChecker().check_imports(p, MD, rep, m.load_policy(None, [tmp_path]), tmp_path)
     assert not any(f.code == "IMPORT_MISSING" for f in rep.findings)
 
 
@@ -36,5 +38,5 @@ def test_real_import_outside_fence_still_flagged(linter_module, tmp_path):
     text = "See @./missing-file.md for details.\n"
     p.write_text(text)
     rep = m.Report()
-    m.check_imports(p, text, rep, m.load_policy(None, [tmp_path]), tmp_path)
+    InstructionChecker().check_imports(p, text, rep, m.load_policy(None, [tmp_path]), tmp_path)
     assert any(f.code == "IMPORT_MISSING" for f in rep.findings)
