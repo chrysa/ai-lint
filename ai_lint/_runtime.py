@@ -159,3 +159,23 @@ def add_gitignore(repo: Path, entry: str, rep: Report) -> None:
     else:
         rep.new_files[gi] = (new, 0o644)
     log(2, f".gitignore: add {entry}", 2)
+
+
+def _writable(path: Path) -> bool:
+    """True if this path (a file, or a dir to create inside) can be modified.
+    Symlinked / synced skills point at a read-only store; editing them raises
+    PermissionError, so the interactive review skips them instead of crashing."""
+    try:
+        # A skill reached through a symlink lives in a managed/synced store; treat it
+        # as read-only whatever the file mode says, and check any symlinked ancestor
+        # up to the skills root too (skills/<name> is often the link, not the file).
+        probe = path
+        for _ in range(6):
+            if probe.is_symlink():
+                return False
+            if probe.name in ("skills", "agents", "commands") or probe == probe.parent:
+                break
+            probe = probe.parent
+        return os.access(path.parent, os.W_OK)
+    except OSError:
+        return False

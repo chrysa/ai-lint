@@ -67,8 +67,11 @@ from urllib.parse import urlparse
 
 from ai_lint._markup import (
     frontmatter_block,
+    frontmatter_of,
     import_targets,
+    move_to_metadata,
     set_frontmatter,
+    slugify,
     split_frontmatter,
     strip_code,
     strip_html_comments,
@@ -77,7 +80,6 @@ from ai_lint._markup import (
 from ai_lint._reference import (
     ABS_ROOTS,
     AGENT_FIELDS,
-    AGENT_TYPOS,
     AGENTS_SKELETON,
     ATTRIBUTION_PATTERNS,
     COMMIT_MSG_HOOK,
@@ -97,13 +99,12 @@ from ai_lint._reference import (
     SECRETS_GITIGNORE,
     SECRETS_GITIGNORE_HEADER,
     SKILL_FIELDS,
-    SKILL_SPEC_FIELDS,
-    SKILL_TYPOS,
     SPECIFIER_TOOLS,
     _is_attribution,
 )
 from ai_lint._runtime import (
     _loc,
+    _writable,
     add_gitignore,
     config_dir,
     dedupe,
@@ -135,6 +136,7 @@ from ai_lint.report import Report, configure_report_context
 from ai_lint.restore_log import RestoreLog as RestoreLog
 from ai_lint.secret_scan import InlineSecretScanner
 from ai_lint.self_update import SelfUpdater
+from ai_lint.skill_agent_checker import SkillAgentChecker
 from ai_lint.terminal_view import Tty
 from ai_lint.tui_app import TuiApp
 from ai_lint.tui_services import TuiServices
@@ -904,10 +906,6 @@ configure_report_context(
 )
 
 
-def slugify(name: str) -> str:
-    return re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")[:64] or "unnamed"
-
-
 def load_json_file(path: Path) -> dict:
     """Read a JSON file and return a dict, or {} when it is missing or invalid.
     Centralises the read_text + json.loads + JSONDecodeError guard used throughout."""
@@ -916,28 +914,6 @@ def load_json_file(path: Path) -> dict:
     except json.JSONDecodeError:
         return {}
     return data if isinstance(data, dict) else {}
-
-
-def frontmatter_of(path: Path) -> dict[str, str]:
-    """The frontmatter of a Markdown file as a flat dict ({} when none/unreadable)."""
-    meta, _ = split_frontmatter(read_text(path) or "")
-    return meta or {}
-
-
-def derive_description(text: str) -> str | None:
-    body = text
-    stripped = body.lstrip("\ufeff \t\r\n")
-    if stripped.startswith("---") and (end := stripped.find("\n---", 3)) != -1:
-        body = stripped[end + 4 :]
-    body = strip_html_comments(strip_code(body))
-    for para in re.split(r"\n\s*\n", body):
-        para = " ".join(
-            l.strip() for l in para.splitlines() if l.strip() and not l.lstrip().startswith(("#", "|", ">", "!"))
-        )
-        para = re.sub(r"[*_`]", "", para).strip(" -")
-        if len(para) >= 20:
-            return re.split(r"(?<=[.!?])\s", para)[0][:300]
-    return None
 
 
 def detect_cli_version() -> tuple[int, ...] | None:
@@ -1564,6 +1540,7 @@ def check_settings(path: Path, base: Path, scope: str, policy: dict, rep: Report
 
 
 _INSTRUCTIONS = InstructionChecker()
+_SKILLS = SkillAgentChecker(_INSTRUCTIONS)
 
 
 _MCP = McpChecker(_SECRETS)
@@ -1582,380 +1559,6 @@ _MCP = McpChecker(_SECRETS)
 # --------------------------------------------------------------------------- #
 # Skills, agents, commands
 # --------------------------------------------------------------------------- #
-
-
-def frontmatter_values(text: str, key: str) -> list[str]:
-    """Values of a top-level frontmatter key: inline list, scalar or '- item' block."""
-    block = frontmatter_block(text).splitlines()
-    for i, line in enumerate(block):
-        m = re.match(rf"^{re.escape(key)}\s*:\s*(.*)$", line)
-        if not m:
-            continue
-        val = m.group(1).strip()
-        if val.startswith("["):
-            return [v.strip().strip("'\"") for v in val.strip("[]").split(",") if v.strip()]
-        if val:
-            return [val.strip("'\"")]
-        items = []
-        for nxt in block[i + 1 :]:
-            if re.match(r"^\s*-\s+", nxt):
-                items.append(re.sub(r"^\s*-\s+", "", nxt).strip().strip("'\""))
-            elif nxt.startswith((" ", "\t")):
-                continue
-            else:
-                break
-        return items
-    return []
-
-
-def move_to_metadata(text: str, keys: list[str]) -> str:
-    """Move top-level frontmatter entries (with their indented continuation) under metadata:."""
-    stripped = text.lstrip("\ufeff \t\r\n")
-    end = stripped.find("\n---", 3)
-    if not stripped.startswith("---") or end == -1:
-        return text
-    lines, body = stripped[3:end].strip("\n").splitlines(), stripped[end + 4 :]
-    entries: list[list[str]] = []
-    for line in lines:
-        if entries and (
-            line.startswith((" ", "\t")) or line.lstrip().startswith("- ") and not re.match(r"^[\w-]+\s*:", line)
-        ):
-            entries[-1].append(line)
-        else:
-            entries.append([line])
-    keep, moved, meta_idx = [], [], None
-    for e in entries:
-        key = (re.match(r"^([\w-]+)\s*:", e[0]) or [None, None])[1]
-        if key in keys:
-            moved.append(e)
-        else:
-            if key == "metadata":
-                meta_idx = len(keep)
-            keep.append(e)
-    if not moved:
-        return text
-    block = ["  " + l for e in moved for l in e]
-    if meta_idx is None:
-        keep.append(["metadata:"] + block)
-    else:
-        keep[meta_idx] = [re.sub(r"^metadata\s*:.*$", "metadata:", keep[meta_idx][0])] + keep[meta_idx][1:] + block
-    return "---\n" + "\n".join(l for e in keep for l in e) + "\n---" + body
-
-
-def check_skill(d: Path, policy: dict, rep: Report) -> str | None:
-    rep.stats["skills"] = rep.stats.get("skills", 0) + 1
-    pol = policy["skills"]
-    name_re = re.compile(pol["name_pattern"])
-    sk = d / "SKILL.md"
-    if not sk.is_file():
-        alt = next((f for f in d.iterdir() if f.is_file() and f.name.lower() == "skill.md"), None)
-        if not alt:
-            # A grouping directory (holds nested skill subdirs, e.g. gitnexus/gitnexus-cli/
-            # or ui-styling/ui-styling/) is not itself a skill: don't flag it.
-            try:
-                if any((sub / "SKILL.md").is_file() for sub in d.iterdir() if sub.is_dir()):
-                    return None
-            except OSError:
-                pass
-            rep.add("error", "SKILL_MISSING", d, "directory without SKILL.md")
-            return None
-        rep.add("error", "SKILL_MISSING", d, f"{alt.name} must be named SKILL.md (copied)", True)
-        rep.new_files[sk] = (read_text(alt) or "", 0o644)
-    text = rep.current(sk) or ""
-    meta, offset = split_frontmatter(text)
-    new = text
-    if offset:
-        rep.add(
-            "warn",
-            "FRONTMATTER_OFFSET",
-            sk,
-            "frontmatter not on line 1 (leading lines removed)",
-            True,
-        )
-        new = text.lstrip("\ufeff \t\r\n")
-    if meta is None:
-        meta = {}
-    renames = {k: SKILL_TYPOS[k] for k in meta if k in SKILL_TYPOS and SKILL_TYPOS[k] not in meta}
-    if renames:
-        rep.add(
-            "warn",
-            "SKILL_FIELD",
-            sk,
-            "renamed: " + ", ".join(f"{a} -> {b}" for a, b in renames.items()),
-            True,
-        )
-        meta = {renames.get(k, k): v for k, v in meta.items()}
-    trig_key = next((k for k in ("triggers", "trigger") if k in meta), None)
-    if trig_key and not meta.get("when_to_use"):
-        phrases = frontmatter_values(new, trig_key)
-        if phrases:
-            updates_trig = "Use when the user says: " + "; ".join(phrases)
-            rep.add(
-                "info",
-                "SKILL_FIELD",
-                sk,
-                f"{trig_key} is ignored by Claude Code (copied into when_to_use, original kept under metadata)",
-                True,
-            )
-            meta = {**meta, "when_to_use": updates_trig}
-            pending_when = updates_trig
-        else:
-            pending_when = None
-    else:
-        pending_when = None
-    unknown = [k for k in meta if k not in SKILL_FIELDS]
-    move_meta: list[str] = []
-    if pending_when and trig_key:
-        unknown = [k for k in unknown if k not in ("trigger", "triggers")] + [trig_key]
-    if unknown:
-        movable = [k for k in unknown if k not in ("trigger", "triggers") or pending_when]
-        can_move = bool(movable) and ("metadata" not in meta or meta.get("metadata", "") == "")
-        rep.add(
-            "info",
-            "SKILL_FIELD",
-            sk,
-            f"custom field(s) ignored by Claude Code: {', '.join(unknown)}"
-            + (" (moved under metadata:)" if can_move else "")
-            + ("; put trigger phrases in description or when_to_use" if len(movable) < len(unknown) else ""),
-            can_move,
-        )
-        if can_move:
-            move_meta = movable
-    if pol["portable"]:
-        extra = [k for k in meta if k in SKILL_FIELDS and k not in SKILL_SPEC_FIELDS]
-        if extra:
-            rep.add("info", "SKILL_PORTABILITY", sk, f"Claude Code-only field(s): {', '.join(extra)}")
-    updates: dict[str, str] = {}
-    if pending_when:
-        updates["when_to_use"] = pending_when
-    name, desc = meta.get("name", ""), meta.get("description", "")
-    dir_ok = bool(name_re.match(d.name))
-    if name and name != d.name:
-        rep.add(
-            "info" if not pol["portable"] else "warn",
-            "SKILL_NAME",
-            sk,
-            f"name {name!r} differs from directory {d.name!r} (the command is /{d.name})"
-            + (" (aligned)" if dir_ok else ""),
-            dir_ok,
-        )
-        if dir_ok:
-            updates["name"] = d.name
-    elif not name and pol["portable"] and dir_ok:
-        rep.add(
-            "info",
-            "SKILL_NAME",
-            sk,
-            "no name (the spec requires one; set to the directory name)",
-            True,
-        )
-        updates["name"] = d.name
-    if not dir_ok:
-        rep.add(
-            "warn",
-            "SKILL_NAME",
-            d,
-            f"directory {d.name!r} is not a valid skill name; rename to {slugify(d.name)!r}",
-        )
-    if not desc:
-        derived = derive_description(new)
-        rep.add(
-            "warn",
-            "SKILL_DESCRIPTION",
-            sk,
-            "no description" + (" (derived from body)" if derived else ""),
-            bool(derived),
-        )
-        if derived:
-            updates["description"] = desc = derived
-    listing = len(desc) + len(meta.get("when_to_use", ""))
-    if listing > pol["max_listing_chars"]:
-        rep.add(
-            "warn",
-            "SKILL_DESCRIPTION",
-            sk,
-            f"description + when_to_use = {listing} chars (truncated at {pol['max_listing_chars']})",
-        )
-    elif pol["portable"] and len(desc) > pol["portable_description_chars"]:
-        rep.add(
-            "info",
-            "SKILL_PORTABILITY",
-            sk,
-            f"description {len(desc)} chars (> {pol['portable_description_chars']})",
-        )
-    body_lines = new.count("\n") + 1
-    if body_lines > pol["max_lines"]:
-        ro = "" if _writable(sk) else " (read-only: synced/symlinked store — edit it upstream)"
-        rep.add("warn", "SKILL_LONG", sk, f"{body_lines} lines{ro}")
-    if meta.get("context") != "fork":
-        stray = [k for k in ("agent", "background") if k in meta]
-        if stray:
-            rep.add("warn", "SKILL_FORK_FIELD", sk, f"{', '.join(stray)} ignored without context: fork")
-    words = "|".join(map(re.escape, pol["side_effect_words"]))
-    dmi = meta.get("disable-model-invocation", "").lower() in ("true", "yes", "on", "1")
-    if re.search(rf"\b({words})\b", f"{d.name} {name}".replace("_", " ").replace("-", " "), re.I) and not dmi:
-        gate = pol.get("gate_side_effects", True)
-        rep.add(
-            "warn",
-            "SKILL_SIDE_EFFECT",
-            sk,
-            "side-effect workflow can be auto-invoked by the model"
-            + (" (disable-model-invocation: true added)" if gate else ""),
-            gate,
-        )
-        if gate:
-            updates["disable-model-invocation"] = "true"
-    tools = meta.get("allowed-tools", "")
-    if re.search(r"(^|[\s,\[])(Bash|PowerShell)(\(\*\)|(?=[\s,\]]|$))|Bash\(\*", tools):
-        rep.add("warn", "SKILL_BROAD_TOOLS", sk, f"allowed-tools grants unrestricted shell: {tools}")
-    if renames or updates or new != text or move_meta:
-        out = set_frontmatter(new, updates, renames) if (renames or updates) else new
-        if move_meta:
-            out = move_to_metadata(out, move_meta)
-        if sk in rep.new_files:
-            rep.new_files[sk] = (out, 0o644)
-        else:
-            rep.edit(sk, text, out)
-        log(2, f"skill {d.name}: " + ", ".join([*renames.values(), *updates]), 2)
-    return d.name
-
-
-def check_agent_assets(root: Path, policy: dict, rep: Report, scope: str, project_root: Path | None) -> None:
-    skills = root / "skills"
-    names: set[str] = set()
-    if skills.is_dir():
-        if scope == "user" and (skills / "manifest.json").exists():
-            rep.add(
-                "warn",
-                "SKILL_MANIFEST_BUG",
-                skills / "manifest.json",
-                "may move skills to .trash on CLIs < 2.1.280",
-            )
-        dirs = sorted(p for p in skills.iterdir() if p.is_dir() and not p.name.startswith("."))
-        log(1, f"{skills}: {len(dirs)} skill dir(s)", 1)
-        for d in dirs:
-            if d.name.lower() == "synced":
-                if scope != "user":
-                    rep.add("error", "SKILL_RESERVED", d, "reserved directory name")
-                continue  # downloaded from claude.ai: never edited here
-            n = check_skill(d, policy, rep)
-            if n:
-                names.add(n)
-    agents = root / "agents"
-    if agents.is_dir():
-        files = sorted(agents.rglob("*.md"))
-        log(1, f"{agents}: {len(files)} subagent(s)", 1)
-        rep.agent_unknown = {}
-        for f in files:
-            check_subagent(f, rep)
-        for field_name, paths in sorted(rep.agent_unknown.items()):
-            if len(paths) >= 10:
-                log(
-                    1,
-                    f"pack convention field {field_name!r} in {len(paths)} subagents "
-                    f"(ignored by Claude Code, harmless)",
-                    1,
-                )
-            else:
-                for p in paths:
-                    rep.add("info", "AGENT_FIELD", p, f"unrecognised field: {field_name}")
-    commands = root / "commands"
-    if commands.is_dir():
-        files = sorted(commands.rglob("*.md"))
-        log(1, f"{commands}: {len(files)} command(s)", 1)
-        for f in files:
-            rep.stats["commands"] = rep.stats.get("commands", 0) + 1
-            cmd_name = ":".join(f.relative_to(commands).with_suffix("").parts)
-            if cmd_name in names:
-                rep.add("warn", "COMMAND_SHADOWED", f, f"skill '{cmd_name}' has the same name and wins")
-            meta = frontmatter_of(f)
-            if not (meta or {}).get("description"):
-                rep.add("info", "COMMAND_FRONTMATTER", f, "no description (first line is used)")
-    _INSTRUCTIONS.check_rules(root, rep, project_root)
-
-
-def check_subagent(f: Path, rep: Report) -> None:
-    rep.stats["subagents"] = rep.stats.get("subagents", 0) + 1
-    text = read_text(f) or ""
-    meta, offset = split_frontmatter(text)
-    meta = meta or {}
-    new = text.lstrip("\ufeff \t\r\n") if offset else text
-    if offset:
-        rep.add(
-            "warn",
-            "FRONTMATTER_OFFSET",
-            f,
-            "frontmatter not on line 1 (leading lines removed)",
-            True,
-        )
-    renames = {k: AGENT_TYPOS[k] for k in meta if k in AGENT_TYPOS and AGENT_TYPOS[k] not in meta}
-    if renames:
-        rep.add(
-            "warn",
-            "AGENT_FIELD",
-            f,
-            "renamed: " + ", ".join(f"{a} -> {b}" for a, b in renames.items()),
-            True,
-        )
-        meta = {renames.get(k, k): v for k, v in meta.items()}
-    for k in meta:
-        if k not in AGENT_FIELDS:
-            rep.agent_unknown.setdefault(k, []).append(f)
-    updates = {}
-    if not meta.get("name"):
-        updates["name"] = slugify(f.stem)
-    if not meta.get("description") and (derived := derive_description(new)):
-        updates["description"] = derived
-    missing = [k for k in ("name", "description") if not meta.get(k)]
-    if missing:
-        still = [k for k in missing if k not in updates]
-        rep.add(
-            "error",
-            "AGENT_FRONTMATTER",
-            f,
-            "missing: "
-            + ", ".join(missing)
-            + (f" (filled: {', '.join(updates)})" if updates else "")
-            + (
-                f" (cannot derive: {', '.join(still)}; if this file is not a subagent, move it out of agents/)"
-                if still
-                else ""
-            ),
-            bool(updates),
-        )
-    tools = meta.get("tools", "")
-    tool_renames = {}
-    if tools:
-        names = [re.sub(r"\(.*", "", t).strip() for t in re.split(r"[,\s\[\]]+", tools) if t.strip()]
-        bad = [t for t in names if t and not t.startswith("mcp__") and t not in KNOWN_TOOLS]
-        for t in bad:
-            if t in LEGACY_TOOLS:
-                tool_renames[t] = LEGACY_TOOLS[t]
-        still_bad = [t for t in bad if t not in tool_renames]
-        if tool_renames:
-            rep.add(
-                "warn",
-                "PERM_LEGACY_TOOL",
-                f,
-                "tools: " + ", ".join(f"{a} -> {b}" for a, b in tool_renames.items()),
-                True,
-            )
-        if still_bad:
-            level = "error" if len(still_bad) == len(names) else "warn"
-            rep.add(level, "AGENT_TOOLS", f, f"unknown tool(s): {', '.join(still_bad)}")
-    if renames or updates or tool_renames or new != text:
-        out = set_frontmatter(new, updates, renames) if (renames or updates) else new
-        if tool_renames:
-            key = "tools"
-
-            def fix_line(m: re.Match) -> str:
-                line = m.group(0)
-                for a, b in tool_renames.items():
-                    line = re.sub(rf"\b{a}\b", b, line)
-                return line
-
-            out = re.sub(rf"(?m)^{key}\s*:.*$", fix_line, out, count=1)
-        rep.edit(f, text, out)
 
 
 # --------------------------------------------------------------------------- #
@@ -2206,7 +1809,7 @@ def check_plugin_dir(root: Path, rep: Report, policy: dict) -> None:
     if raw is None:
         if has_layout:
             log(1, f"plugin without manifest: {root}", 1)
-            check_agent_assets(root, policy, rep, "plugin", root)
+            _SKILLS.check_agent_assets(root, policy, rep, "plugin", root)
         return
     log(1, f"plugin: {root}", 1)
     rep.stats["plugins"] = rep.stats.get("plugins", 0) + 1
@@ -2293,7 +1896,7 @@ def check_plugin_dir(root: Path, rep: Report, policy: dict) -> None:
     if (root / ".mcp.json").exists():
         _MCP.check_mcp(root / ".mcp.json", rep, policy)
     if any((root / sub).is_dir() for sub in ("skills", "agents", "commands")):
-        check_agent_assets(root, policy, rep, "plugin", root)
+        _SKILLS.check_agent_assets(root, policy, rep, "plugin", root)
     check_output_styles(root, rep)
     if new != data or repaired:
         rep.edit(mf, raw, dump_json(new))
@@ -4293,26 +3896,6 @@ def _fr_plural(n: int, singular: str, plural: str | None = None) -> str:
     return f"{n} {word}"
 
 
-def _writable(path: Path) -> bool:
-    """True if this path (a file, or a dir to create inside) can be modified.
-    Symlinked / synced skills point at a read-only store; editing them raises
-    PermissionError, so the interactive review skips them instead of crashing."""
-    try:
-        # A skill reached through a symlink lives in a managed/synced store; treat it
-        # as read-only whatever the file mode says, and check any symlinked ancestor
-        # up to the skills root too (skills/<name> is often the link, not the file).
-        probe = path
-        for _ in range(6):
-            if probe.is_symlink():
-                return False
-            if probe.name in ("skills", "agents", "commands") or probe == probe.parent:
-                break
-            probe = probe.parent
-        return os.access(path.parent, os.W_OK)
-    except OSError:
-        return False
-
-
 def _ask(prompt: str, choices: str = "yN") -> str:
     """Read one answer. Case is preserved so a prompt can offer both a
     lowercase key and its uppercase "...for all" variant (e.g. s vs S, a vs A)
@@ -5855,7 +5438,7 @@ def lint_user(policy: dict, rep: Report, repos: list[Path]) -> str | None:
     for name in ("settings.json", "settings.local.json"):
         s = check_settings(home / name, home, "user", policy, rep)
         user_settings = user_settings or s
-    check_agent_assets(home, policy, rep, "user", None)
+    _SKILLS.check_agent_assets(home, policy, rep, "user", None)
     _INSTRUCTIONS.check_auto_memory(home, policy, rep)
     _MCP.check_claude_json(rep, repos)
     check_user_extras(rep)
@@ -5888,7 +5471,7 @@ def lint_repo(repo: Path, policy: dict, rep: Report, history: bool, user_text: s
             f"user defaultMode={user_mode} may be dropped by this project's permissions block",
         )
     _MCP.check_mcp(repo / ".mcp.json", rep, policy)
-    check_agent_assets(dot, policy, rep, "project", repo)
+    _SKILLS.check_agent_assets(dot, policy, rep, "project", repo)
     check_output_styles(dot, rep)
     for proot in find_plugin_roots(repo):
         if (proot / ".claude-plugin" / "plugin.json").exists():

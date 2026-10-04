@@ -7,6 +7,8 @@ import os
 import re
 from pathlib import Path
 
+from ai_lint._runtime import read_text
+
 IMPORT_RE = re.compile(r"(?<![\w@`])@((?:~/|\.{1,2}/|/)?[\w.\-/]+[\w/])")
 
 
@@ -80,3 +82,87 @@ def import_targets(path: Path, text: str) -> list[tuple[str, Path]]:
         if target.exists() or explicit:
             refs.append((ref, target))
     return refs
+
+
+def slugify(name: str) -> str:
+    return re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")[:64] or "unnamed"
+
+
+def derive_description(text: str) -> str | None:
+    body = text
+    stripped = body.lstrip("\ufeff \t\r\n")
+    if stripped.startswith("---") and (end := stripped.find("\n---", 3)) != -1:
+        body = stripped[end + 4 :]
+    body = strip_html_comments(strip_code(body))
+    for para in re.split(r"\n\s*\n", body):
+        para = " ".join(
+            l.strip() for l in para.splitlines() if l.strip() and not l.lstrip().startswith(("#", "|", ">", "!"))
+        )
+        para = re.sub(r"[*_`]", "", para).strip(" -")
+        if len(para) >= 20:
+            return re.split(r"(?<=[.!?])\s", para)[0][:300]
+    return None
+
+
+def frontmatter_values(text: str, key: str) -> list[str]:
+    """Values of a top-level frontmatter key: inline list, scalar or '- item' block."""
+    block = frontmatter_block(text).splitlines()
+    for i, line in enumerate(block):
+        m = re.match(rf"^{re.escape(key)}\s*:\s*(.*)$", line)
+        if not m:
+            continue
+        val = m.group(1).strip()
+        if val.startswith("["):
+            return [v.strip().strip("'\"") for v in val.strip("[]").split(",") if v.strip()]
+        if val:
+            return [val.strip("'\"")]
+        items = []
+        for nxt in block[i + 1 :]:
+            if re.match(r"^\s*-\s+", nxt):
+                items.append(re.sub(r"^\s*-\s+", "", nxt).strip().strip("'\""))
+            elif nxt.startswith((" ", "\t")):
+                continue
+            else:
+                break
+        return items
+    return []
+
+
+def frontmatter_of(path: Path) -> dict[str, str]:
+    """The frontmatter of a Markdown file as a flat dict ({} when none/unreadable)."""
+    meta, _ = split_frontmatter(read_text(path) or "")
+    return meta or {}
+
+
+def move_to_metadata(text: str, keys: list[str]) -> str:
+    """Move top-level frontmatter entries (with their indented continuation) under metadata:."""
+    stripped = text.lstrip("\ufeff \t\r\n")
+    end = stripped.find("\n---", 3)
+    if not stripped.startswith("---") or end == -1:
+        return text
+    lines, body = stripped[3:end].strip("\n").splitlines(), stripped[end + 4 :]
+    entries: list[list[str]] = []
+    for line in lines:
+        if entries and (
+            line.startswith((" ", "\t")) or line.lstrip().startswith("- ") and not re.match(r"^[\w-]+\s*:", line)
+        ):
+            entries[-1].append(line)
+        else:
+            entries.append([line])
+    keep, moved, meta_idx = [], [], None
+    for e in entries:
+        key = (re.match(r"^([\w-]+)\s*:", e[0]) or [None, None])[1]
+        if key in keys:
+            moved.append(e)
+        else:
+            if key == "metadata":
+                meta_idx = len(keep)
+            keep.append(e)
+    if not moved:
+        return text
+    block = ["  " + l for e in moved for l in e]
+    if meta_idx is None:
+        keep.append(["metadata:"] + block)
+    else:
+        keep[meta_idx] = [re.sub(r"^metadata\s*:.*$", "metadata:", keep[meta_idx][0])] + keep[meta_idx][1:] + block
+    return "---\n" + "\n".join(l for e in keep for l in e) + "\n---" + body

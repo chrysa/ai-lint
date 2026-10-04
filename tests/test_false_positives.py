@@ -4,6 +4,9 @@
 
 from __future__ import annotations
 
+from ai_lint.instruction_checker import InstructionChecker
+from ai_lint.skill_agent_checker import SkillAgentChecker
+
 
 def test_grouping_skill_dir_not_flagged(linter_module, tmp_path):
     m = linter_module
@@ -11,7 +14,7 @@ def test_grouping_skill_dir_not_flagged(linter_module, tmp_path):
     (group / "gitnexus-cli").mkdir(parents=True)
     (group / "gitnexus-cli" / "SKILL.md").write_text("---\nname: gitnexus-cli\ndescription: cli\n---\n\nx\n")
     rep = m.Report()
-    m.check_skill(group, m.load_policy(None, [tmp_path]), rep)
+    SkillAgentChecker(InstructionChecker()).check_skill(group, m.load_policy(None, [tmp_path]), rep)
     assert not any(f.code == "SKILL_MISSING" for f in rep.findings)
 
 
@@ -21,7 +24,7 @@ def test_leaf_dir_without_skill_still_flagged(linter_module, tmp_path):
     empty.mkdir()
     (empty / "notes.txt").write_text("hi")
     rep = m.Report()
-    m.check_skill(empty, m.load_policy(None, [tmp_path]), rep)
+    SkillAgentChecker(InstructionChecker()).check_skill(empty, m.load_policy(None, [tmp_path]), rep)
     assert any(f.code == "SKILL_MISSING" for f in rep.findings)
 
 
