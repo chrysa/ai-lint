@@ -3728,7 +3728,7 @@ def _body_hash(text: str) -> str:
     if stripped.startswith("---") and (end := stripped.find("\n---", 3)) != -1:
         stripped = stripped[end + 4 :]
     norm = re.sub(r"\s+", " ", stripped).strip()
-    return hashlib.sha1(norm.encode()).hexdigest() if len(norm) > 200 else ""
+    return hashlib.sha1(norm.encode(), usedforsecurity=False).hexdigest() if len(norm) > 200 else ""
 
 
 def collect_items(roots: list[Path]) -> list[dict]:
@@ -4171,6 +4171,9 @@ def _local_marketplace(policy: dict) -> tuple[Path, str]:
 
 
 def _register_plugin(plugin: str, desc: str, policy: dict, restore: list[str]) -> None:
+    # The name becomes a directory under the marketplace: never let it leave it.
+    if not re.fullmatch(r"[a-z0-9][a-z0-9-]{0,63}", plugin):
+        raise ValueError(f"invalid plugin name {plugin!r}: kebab-case, at most 64 characters")
     mk, name = _local_marketplace(policy)
     mf = mk / ".claude-plugin" / "marketplace.json"
     data = load_json_file(mf)

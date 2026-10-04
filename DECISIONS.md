@@ -4,6 +4,16 @@ Why the project is the way it is — the rationale an agent would otherwise re-d
 undo) each session. History of *what* changed is in [CHANGELOG.md](CHANGELOG.md); this file
 records *why*. Newest first. Each entry: decision, why, and what would reverse it.
 
+## D-027 · SonarCloud analysis from CI, with coverage
+SonarCloud project `chrysa_agent-config-lint` (organisation `chrysa`). `sonar-project.properties`
+configures a CI analysis that also imports `.reports/coverage.xml`; the CI step runs only when
+the `SONAR_TOKEN` secret exists, on the Python 3.13 job. Third-party actions are pinned to a
+commit SHA. **Why:** automatic analysis cannot import coverage, so the quality gate had no
+coverage signal. **How to apply:** turn off automatic analysis in SonarCloud, then add the
+`SONAR_TOKEN` secret; until then the step is skipped and automatic analysis keeps running.
+`pythonsecurity:S6549` on the guard's path handling stays open pending an explicit decision.
+**Reverse:** only if SonarCloud is dropped.
+
 ## D-026 · No project-specific names in the core defaults
 The core ships generic defaults only. Repository-specific critical documents go in
 `[critical] extra_files` of that repository's `.ai-lint.toml`; standards-repository markers go in

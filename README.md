@@ -1,6 +1,6 @@
 # ai-lint
 
-[![Tests](https://github.com/chrysa/ai-lint/actions/workflows/ci.yml/badge.svg)](https://github.com/chrysa/ai-lint/actions/workflows/ci.yml) [![License](https://img.shields.io/badge/license-MIT-blue)](pyproject.toml)
+[![Tests](https://github.com/chrysa/ai-lint/actions/workflows/ci.yml/badge.svg)](https://github.com/chrysa/ai-lint/actions/workflows/ci.yml) [![License](https://img.shields.io/badge/license-MIT-blue)](pyproject.toml) [![Quality Gate](https://sonarcloud.io/api/project_badges/measure?project=chrysa_agent-config-lint&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=chrysa_agent-config-lint) [![Coverage](https://sonarcloud.io/api/project_badges/measure?project=chrysa_agent-config-lint&metric=coverage)](https://sonarcloud.io/summary/new_code?id=chrysa_agent-config-lint)
 
 **Linter, fixer and guard for AI coding-agent configuration.** Validates permissions, instructions, hooks, MCP servers, skills and subagents; flags security, token cost and correctness issues; repairs safely. Works with Claude Code, Cursor, Windsurf and others.
 
