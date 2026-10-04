@@ -33,16 +33,10 @@ def test_llmtrim_checker_get_status():
     assert status is None or isinstance(status, str)
 
 
-def test_llmtrim_checker_recommendation_heavy_context_not_configured(tmp_path):
+def test_llmtrim_checker_recommendation_heavy_context_not_configured():
     checker = LlmtrimChecker()
-    config = tmp_path / "settings.json"
-    config.write_text("{}")
-    rec = checker.recommendation(token_budget=15000, is_configured=False)
-    # Recommendation depends on whether llmtrim is installed
-    if checker.is_installed():
-        assert "configured" in (rec or "").lower()
-    else:
-        assert "install" in (rec or "").lower()
+    assert "install" in (checker.recommendation(15000, False, installed=False) or "").lower()
+    assert "setup" in (checker.recommendation(15000, False, installed=True) or "").lower()
 
 
 def test_llmtrim_checker_recommendation_light_context():

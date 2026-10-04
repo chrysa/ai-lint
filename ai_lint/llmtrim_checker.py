@@ -59,4 +59,4 @@ class LlmtrimChecker:
             return None
         if self.is_installed() if installed is None else installed:
             return "llmtrim is installed but not configured: run `llmtrim setup` to enable compression"
-        return f"~{int(token_budget)} tokens loaded per session (> {int(threshold)}): llmtrim can compress them"
+        return f"~{int(token_budget)} tokens loaded per session (> {int(threshold)}): install llmtrim to compress them"
