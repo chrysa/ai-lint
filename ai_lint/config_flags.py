@@ -1,80 +1,61 @@
-"""Modular CLI flags and config file handling."""
+"""CLI defaults from the [flags] table of the policy file, limited to options that never write."""
 
 from __future__ import annotations
 
-import argparse
 import tomllib
-from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
+
+# Only options that change what is reported or which external tools are probed. Anything
+# that writes, approves, widens the scope or loads code (fix, generate, interactive,
+# full_yes, user, approve_conversion, plugin_dir, policy...) must come from the command
+# line: a policy file inside a scanned repository must not turn a read-only run into one
+# that modifies files or approves critical content.
+SAFE_FLAGS: dict[str, type] = {
+    "strict": bool,
+    "no_history": bool,
+    "no_cli": bool,
+    "no_rtk": bool,
+    "no_update_check": bool,
+    "no_scaffold": bool,
+    "details": bool,
+    "all": bool,
+    "diff": bool,
+    "quiet": bool,
+    "verbose": int,
+    "format": str,
+    "lang": str,
+    "min_level": str,
+}
+CHOICES = {"format": ("text", "json"), "lang": ("en", "fr"), "min_level": ("error", "warn", "info")}
 
 
-@dataclass
-class CLIFlags:
-    """CLI flags with config file override support."""
+class ConfigFlags:
+    """Read [flags] from a policy file and return argparse defaults plus rejection notes."""
 
-    fix: bool = False
-    user: bool = False
-    user_only: bool = False
-    strict: bool = False
-    no_history: bool = False
-    no_scaffold: bool = False
-    no_cli: bool = False
-    no_rtk: bool = False
-    no_update_check: bool = False
-    update_check: bool = False
-    interactive: bool = False
-    full_yes: bool = False
-    convert_to: str | None = None
-    convert_from: str | None = None
-    approve_conversion: bool = False
-    apply_conversion: bool = False
-    verbose: int = 0
-    format: str = "text"  # text, brief, json
-    detail: bool = False
-    diff: bool = False
-    graphify: bool = False
+    def __init__(self, path: Path) -> None:
+        self.path = path
 
-    def merge_from_toml(self, toml_flags: dict) -> None:
-        """Update flags from TOML config [flags] section, skipping defaults."""
-        for key, value in toml_flags.items():
-            if hasattr(self, key):
-                setattr(self, key, value)
-
-    def to_args_namespace(self) -> argparse.Namespace:
-        """Convert to argparse.Namespace for CLI compatibility."""
-        return argparse.Namespace(**self.__dict__)
-
-    @classmethod
-    def from_args_namespace(cls, args: argparse.Namespace) -> CLIFlags:
-        """Extract CLIFlags from argparse result."""
-        flags = cls()
-        for field_name in flags.__dataclass_fields__:
-            if hasattr(args, field_name):
-                setattr(flags, field_name, getattr(args, field_name))
-        return flags
-
-
-def load_flags_from_config(config_path: Path) -> dict | None:
-    """Load [flags] section from TOML config file."""
-    if not config_path.exists():
-        return None
-    try:
-        with open(config_path, "rb") as f:
-            data = tomllib.load(f)
-        return data.get("flags", {})
-    except (OSError, ValueError, RuntimeError):
-        return None
-
-
-def apply_config_flags(args: argparse.Namespace, config_path: Path | None) -> None:
-    """Apply config file flags to args as baseline; CLI parsing overrides after."""
-    if not config_path:
-        return
-    toml_flags = load_flags_from_config(config_path)
-    if not toml_flags:
-        return
-    # Set TOML flags first; they act as defaults. Caller should re-parse CLI args
-    # after this to override (argparse handles precedence via nargs/action).
-    for key, value in toml_flags.items():
-        if hasattr(args, key):
-            setattr(args, key, value)
+    def load(self) -> tuple[dict[str, Any], list[str]]:
+        try:
+            with self.path.open("rb") as fh:
+                table = tomllib.load(fh).get("flags", {})
+        except FileNotFoundError:
+            return {}, []
+        except (OSError, tomllib.TOMLDecodeError) as e:
+            return {}, [f"{self.path}: ignored ({e})"]
+        if not isinstance(table, dict):
+            return {}, [f"{self.path}: [flags] must be a table"]
+        defaults: dict[str, Any] = {}
+        rejected: list[str] = []
+        for key, value in table.items():
+            kind = SAFE_FLAGS.get(key)
+            if kind is None:
+                rejected.append(f"{key}: not allowed in [flags] (pass it on the command line)")
+            elif type(value) is not kind or (isinstance(value, int) and value < 0):
+                rejected.append(f"{key}: expected {kind.__name__}, got {value!r}")
+            elif key in CHOICES and value not in CHOICES[key]:
+                rejected.append(f"{key}: expected one of {', '.join(CHOICES[key])}, got {value!r}")
+            else:
+                defaults[key] = value
+        return defaults, rejected

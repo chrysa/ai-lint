@@ -1,61 +1,39 @@
-"""Tests for APE instruction clarity checker."""
+"""Instruction clarity: hedging verbs and open-ended scope, low false positives."""
 
 from __future__ import annotations
 
 from ai_lint.ape_checker import APEChecker
 
 
-def test_ape_checker_vague_verbs(tmp_path):
-    file = tmp_path / "CLAUDE.md"
-    file.write_text("You should try to make this work.\n")
-    checker = APEChecker()
-    issues = checker.check_file(file)
-    assert any(t == "vague_verb" for _, t, _ in issues)
+def _types(text):
+    return [t for _, t, _ in APEChecker().check_text(text)]
 
 
-def test_ape_checker_missing_constraint(tmp_path):
-    file = tmp_path / "CLAUDE.md"
-    file.write_text("Fix bugs in the codebase.\n")
-    checker = APEChecker()
-    issues = checker.check_file(file)
-    assert any(t == "missing_constraint" for _, t, _ in issues)
+def test_hedging_verb_is_flagged():
+    assert _types("You might want to try to run the tests.\n") == ["vague_verb"]
 
 
-def test_ape_checker_ambiguous_scope(tmp_path):
-    file = tmp_path / "CLAUDE.md"
-    file.write_text("Check Python files, JavaScript, etc.\n")
-    checker = APEChecker()
-    issues = checker.check_file(file)
-    assert any(t == "ambiguous_scope" for _, t, _ in issues)
+def test_open_ended_scope_is_flagged():
+    assert _types("Lint Python, JavaScript, etc.\n") == ["ambiguous_scope"]
 
 
-def test_ape_checker_incomplete_criteria(tmp_path):
-    file = tmp_path / "CLAUDE.md"
-    file.write_text("Verify the tests pass.\n")
-    checker = APEChecker()
-    issues = checker.check_file(file)
-    assert any(t == "incomplete_criteria" for _, t, _ in issues)
+def test_ordinary_imperatives_are_not_flagged():
+    text = "Fix failing tests.\nBuild the image.\nVerify with `make check`.\nUpdate the changelog.\n"
+    assert _types(text) == []
 
 
-def test_ape_checker_clear_instruction(tmp_path):
-    file = tmp_path / "CLAUDE.md"
-    file.write_text("NEVER add allow rules. ONLY tighten permissions.\n")
-    checker = APEChecker()
-    issues = checker.check_file(file)
-    assert len(issues) == 0
+def test_code_blocks_inline_code_and_headings_are_ignored():
+    text = "# Might be a heading\n```sh\ntry to run etc.\n```\nRun `maybe-tool` now.\n"
+    assert _types(text) == []
 
 
-def test_ape_checker_summarize(tmp_path):
-    file = tmp_path / "CLAUDE.md"
-    file.write_text("You should try to fix this, etc.\n")
-    checker = APEChecker()
-    issues = checker.check_file(file)
-    summary = checker.summarize(issues)
+def test_summarize_reports_counts_and_lines():
+    issues = APEChecker().check_text("Maybe do X.\nAdd A, B, etc.\nYou could skip Y.\n")
+    summary = APEChecker().summarize(issues)
     assert summary is not None
-    assert "clarity" in summary.lower()
+    assert "2 vague verb" in summary and "1 ambiguous scope" in summary and "lines 1, 2, 3" in summary
+    assert APEChecker().summarize([]) is None
 
 
-def test_ape_checker_nonexistent(tmp_path):
-    checker = APEChecker()
-    issues = checker.check_file(tmp_path / "nonexistent.md")
-    assert issues == []
+def test_missing_file_yields_nothing(tmp_path):
+    assert APEChecker().check_file(tmp_path / "nonexistent.md") == []

@@ -4,6 +4,19 @@ Why the project is the way it is — the rationale an agent would otherwise re-d
 undo) each session. History of *what* changed is in [CHANGELOG.md](CHANGELOG.md); this file
 records *why*. Newest first. Each entry: decision, why, and what would reverse it.
 
+## D-025 · [flags] only sets options that never write; two unreliable checkers removed
+The `[flags]` table of `.ai-lint.toml` can set reporting and probing options only (`strict`,
+`no_cli`, `verbose`, `format`, `details`...). `fix`, `generate`, `interactive`, `full_yes`,
+`user`, `approve_conversion`, `plugin_dir` and `policy` are rejected with a warning.
+**Why:** that file lives in the scanned repository; honouring `fix = true` or
+`approve_conversion = true` would let a repository turn a read-only run into one that writes
+files or approves critical content. `account_capabilities` (looked for a model name in
+`claude --version`, which prints none; invented token limits) and `project_adaptation`
+(project kinds unknown to `ProjectProfiler`, recommended skills that exist nowhere) were
+removed instead of wired: they could only produce wrong findings, and `--generate` already
+adapts configuration to the detected stack. **Reverse:** reintroduce either only on a
+reliable data source, with tests against real output.
+
 ## D-024 · The guard must survive how Claude Code launches it
 The session hook runs `python …/ai_lint/_engine.py --guard` from the agent's working
 directory. The engine puts its package root on `sys.path` when run as a script, and in guard

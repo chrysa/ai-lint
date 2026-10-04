@@ -67,3 +67,22 @@ def test_llmtrim_non_object_settings_do_not_crash(tmp_path):
     config = tmp_path / "settings.json"
     config.write_text("[1, 2]")
     assert LlmtrimChecker().is_configured(config) is False
+
+
+def test_recommendation_uses_the_given_threshold():
+    checker = LlmtrimChecker()
+    assert checker.recommendation(9000, False, threshold=8000, installed=False) is not None
+    assert checker.recommendation(9000, False, threshold=12000, installed=False) is None
+
+
+def test_token_budget_suggests_llmtrim_only_when_missing(linter_module, tmp_path, monkeypatch):
+    m = linter_module
+    big = tmp_path / "CLAUDE.md"
+    big.write_text("- rule line that is long enough to weigh something\n" * 2000)
+    pol = m.load_policy(None, [tmp_path])
+    for path, expected in ((None, True), ("/usr/bin/llmtrim", False)):
+        monkeypatch.setitem(m.LLMTRIM, "checked_cli", True)
+        monkeypatch.setitem(m.LLMTRIM, "path", path)
+        rep = m.Report()
+        m.token_budget(tmp_path, False, pol, rep)
+        assert ("LLMTRIM_SUGGESTED" in {f.code for f in rep.findings}) is expected
