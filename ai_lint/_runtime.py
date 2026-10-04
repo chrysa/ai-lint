@@ -32,6 +32,7 @@ class RunState:
     interactive_ran: bool = False
     show_all: bool = False
     min_level: str = "info"  # hide findings below this level in the report (--min-level)
+    critical_extra: tuple[str, ...] = ()  # [critical] extra_files: repo-relative paths that need validation
 
 
 state = RunState()

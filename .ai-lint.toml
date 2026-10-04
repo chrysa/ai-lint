@@ -1,0 +1,11 @@
+# ai-lint policy for this repository. Only what differs from the built-in defaults
+# (python3 ai-lint.py --print-policy shows them all).
+
+[critical]
+# This repository's own operating documents: guarded sessions need human validation
+# before changing them, like CLAUDE.md, AGENTS.md and README.md.
+extra_files = [
+  "docs/FIXER_POLICY.md",
+  "docs/SHARED_STANDARDS_MAPPING.md",
+  "docs/CLAUDE_CODE_BEST_PRACTICES.md",
+]

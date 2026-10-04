@@ -4,6 +4,17 @@ Why the project is the way it is — the rationale an agent would otherwise re-d
 undo) each session. History of *what* changed is in [CHANGELOG.md](CHANGELOG.md); this file
 records *why*. Newest first. Each entry: decision, why, and what would reverse it.
 
+## D-026 · No project-specific names in the core defaults
+The core ships generic defaults only. Repository-specific critical documents go in
+`[critical] extra_files` of that repository's `.ai-lint.toml`; standards-repository markers go in
+`[profile] standards_markers`. This repository lists its own `docs/FIXER_POLICY.md`,
+`docs/SHARED_STANDARDS_MAPPING.md` and `docs/CLAUDE_CODE_BEST_PRACTICES.md`, so its guard
+protection is unchanged (a test runs the guard against it). **Why:** ai-lint is a standalone,
+public tool; hard-coding one ecosystem's file names in every scan was wrong for other users.
+**How to apply:** `extra_files` only adds protection; a guarded agent cannot remove entries
+(only `[reference]` of `.ai-lint.toml` is editable). Absolute or `..` paths are ignored with a
+warning. **Reverse:** never put project names back into the defaults.
+
 ## D-025 · [flags] only sets options that never write; two unreliable checkers removed
 The `[flags]` table of `.ai-lint.toml` can set reporting and probing options only (`strict`,
 `no_cli`, `verbose`, `format`, `details`...). `fix`, `generate`, `interactive`, `full_yes`,
@@ -73,7 +84,8 @@ or licensing change; until then, both install paths (git clone and pip) coexist.
 ## D-019 · Critical content changes require human validation
 Guarded sessions block edits to critical content files: repo contracts (`CLAUDE.md`,
 `AGENTS.md`), public/project docs (`README.md`, `ARCHITECTURE.md`, `DECISIONS.md`,
-`TESTING.md`), local standards/best-practice docs, fixer policy and `.claude/rules/*.md`.
+`TESTING.md`), policy/config files and `.claude/rules/*.md`, plus the repository-specific
+files listed in `[critical] extra_files` (D-026).
 **Why:** these files change project meaning, operating rules or standards; an agent may draft
 the change, but a human must validate the content before it lands. **How to apply:** the
 `--guard` PreToolUse check returns a block reason for changed critical content. Config

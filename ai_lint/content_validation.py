@@ -29,6 +29,8 @@ class CriticalContentValidator:
                 return True
         if len(rel.parts) == 2 and rel.parts[0] == "docs" and rel.name in self.policy.docs_files:
             return True
+        if rel.as_posix() in self.policy.extra_paths:
+            return True
         return self._is_rule_file(rel)
 
     def _relative_path(self, path: Path) -> Path | None:
