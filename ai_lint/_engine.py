@@ -85,9 +85,7 @@ from ai_lint._reference import (
     READONLY_BUILTINS,
     RULE_ONLY_TOOLS,
     RULE_TYPOS,
-    SECRET_KEY_RE,
     SECRET_REDACT_RE,
-    SECRET_VALUE_PATTERNS,
     SECRETS_GITIGNORE,
     SECRETS_GITIGNORE_HEADER,
     SKILL_FIELDS,
@@ -96,7 +94,7 @@ from ai_lint._reference import (
     SPECIFIER_TOOLS,
     _is_attribution,
 )
-from ai_lint._runtime import _loc, dedupe, log, read_text, state
+from ai_lint._runtime import _loc, config_dir, dedupe, dump_json, lenient_json, log, read_text, state
 from ai_lint.agent_contract import AgentContract
 from ai_lint.agent_converter import ADAPTERS, AgentConverter
 from ai_lint.content_validation import CriticalContentValidator as CriticalContentValidator
@@ -108,10 +106,12 @@ from ai_lint.guard_checker import CONFIG_HINT as CONFIG_HINT
 from ai_lint.guard_checker import GUARD_MARKER as GUARD_MARKER
 from ai_lint.guard_checker import GuardChecker
 from ai_lint.hook_checker import HookChecker
+from ai_lint.mcp_checker import McpChecker
 from ai_lint.plugin_registry import PluginRegistry
 from ai_lint.project_profile import ProjectProfiler
 from ai_lint.report import Report, configure_report_context
 from ai_lint.restore_log import RestoreLog as RestoreLog
+from ai_lint.secret_scan import InlineSecretScanner
 from ai_lint.self_update import SelfUpdater
 from ai_lint.terminal_view import Tty
 from ai_lint.tui_app import TuiApp
@@ -882,50 +882,6 @@ configure_report_context(
 )
 
 
-def dump_json(data: Any) -> str:
-    return json.dumps(data, indent=2, ensure_ascii=False) + "\n"
-
-
-def config_dir() -> Path:
-    return Path(os.path.expanduser(os.environ.get("CLAUDE_CONFIG_DIR") or "~/.claude"))
-
-
-def lenient_json(raw: str) -> tuple[Any, bool]:
-    """Parse JSON; on failure retry without BOM, comments and trailing commas."""
-    try:
-        return json.loads(raw), False
-    except json.JSONDecodeError as first_error:
-        text = raw.lstrip("\ufeff")
-        out, i, n, in_str = [], 0, len(text), False
-        while i < n:
-            c = text[i]
-            if in_str:
-                out.append(c)
-                if c == "\\" and i + 1 < n:
-                    out.append(text[i + 1])
-                    i += 1
-                elif c == '"':
-                    in_str = False
-            elif c == '"':
-                in_str = True
-                out.append(c)
-            elif text.startswith("//", i):
-                while i < n and text[i] != "\n":
-                    i += 1
-                continue
-            elif text.startswith("/*", i):
-                end = text.find("*/", i + 2)
-                i = n if end == -1 else end + 2
-                continue
-            else:
-                out.append(c)
-            i += 1
-        try:
-            return json.loads(re.sub(r",(\s*[}\]])", r"\1", "".join(out))), True
-        except json.JSONDecodeError:
-            raise first_error from None
-
-
 def slugify(name: str) -> str:
     return re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")[:64] or "unnamed"
 
@@ -1515,6 +1471,9 @@ def optimize_permissions(perms: dict, policy: dict, path: Path, rep: Report, sco
     return out
 
 
+_SECRETS = InlineSecretScanner()
+
+
 # --------------------------------------------------------------------------- #
 # Hooks
 # --------------------------------------------------------------------------- #
@@ -1525,39 +1484,7 @@ def optimize_permissions(perms: dict, policy: dict, path: Path, rep: Report, sco
 # --------------------------------------------------------------------------- #
 
 
-def check_env_secrets(env: dict, path: Path, rep: Report, ctx: str, mode: str = "report") -> dict:
-    """mode: report | reference (-> ${VAR}) | remove."""
-    out = dict(env or {})
-    for k, v in (env or {}).items():
-        if not isinstance(v, str):
-            continue
-        bare = re.sub(r"^(bearer|token|basic)\s+", "", v, flags=re.I)
-        if bare.startswith("$"):
-            continue
-        if any(p.search(bare) for p in SECRET_VALUE_PATTERNS) or (SECRET_KEY_RE.search(k) and len(bare) >= 12):
-            var = re.sub(r"[^A-Z0-9]+", "_", k.upper()).strip("_")
-            if k.lower() == "authorization" and "." in ctx:
-                var = re.sub(r"[^A-Z0-9]+", "_", ctx.split(".")[1].upper()) + "_TOKEN"
-            if mode == "reference":
-                prefix = v.split(" ")[0] + " " if v.lower().startswith(("bearer ", "token ", "basic ")) else ""
-                out[k] = f"{prefix}${{{var}}}"
-                action = f"replaced by {out[k]}; export {var} (or inject it from the vault)"
-            elif mode == "remove":
-                out.pop(k)
-                action = f"removed; export {var} in your shell profile or inject it from the vault"
-            else:
-                action = "reference an env var or the vault instead"
-            rep.add(
-                "error" if mode != "report" or ".claude.json" not in str(path) else "warn",
-                "SECRET_INLINE",
-                path,
-                f"{ctx}: {k} holds a literal secret; {action}",
-                mode != "report",
-            )
-    return out
-
-
-_HOOKS = HookChecker(check_env_secrets=check_env_secrets)
+_HOOKS = HookChecker(check_env_secrets=_SECRETS.check_env_secrets)
 
 
 def check_settings(path: Path, base: Path, scope: str, policy: dict, rep: Report) -> dict | None:
@@ -1685,7 +1612,7 @@ def check_settings(path: Path, base: Path, scope: str, policy: dict, rep: Report
     new = move_settings_mcp(new, base, path, rep, scope)
 
     if isinstance(new.get("env"), dict):
-        new["env"] = check_env_secrets(new["env"], path, rep, "env", "remove")
+        new["env"] = _SECRETS.check_env_secrets(new["env"], path, rep, "env", "remove")
         if not new["env"] and data.get("env"):
             new.pop("env")
 
@@ -1711,128 +1638,12 @@ def check_settings(path: Path, base: Path, scope: str, policy: dict, rep: Report
     return new
 
 
+_MCP = McpChecker(_SECRETS)
+
+
 # --------------------------------------------------------------------------- #
 # MCP configuration
 # --------------------------------------------------------------------------- #
-
-
-def check_servers(servers: dict, path: Path, rep: Report, ctx: str, writable: bool) -> dict:
-    out = {}
-    for name, cfg in servers.items():
-        rep.stats["MCP servers"] = rep.stats.get("MCP servers", 0) + 1
-        if not isinstance(cfg, dict) or not (cfg.get("command") or cfg.get("url")):
-            rep.add("error", "MCP_SHAPE", path, f"{ctx}.{name}: needs 'command' or 'url'")
-            out[name] = cfg
-            continue
-        cfg = dict(cfg)
-        kind = cfg.get("type") or ("http" if cfg.get("url") else "stdio")
-        log(
-            2,
-            f"{name}: {kind} {cfg.get('url') or cfg.get('command')}, {len(cfg.get('env') or {})} env var(s)",
-            2,
-        )
-        if cfg.get("url") and "type" not in cfg:
-            rep.add("warn", "MCP_TYPE", path, f"{ctx}.{name}: url without type (set to http)", writable)
-            if writable:
-                cfg = {"type": "http", **cfg}
-        elif cfg.get("type") == "sse":
-            rep.add("info", "MCP_SSE", path, f"{ctx}.{name}: SSE transport is deprecated")
-        elif cfg.get("type") not in (None, "stdio", "http", "sse", "ws"):
-            rep.add("error", "MCP_TYPE", path, f"{ctx}.{name}: unknown type {cfg.get('type')!r}")
-        if (
-            cfg.get("command")
-            and " " in str(cfg["command"]).strip()
-            and not cfg.get("args")
-            and not os.path.exists(str(cfg["command"]))
-        ):
-            parts = shlex.split(str(cfg["command"]))
-            rep.add(
-                "warn",
-                "MCP_COMMAND_ARGS",
-                path,
-                f"{ctx}.{name}: command contains arguments (split into args)",
-                writable,
-            )
-            if writable:
-                cfg["command"], cfg["args"] = parts[0], parts[1:]
-        mode = "reference" if writable else "report"
-        for sect in ("env", "headers"):
-            if isinstance(cfg.get(sect), dict):
-                cfg[sect] = check_env_secrets(cfg[sect], path, rep, f"{ctx}.{name}.{sect}", mode)
-        for a in cfg.get("args", []) or []:
-            if isinstance(a, str) and any(p.search(a) for p in SECRET_VALUE_PATTERNS):
-                rep.add(
-                    "error",
-                    "SECRET_INLINE",
-                    path,
-                    f"{ctx}.{name}: literal secret in args (move it to env)",
-                )
-        out[name] = cfg
-    return out
-
-
-def check_mcp(path: Path, rep: Report, policy: dict) -> None:
-    raw = read_text(path)
-    if raw is None:
-        log(2, f"{path}: absent", 1)
-        return
-    log(1, f"{path}", 1)
-    try:
-        data, repaired = lenient_json(raw)
-    except json.JSONDecodeError as e:
-        rep.add("error", "JSON_INVALID", path, f"invalid JSON, not auto-repairable: {e}")
-        return
-    if repaired:
-        rep.add("error", "JSON_REPAIRED", path, "comments, trailing commas or BOM in strict JSON", True)
-    if not isinstance(data, dict):
-        rep.add("error", "MCP_SHAPE", path, "top level must be an object")
-        return
-    new = copy.deepcopy(data)
-    if (
-        "mcpServers" not in data
-        and data
-        and all(isinstance(v, dict) and (v.get("command") or v.get("url")) for v in data.values())
-    ):
-        rep.add(
-            "warn",
-            "MCP_MISPLACED",
-            path,
-            "servers declared at top level (moved under mcpServers)",
-            True,
-        )
-        new = {"mcpServers": copy.deepcopy(data)}
-    servers = new.get("mcpServers")
-    if not isinstance(servers, dict):
-        rep.add("error", "MCP_SHAPE", path, "missing 'mcpServers' object")
-        return
-    log(1, f"{len(servers)} MCP server(s): " + ", ".join(servers), 2)
-    if len(servers) > policy["mcp"]["max_servers"]:
-        rep.add("warn", "MCP_TOO_MANY", path, f"{len(servers)} servers; each one costs context")
-    new["mcpServers"] = check_servers(servers, path, rep, "mcpServers", True)
-    if new != data or repaired:
-        rep.edit(path, raw, dump_json(new))
-
-
-def check_claude_json(rep: Report, repos: list[Path]) -> None:
-    """~/.claude.json is written by Claude Code itself: validate, never edit."""
-    path = Path(os.path.expanduser("~/.claude.json"))
-    if os.environ.get("CLAUDE_CONFIG_DIR"):
-        path = config_dir() / ".claude.json"
-    raw = read_text(path)
-    if raw is None:
-        return
-    try:
-        data = json.loads(raw)
-    except json.JSONDecodeError as e:
-        rep.add("error", "JSON_INVALID", path, f"invalid JSON ({e}); restore from ~/.claude/backups/")
-        return
-    log(1, f"{path} (read-only)", 1)
-    if isinstance(data.get("mcpServers"), dict):
-        check_servers(data["mcpServers"], path, rep, "mcpServers", False)
-    for proj, cfg in (data.get("projects") or {}).items():
-        if isinstance(cfg, dict) and isinstance(cfg.get("mcpServers"), dict) and cfg["mcpServers"]:
-            if not repos or any(str(r) == proj for r in repos):
-                check_servers(cfg["mcpServers"], path, rep, f"projects[{proj}].mcpServers", False)
 
 
 # --------------------------------------------------------------------------- #
@@ -2810,7 +2621,7 @@ def check_plugin_dir(root: Path, rep: Report, policy: dict) -> None:
         except json.JSONDecodeError as e:
             rep.add("error", "JSON_INVALID", hooks_file, f"invalid JSON: {e}")
     if (root / ".mcp.json").exists():
-        check_mcp(root / ".mcp.json", rep, policy)
+        _MCP.check_mcp(root / ".mcp.json", rep, policy)
     if any((root / sub).is_dir() for sub in ("skills", "agents", "commands")):
         check_agent_assets(root, policy, rep, "plugin", root)
     check_output_styles(root, rep)
@@ -3101,7 +2912,7 @@ def check_user_extras(rep: Report) -> None:
             rep.add("error", "JSON_REPAIRED", dc, "comments or trailing commas in strict JSON", True)
             rep.edit(dc, raw, dump_json(data))
         if isinstance(data.get("mcpServers"), dict):
-            check_servers(data["mcpServers"], dc, rep, "mcpServers", False)
+            _MCP.check_servers(data["mcpServers"], dc, rep, "mcpServers", False)
     for managed in (
         Path("/etc/claude-code/managed-settings.json"),
         Path("/Library/Application Support/ClaudeCode/managed-settings.json"),
@@ -6376,7 +6187,7 @@ def lint_user(policy: dict, rep: Report, repos: list[Path]) -> str | None:
         user_settings = user_settings or s
     check_agent_assets(home, policy, rep, "user", None)
     check_auto_memory(home, policy, rep)
-    check_claude_json(rep, repos)
+    _MCP.check_claude_json(rep, repos)
     check_user_extras(rep)
     return check_instruction_file(home / "CLAUDE.md", "user", policy, rep, None)
 
@@ -6406,7 +6217,7 @@ def lint_repo(repo: Path, policy: dict, rep: Report, history: bool, user_text: s
             repo,
             f"user defaultMode={user_mode} may be dropped by this project's permissions block",
         )
-    check_mcp(repo / ".mcp.json", rep, policy)
+    _MCP.check_mcp(repo / ".mcp.json", rep, policy)
     check_agent_assets(dot, policy, rep, "project", repo)
     check_output_styles(dot, rep)
     for proot in find_plugin_roots(repo):

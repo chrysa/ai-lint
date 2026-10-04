@@ -31,15 +31,17 @@ section banners:
 | `# Policy` | `DEFAULT_POLICY` (nested dict), `load_policy` (TOML overlay via `deep_merge`), `to_toml`. Every knob defaults here. |
 | `ai_lint/_reference.py` (docs snapshot) | Known settings keys, hook events, tools, skill/agent fields, dead keys; also the attribution patterns and the scaffold templates (`COMMIT_MSG_HOOK`, `PRE_COMPACT_HOOK`, `SECRETS_GITIGNORE`, `AGENTS_SKELETON`). Pure data shared by every module. The source of truth the checks compare against; carries the doc date. |
 | `# Hints and references` | `HINTS[code] = (why/how, doc_url)`. |
-| checks | `check_*` functions (settings, permissions, MCP, skills, subagents, rules, instructions, plugins, workflows, secrets). Each appends `Finding`s to a `Report`. |
+| checks | `check_*` functions (settings, permissions, skills, subagents, rules, instructions, plugins, workflows, secrets). Each appends `Finding`s to a `Report`. |
 | `# Token budget` | `token_budget`, `check_token_levers`, `check_effort_levels`, `render_token_budget` — the always-loaded weight estimate and its levers. |
 | `# Scaffolding` | `scaffold_project`, `scaffold_user`, `scaffold_security`, `gen_new_file` — files `--generate` proposes. |
 | `# Orchestration` | `run_lint`, `lint_repo`, `lint_user`, `apply`, `main`, and the render functions. |
 | `# Guard` | `guard_check`, `run_guard` — the PreToolUse hook. |
 | `# Plugin system` | `CheckContext`, `PluginAPI`, `load_plugins`, `run_plugin_checks`. |
 | catalogue | `catalog_data`, `dump_catalog`, `load_catalog`. |
-| `ai_lint/_runtime.py` | `RunState` (`state`): per-run options set by `main()`, plus base helpers `log`, `read_text`, `_loc`, `dedupe`. Extracted check modules import these from here, never from `_engine` (D-022). |
+| `ai_lint/_runtime.py` | `RunState` (`state`): per-run options set by `main()`, plus base helpers `log`, `read_text`, `_loc`, `dedupe`, `config_dir`, `lenient_json`, `dump_json`. Extracted check modules import these from here, never from `_engine` (D-022). |
 | `ai_lint/hook_checker.py` | `HookChecker`: hook events, matchers, handlers, script paths and exec form. The engine holds one instance (`_HOOKS`) and injects `check_env_secrets`. |
+| `ai_lint/secret_scan.py` | `InlineSecretScanner.check_env_secrets`: literal secrets in env, headers and args; reports, or replaces them by `${VAR}` / removes them. One engine instance (`_SECRETS`), injected into the hook and MCP checkers. |
+| `ai_lint/mcp_checker.py` | `McpChecker`: `.mcp.json` servers (shape, type, command/args split, inline secrets, count) and the read-only `~/.claude.json`. Engine instance `_MCP`. |
 | `ai_lint/content_validation.py` | `CriticalContentValidator.validation_reason()` blocks critical content edits until human validation. Covers instruction, doc, config and rule files. |
 | `ai_lint/project_profile.py` | `ProjectProfiler.detect_stack()` and `.detect_profile()` classify the scanned repo (CLI, library, app, etc.). |
 | `ai_lint/self_update.py` | `SelfUpdater.check()` handles release-branch update detection, confirmation and `git pull --ff-only`; config is in `SelfUpdateConfig`. |

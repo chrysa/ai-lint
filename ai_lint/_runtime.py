@@ -3,6 +3,9 @@
 from __future__ import annotations
 
 import datetime as dt
+import json
+import os
+import re
 import sys
 from dataclasses import dataclass
 from pathlib import Path
@@ -70,3 +73,47 @@ def read_text(p: Path) -> str | None:
 def dedupe(seq: list[str]) -> list[str]:
     seen: set[str] = set()
     return [x for x in seq if not (x in seen or seen.add(x))]  # type: ignore[func-returns-value]
+
+
+def dump_json(data: Any) -> str:
+    return json.dumps(data, indent=2, ensure_ascii=False) + "\n"
+
+
+def config_dir() -> Path:
+    return Path(os.path.expanduser(os.environ.get("CLAUDE_CONFIG_DIR") or "~/.claude"))
+
+
+def lenient_json(raw: str) -> tuple[Any, bool]:
+    """Parse JSON; on failure retry without BOM, comments and trailing commas."""
+    try:
+        return json.loads(raw), False
+    except json.JSONDecodeError as first_error:
+        text = raw.lstrip("\ufeff")
+        out, i, n, in_str = [], 0, len(text), False
+        while i < n:
+            c = text[i]
+            if in_str:
+                out.append(c)
+                if c == "\\" and i + 1 < n:
+                    out.append(text[i + 1])
+                    i += 1
+                elif c == '"':
+                    in_str = False
+            elif c == '"':
+                in_str = True
+                out.append(c)
+            elif text.startswith("//", i):
+                while i < n and text[i] != "\n":
+                    i += 1
+                continue
+            elif text.startswith("/*", i):
+                end = text.find("*/", i + 2)
+                i = n if end == -1 else end + 2
+                continue
+            else:
+                out.append(c)
+            i += 1
+        try:
+            return json.loads(re.sub(r",(\s*[}\]])", r"\1", "".join(out))), True
+        except json.JSONDecodeError:
+            raise first_error from None
