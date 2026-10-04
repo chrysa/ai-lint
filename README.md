@@ -1,12 +1,12 @@
 # ai-lint
 
-[![Tests](https://github.com/chrysa/ai-lint/actions/workflows/ci.yml/badge.svg)](https://github.com/chrysa/ai-lint/actions/workflows/ci.yml) [![PyPI](https://img.shields.io/pypi/v/ai-lint?style=flat)](https://pypi.org/project/ai-lint/) [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
+[![Tests](https://github.com/chrysa/ai-lint/actions/workflows/ci.yml/badge.svg)](https://github.com/chrysa/ai-lint/actions/workflows/ci.yml) [![PyPI](https://img.shields.io/pypi/v/ai-lint?style=flat)](https://pypi.org/project/ai-lint/) [![License](https://img.shields.io/badge/license-MIT-blue)](pyproject.toml)
 
 **Linter, fixer and guard for AI coding-agent configuration.** Validates permissions, instructions, hooks, MCP servers, skills and subagents; flags security, token cost and correctness issues; repairs safely. Works with Claude Code, Cursor, Windsurf and others.
 
 ## 30-second pitch
 
-Agent config drifts. api-lint catches three problems:
+Agent config drifts. ai-lint catches three problems:
 - **Security**: permission rules that silently allow too much, committed keys, broken hooks, missing gitignore. Only tightens, never loosens.
 - **Tokens**: everything in your instructions, rules, skills and MCP is re-sent per request. ai-lint estimates it, names the biggest killers, suggests concrete cuts.
 - **Correctness**: deprecated keys, invalid shapes, duplicates, config in the wrong scope.
@@ -100,6 +100,19 @@ ai-lint . --user --fix       # include user scope (~/.claude)
 **More**: `--policy FILE`, `--catalog FILE`, `--plugin-dir DIR`, `--guard`, `--dump-reference`, `--print-policy`, `--list-plugins`, `--restore [DIR]`, `--no-cli`, `--no-rtk`, `--no-scaffold`, `--no-update-check`, `--graphify`, `--rtk-report`.
 
 Exit codes: `0` clean, `1` errors/warnings (`--strict`), `2` usage or guard block.
+
+## Pre-commit hook
+
+Add to `.pre-commit-config.yaml`:
+
+```yaml
+- repo: https://github.com/chrysa/ai-lint
+  rev: vX.Y.Z  # a release tag; `pre-commit autoupdate` picks the latest
+  hooks:
+    - id: ai-lint
+```
+
+Runs only when agent config changes (`.claude/`, `CLAUDE.md`, `AGENTS.md`, `.mcp.json`, `.ai-lint.toml`, workflows...). Read-only: it never runs `--fix`, never calls external CLIs, and blocks the commit on errors only, listing each with its `→ fix`. Run it on demand with `pre-commit run ai-lint --hook-stage manual`.
 
 ## Features
 
