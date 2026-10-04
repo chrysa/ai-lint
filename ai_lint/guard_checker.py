@@ -236,7 +236,10 @@ class GuardChecker:
     def protected_path(self, p: Path) -> str | None:
         rp = p.resolve()
         s = str(rp)
-        if rp in (self.engine_path, Path(__file__).resolve()):
+        package = self.engine_path.parent
+        if rp in (self.engine_path, Path(__file__).resolve(), package.parent / "ai-lint.py") or rp.is_relative_to(
+            package
+        ):
             return "the linter itself"
         if rp.name == ".claude.json":
             return "~/.claude.json is written by Claude Code"

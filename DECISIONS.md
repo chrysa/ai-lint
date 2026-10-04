@@ -4,6 +4,15 @@ Why the project is the way it is — the rationale an agent would otherwise re-d
 undo) each session. History of *what* changed is in [CHANGELOG.md](CHANGELOG.md); this file
 records *why*. Newest first. Each entry: decision, why, and what would reverse it.
 
+## D-023 · The guard protects the whole linter package
+`GuardChecker.protected_path` treats every file under the `ai_lint/` package, plus the
+`ai-lint.py` wrapper next to it, as "the linter itself". **Why:** it used to protect only
+`_engine.py` and `guard_checker.py`, so a guarded agent could edit `content_validation.py`
+(disabling human validation), the wrapper, or `_reference.py` (attribution and secret
+patterns, known tools). Every extraction out of the engine widened that gap. **How to
+apply:** new modules are covered automatically; do not add per-file exceptions. **Reverse:**
+never loosen this; if a file must become agent-editable, move it out of the package.
+
 ## D-022 · Run state lives in one object, not module globals
 Options set by `main()` (verbosity, language, debug log, scaffold, min level...) live in
 `ai_lint._runtime.state` (`RunState`), next to the base helpers `log`, `read_text`,

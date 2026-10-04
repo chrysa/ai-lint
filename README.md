@@ -173,7 +173,7 @@ ai-lint --session-settings /tmp/audit.json
 claude --settings /tmp/audit.json  # then /config-audit
 ```
 
-Every edit checked by `ai-lint --guard` (PreToolUse hook); loosening blocked. Guard blocks: adding allow rules, removing deny/ask, extending tools, adding attribution, code-executing plugins, permission bypasses, or edits to critical files.
+Every edit checked by `ai-lint --guard` (PreToolUse hook); loosening blocked. Guard blocks: adding allow rules, removing deny/ask, extending tools, adding attribution, code-executing plugins, permission bypasses, edits to critical files, or edits to the linter itself (the whole `ai_lint` package).
 
 ## Customization
 

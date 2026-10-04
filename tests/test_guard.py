@@ -299,3 +299,14 @@ def test_notebook_edit_still_checks_protected_paths(guard_module, tmp_path):
     )
     assert reason
     assert "git hooks" in reason
+
+
+def test_guard_protects_every_module_of_the_linter_package(linter_module, tmp_path):
+    from pathlib import Path
+
+    checker = linter_module._guard_checker()
+    package = checker.engine_path.parent
+    for name in ("_reference.py", "_runtime.py", "content_validation.py", "report.py", "__init__.py"):
+        assert checker.protected_path(package / name) == "the linter itself", name
+    assert checker.protected_path(package.parent / "ai-lint.py") == "the linter itself"
+    assert checker.protected_path(Path(tmp_path) / "notes.md") is None
