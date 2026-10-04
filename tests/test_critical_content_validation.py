@@ -23,7 +23,10 @@ def test_legacy_config_files_are_critical(tmp_path):
         assert validator.is_critical(tmp_path / name), f"{name} should be critical"
 
 
-def test_docs_files_in_docs_dir_are_critical(tmp_path):
+def test_docs_files_listed_in_policy_are_critical(tmp_path, monkeypatch):
+    from ai_lint._runtime import state
+
+    monkeypatch.setattr(state, "critical_extra", ("docs/FIXER_POLICY.md", "docs/SHARED_STANDARDS_MAPPING.md"))
     validator = CriticalContentValidator(repo_roots=[tmp_path])
     docs_path = tmp_path / "docs"
     docs_path.mkdir()

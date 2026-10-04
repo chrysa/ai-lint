@@ -28,11 +28,21 @@ def test_detect_project_profile_standards_repo(tmp_path):
     (repo / "standards" / "rules").mkdir(parents=True)
     (repo / "standards" / "STANDARDS.chrysa.md").write_text("# Standards\n")
 
-    profile = ProjectProfiler(repo).detect_profile()
+    markers = ("standards/STANDARDS.chrysa.md", "standards/rules")
+    profile = ProjectProfiler(repo, markers).detect_profile()
 
     assert profile["kind"] == "standards-repo"
     assert profile["confidence"] == "high"
-    assert "shared-standards" in profile["signals"]
+    assert "standards" in profile["signals"]
+
+
+def test_standards_detection_is_off_without_policy_markers(tmp_path):
+    repo = tmp_path / "standards"
+    (repo / "standards" / "rules").mkdir(parents=True)
+    (repo / "standards" / "STANDARDS.chrysa.md").write_text("# Standards\n")
+    profile = ProjectProfiler(repo).detect_profile()
+    assert profile["kind"] != "standards-repo"
+    assert "standards" not in profile["signals"]
 
 
 def test_json_output_includes_project_profiles(env):

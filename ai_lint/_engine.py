@@ -386,6 +386,11 @@ DEFAULT_POLICY: dict[str, Any] = {
         "docs_checked": "",
     },
     "memory": {"max_lines": 200, "max_bytes": 25_000},
+    # Repository-specific files that need human validation in guarded sessions, on top of the
+    # generic defaults (instruction files, policy files, .claude/rules). Repo-relative paths.
+    "critical": {"extra_files": []},
+    # Paths whose presence marks a standards repository (profile kind "standards-repo").
+    "profile": {"standards_markers": []},
 }
 
 
@@ -907,6 +912,14 @@ def load_policy(path: Path | None, repos: list[Path]) -> dict:
         f"policy: {source}" + (f" (reference data checked {ref['docs_checked']})" if ref.get("docs_checked") else ""),
     )
     log(3, "resolved policy: " + json.dumps(policy, ensure_ascii=False))
+    extra: list[str] = []
+    for entry in policy["critical"]["extra_files"]:
+        rel = Path(str(entry))
+        if isinstance(entry, str) and entry and not rel.is_absolute() and ".." not in rel.parts:
+            extra.append(rel.as_posix())
+        else:
+            print(f"warning: [critical] extra_files: ignored {entry!r} (repo-relative path expected)", file=sys.stderr)
+    state.critical_extra = tuple(extra)
     return policy
 
 
@@ -2809,10 +2822,6 @@ if __name__ == "__main__":
 
 def detect_stack(repo: Path) -> dict:
     return ProjectProfiler(repo).detect_stack()
-
-
-def detect_project_profile(repo: Path, stack: dict | None = None) -> dict:
-    return ProjectProfiler(repo).detect_profile(stack)
 
 
 def generated_permissions(stack: dict, policy: dict) -> dict:
@@ -5578,7 +5587,8 @@ def run_lint(repos: list[Path], policy: dict, args: argparse.Namespace, history:
         run_plugin_checks("user", config_dir(), policy, rep)
     check_rtk(policy, rep, repos, bool(args.user or args.user_only))
     check_llmtrim(rep, repos, bool(args.user or args.user_only))
-    rep.project_profiles = [detect_project_profile(r) for r in repos]
+    markers = tuple(policy["profile"]["standards_markers"])
+    rep.project_profiles = [ProjectProfiler(r, markers).detect_profile() for r in repos]
     rep.desktop_compatibility = [DesktopChecker(r).check(rep) for r in repos]
     rep.budget = token_budget(repos[0] if repos else None, bool(args.user or args.user_only), policy, rep)
     user_roots = [config_dir()] if (args.user or args.user_only) else []

@@ -185,6 +185,8 @@ Copy `ai-lint.example.toml` to `.ai-lint.toml` and keep only what you change.
 
 **CLI defaults** (`[flags]`, in `.ai-lint.toml` of the current directory): `strict`, `no_cli`, `no_history`, `verbose`, `format`, `details`, `diff`, `lang`, `min_level`... Options that write or approve (`fix`, `generate`, `interactive`, `full_yes`, `user`) are refused: pass them on the command line, which always wins.
 
+**Repository-specific rules**: `[critical] extra_files` adds files that need human validation in guarded sessions (repo-relative paths); `[profile] standards_markers` lists paths that mark a standards repository.
+
 **Token checks** (`[tokens]`): preferred model, heavy models (flagged when default), subagent model, max effort level.
 
 **Scopes** (`[scopes]`): where skills/agents/commands/MCP should live (project, user, local).

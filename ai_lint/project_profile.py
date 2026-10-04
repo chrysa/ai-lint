@@ -13,8 +13,9 @@ from ai_lint.desktop_checker import DesktopChecker
 
 
 class ProjectProfiler:
-    def __init__(self, repo: Path) -> None:
+    def __init__(self, repo: Path, standards_markers: tuple[str, ...] = ()) -> None:
         self.repo = repo
+        self.standards_markers = standards_markers
 
     def detect_stack(self) -> dict[str, Any]:
         stack: dict[str, Any] = {"make": [], "scripts": {}, "pm": None}
@@ -52,10 +53,8 @@ class ProjectProfiler:
         make_targets = stack.get("make") or []
         signals = self._signals(stack, make_targets)
 
-        standards = (self.repo / "standards" / "STANDARDS.chrysa.md").exists() or (
-            self.repo / "standards" / "rules"
-        ).is_dir()
-        self._note(signals, standards, "shared-standards")
+        standards = any((self.repo / marker).exists() for marker in self.standards_markers)
+        self._note(signals, standards, "standards")
         workflows = (self.repo / ".github" / "workflows").is_dir()
         self._note(signals, workflows, "github-actions")
         agent_config = (

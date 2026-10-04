@@ -67,6 +67,12 @@ docs_checked = ""
 max_lines = 200
 max_bytes = 25000
 
+[critical]
+extra_files = []
+
+[profile]
+standards_markers = []
+
 [generate]
 project_settings = true
 user_settings = true

@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+
+from ai_lint._runtime import state
 
 
 @dataclass(frozen=True)
@@ -17,13 +19,9 @@ class CriticalContentPolicy:
             "TESTING.md",
         }
     )
-    docs_files: frozenset[str] = frozenset(
-        {
-            "CLAUDE_CODE_BEST_PRACTICES.md",
-            "FIXER_POLICY.md",
-            "SHARED_STANDARDS_MAPPING.md",
-        }
-    )
+    # Project-specific documents are added per repository with [critical] extra_files.
+    docs_files: frozenset[str] = frozenset()
+    extra_paths: frozenset[str] = field(default_factory=lambda: frozenset(state.critical_extra))
     config_files: frozenset[str] = frozenset(
         {
             ".ai-lint.toml",

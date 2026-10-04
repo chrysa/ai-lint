@@ -26,7 +26,7 @@ recommendation, never forced blindly.
 | Container/runtime policy | ai-lint has no runtime container requirement; it must run with bare Python >= 3.13 (never lower). | Do not add runtime dependencies or container-only assumptions for the CLI. |
 | CI/CD and pre-commit | CI and hooks should be deterministic, least-privilege and conventional. | CI runs Ruff, mypy, pytest, self-check and coverage directly from `pyproject.toml` tooling; local shortcuts may keep `make check` / `make selfcheck`; releases follow Conventional Commits. |
 | Docs and project state | Behaviour changes update docs in the same change. | User-facing behaviour -> README; rationale -> DECISIONS; architecture -> ARCHITECTURE. |
-| Critical content validation | Files that define project meaning or operating rules require human validation before content changes. | `CriticalContentValidator` blocks guarded edits to repo contracts, key docs, standards docs and `.claude/rules/*.md`. |
+| Critical content validation | Files that define project meaning or operating rules require human validation before content changes. | `CriticalContentValidator` (generic defaults plus this repo's `[critical] extra_files` in `.ai-lint.toml`) blocks guarded edits to repo contracts, key docs, standards docs and `.claude/rules/*.md`. |
 | Security gates | Secret scanning, PII awareness and permission hardening are gates, not afterthoughts. | The fixer policy remains stricter than the generic standard: automatic actions never loosen. |
 
 ## Feedback expectations
