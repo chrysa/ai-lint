@@ -16,11 +16,15 @@ from ai_lint._markup import (
 )
 from ai_lint._reference import RULE_TYPOS
 from ai_lint._runtime import add_gitignore, is_ignored, is_tracked, log, read_text, state
+from ai_lint.ape_checker import APEChecker
 from ai_lint.report import Report
 
 
 class InstructionChecker:
     """Check instruction files, rules and auto memory; records findings, never writes."""
+
+    def __init__(self) -> None:
+        self._clarity = APEChecker()
 
     def check_imports(
         self,
@@ -93,6 +97,9 @@ class InstructionChecker:
                 path,
                 f"filler wording ({', '.join(sorted(set(hits))[:4])}...): write direct imperatives",
             )
+        unclear = self._clarity.check_text(effective)
+        if len(unclear) >= pol.get("vague_wording_min", 3):
+            rep.add("info", "INSTR_VAGUE", path, self._clarity.summarize(unclear) or "unclear wording")
 
     def check_instruction_file(
         self, path: Path, scope: str, policy: dict, rep: Report, root: Path | None

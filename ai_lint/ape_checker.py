@@ -1,66 +1,61 @@
-"""APE (Automatic Prompt Engineering) checker for instruction clarity."""
+"""Instruction clarity (APE-style): hedging verbs and open-ended scope in agent instructions."""
 
 from __future__ import annotations
 
 import re
 from pathlib import Path
 
+# Only wording an agent cannot act on deterministically. Ordinary verbs (fix, build,
+# verify...) are not flagged: they are what instructions are made of. "should" is left
+# to the filler-wording check so one word is never reported twice.
+CLARITY_ISSUES = {
+    "vague_verb": (
+        r"\b(might|could|maybe|perhaps|try to|attempt to)\b",
+        "hedging verb: state what to do (DO / NEVER / ONLY)",
+    ),
+    "ambiguous_scope": (
+        r"(\betc\.?(?=\W|$)|\band so on\b|\bbasically\b|\band similar\b)",
+        "open-ended scope: list exactly what is included",
+    ),
+}
+
 
 class APEChecker:
-    """Validate instruction files against APE clarity principles."""
-
-    # APE principles: clarity, completeness, constraints, objectives
-    CLARITY_ISSUES = {
-        "vague_verb": (
-            r"\b(should|might|could|may|try|attempt|maybe)\b",
-            "Vague instruction — use direct verbs (MUST, DO, ONLY, NEVER)",
-        ),
-        "missing_constraint": (
-            r"\b(fix|build|make|create|update)\b",
-            "Missing constraint — add ONLY/NEVER/ALWAYS to bound execution",
-        ),
-        "ambiguous_scope": (
-            r"(etc\.|and so on|similar|basically)",
-            "Ambiguous scope — specify exactly what is included/excluded",
-        ),
-        "incomplete_criteria": (
-            r"\b(check|validate|verify|ensure)\b(?!.*\b(by|with|using|via)\b)",
-            "Incomplete criteria — specify HOW to validate",
-        ),
-    }
+    """Find instruction lines an agent cannot act on deterministically."""
 
     def __init__(self) -> None:
-        self.compiled_patterns = {
-            name: re.compile(pattern, re.IGNORECASE) for name, (pattern, _) in self.CLARITY_ISSUES.items()
-        }
+        self.compiled_patterns = {name: re.compile(p, re.IGNORECASE) for name, (p, _) in CLARITY_ISSUES.items()}
 
-    def check_file(self, path: Path) -> list[tuple[int, str, str]]:
-        """Scan instruction file for clarity issues. Returns (line_num, issue_type, message)."""
-        if not path.exists():
-            return []
+    def check_text(self, text: str) -> list[tuple[int, str, str]]:
+        """Return (line number, issue type, message) for every unclear line, outside code."""
         issues = []
-        try:
-            text = path.read_text(encoding="utf-8")
-        except (OSError, UnicodeDecodeError):
-            return []
-        for line_num, line in enumerate(text.split("\n"), 1):
-            # Skip comments, headings, code blocks
-            if line.strip().startswith("#") or line.strip().startswith("```"):
+        in_fence = False
+        for line_num, line in enumerate(text.splitlines(), 1):
+            s = line.strip()
+            if s.startswith(("```", "~~~")):
+                in_fence = not in_fence
                 continue
+            if in_fence or s.startswith("#"):
+                continue
+            s = re.sub(r"`[^`\n]*`", "", s)
             for issue_type, pattern in self.compiled_patterns.items():
-                if pattern.search(line):
-                    _, message = self.CLARITY_ISSUES[issue_type]
-                    issues.append((line_num, issue_type, message))
+                if pattern.search(s):
+                    issues.append((line_num, issue_type, CLARITY_ISSUES[issue_type][1]))
         return issues
 
+    def check_file(self, path: Path) -> list[tuple[int, str, str]]:
+        try:
+            return self.check_text(path.read_text(encoding="utf-8"))
+        except (OSError, UnicodeDecodeError):
+            return []
+
     def summarize(self, issues: list[tuple[int, str, str]]) -> str | None:
-        """Return summary of clarity issues found, or None if clear."""
+        """One-line summary with counts per issue type and the first lines, or None."""
         if not issues:
             return None
-        counts = {}
+        counts: dict[str, int] = {}
         for _, issue_type, _ in issues:
             counts[issue_type] = counts.get(issue_type, 0) + 1
-        summary = "Instruction clarity issues: " + ", ".join(
-            f"{count} {t.replace('_', ' ')}" for t, count in counts.items()
-        )
-        return summary
+        lines = ", ".join(str(n) for n, _, _ in issues[:5])
+        kinds = ", ".join(f"{count} {t.replace('_', ' ')}" for t, count in counts.items())
+        return f"unclear wording ({kinds}; lines {lines}): state exactly what to do and its scope"

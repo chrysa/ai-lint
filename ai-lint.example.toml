@@ -11,6 +11,7 @@ min_duplicate_line_len = 30
 style_checks = true
 prose_block_lines = 4
 prose_line_min_chars = 60
+vague_wording_min = 3
 filler_phrases = ["please", "you should", "you must", "make sure to", "be sure to", "note that", "keep in mind", "in order to", "it is important to", "as a reminder", "feel free to"]
 
 [permissions]

@@ -53,3 +53,23 @@ def test_style_checks_disabled_by_policy(linter_module, tmp_path):
     rep = m.Report()
     InstructionChecker().check_instruction_file(tmp_path / "CLAUDE.md", "project", pol, rep, tmp_path)
     assert not any(f.code in ("INSTR_PROSE", "INSTR_FILLER") for f in rep.findings)
+
+
+def test_vague_wording_flagged_once_above_threshold(linter_module, tmp_path):
+    m = linter_module
+    text = "# Rules\n- Maybe run tests.\n- You could lint, etc.\n- Try to format.\n"
+    (tmp_path / "CLAUDE.md").write_text(text)
+    pol = m.load_policy(None, [tmp_path])
+    rep = m.Report()
+    InstructionChecker().check_instruction_file(tmp_path / "CLAUDE.md", "project", pol, rep, tmp_path)
+    vague = [f for f in rep.findings if f.code == "INSTR_VAGUE"]
+    assert len(vague) == 1 and vague[0].level == "info"
+
+
+def test_vague_wording_below_threshold_is_silent(linter_module, tmp_path):
+    m = linter_module
+    (tmp_path / "CLAUDE.md").write_text("# Rules\n- A change could loosen config: report it.\n")
+    pol = m.load_policy(None, [tmp_path])
+    rep = m.Report()
+    InstructionChecker().check_instruction_file(tmp_path / "CLAUDE.md", "project", pol, rep, tmp_path)
+    assert not [f for f in rep.findings if f.code == "INSTR_VAGUE"]

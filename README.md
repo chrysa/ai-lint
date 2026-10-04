@@ -183,6 +183,8 @@ Copy `ai-lint.example.toml` to `.ai-lint.toml` and keep only what you change.
 
 **Main knobs**: `permissions.require_rtk`, `permissions.rule_style` (keep/space/colon), `skills.gate_side_effects`, `instructions.claude_md_import`, `scaffold.*`.
 
+**CLI defaults** (`[flags]`, in `.ai-lint.toml` of the current directory): `strict`, `no_cli`, `no_history`, `verbose`, `format`, `details`, `diff`, `lang`, `min_level`... Options that write or approve (`fix`, `generate`, `interactive`, `full_yes`, `user`) are refused: pass them on the command line, which always wins.
+
 **Token checks** (`[tokens]`): preferred model, heavy models (flagged when default), subagent model, max effort level.
 
 **Scopes** (`[scopes]`): where skills/agents/commands/MCP should live (project, user, local).

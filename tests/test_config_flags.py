@@ -1,100 +1,56 @@
-"""Tests for modular CLI flags and config file handling."""
+"""[flags] defaults: only non-writing options, validated, command line wins."""
 
 from __future__ import annotations
 
-import argparse
+import subprocess
+import sys
 from pathlib import Path
 
-from ai_lint.config_flags import CLIFlags, apply_config_flags, load_flags_from_config
+from ai_lint.config_flags import ConfigFlags
+
+ROOT = Path(__file__).resolve().parent.parent
 
 
-def test_cli_flags_defaults():
-    flags = CLIFlags()
-    assert flags.fix is False
-    assert flags.user is False
-    assert flags.strict is False
-    assert flags.verbose == 0
-    assert flags.format == "text"
+def _write(tmp_path, body):
+    p = tmp_path / ".ai-lint.toml"
+    p.write_text(body)
+    return ConfigFlags(p)
 
 
-def test_cli_flags_to_namespace():
-    flags = CLIFlags(fix=True, user=True, verbose=2)
-    ns = flags.to_args_namespace()
-    assert ns.fix is True
-    assert ns.user is True
-    assert ns.verbose == 2
+def test_safe_flags_become_defaults(tmp_path):
+    defaults, rejected = _write(tmp_path, '[flags]\nstrict = true\nverbose = 2\nformat = "json"\n').load()
+    assert defaults == {"strict": True, "verbose": 2, "format": "json"}
+    assert rejected == []
 
 
-def test_cli_flags_from_namespace():
-    ns = argparse.Namespace(fix=True, user=True, verbose=2, strict=False)
-    flags = CLIFlags.from_args_namespace(ns)
-    assert flags.fix is True
-    assert flags.user is True
-    assert flags.verbose == 2
+def test_writing_or_approving_flags_are_rejected(tmp_path):
+    body = "[flags]\nfix = true\nfull_yes = true\napprove_conversion = true\nuser = true\nplugin_dir = '/tmp'\n"
+    defaults, rejected = _write(tmp_path, body).load()
+    assert defaults == {}
+    assert len(rejected) == 5
 
 
-def test_cli_flags_merge_from_toml():
-    flags = CLIFlags()
-    toml_flags = {"fix": True, "strict": True, "verbose": 2}
-    flags.merge_from_toml(toml_flags)
-    assert flags.fix is True
-    assert flags.strict is True
-    assert flags.verbose == 2
+def test_wrong_types_and_choices_are_rejected(tmp_path):
+    defaults, rejected = _write(tmp_path, '[flags]\nstrict = "yes"\nverbose = -1\nformat = "xml"\n').load()
+    assert defaults == {}
+    assert len(rejected) == 3
 
 
-def test_load_flags_from_toml_file(tmp_path):
-    config_file = tmp_path / ".ai-lint.toml"
-    config_file.write_text(
-        """
-[flags]
-fix = true
-user = true
-verbose = 1
-strict = false
-"""
+def test_missing_or_broken_file(tmp_path):
+    assert ConfigFlags(tmp_path / "none.toml").load() == ({}, [])
+    defaults, rejected = _write(tmp_path, "[flags\n").load()
+    assert defaults == {} and len(rejected) == 1
+
+
+def test_cli_run_honours_flags_and_command_line_wins(tmp_path):
+    (tmp_path / ".ai-lint.toml").write_text('[flags]\nformat = "json"\nfix = true\n')
+    base = [sys.executable, str(ROOT / "ai-lint.py"), ".", "--no-cli", "--no-scaffold", "--no-history"]
+    env = {"PATH": "/usr/bin:/bin", "HOME": str(tmp_path), "AI_LINT_UPDATE_CHECK": "0"}
+    res = subprocess.run(base, cwd=tmp_path, capture_output=True, text=True, env=env, timeout=120)
+    assert res.stdout.lstrip().startswith("{")
+    assert "fix: not allowed in [flags]" in res.stderr
+    assert not (tmp_path / ".claude").exists()  # fix = true was not applied
+    res = subprocess.run(
+        [*base, "--format", "text"], cwd=tmp_path, capture_output=True, text=True, env=env, timeout=120
     )
-    flags = load_flags_from_config(config_file)
-    assert flags is not None
-    assert flags["fix"] is True
-    assert flags["user"] is True
-    assert flags["verbose"] == 1
-    assert flags["strict"] is False
-
-
-def test_load_flags_nonexistent_file():
-    flags = load_flags_from_config(Path("/nonexistent/.ai-lint.toml"))
-    assert flags is None
-
-
-def test_load_flags_no_flags_section(tmp_path):
-    config_file = tmp_path / ".ai-lint.toml"
-    config_file.write_text("[other]\nkey = true")
-    flags = load_flags_from_config(config_file)
-    assert flags == {}
-
-
-def test_apply_config_flags_override(tmp_path):
-    config_file = tmp_path / ".ai-lint.toml"
-    config_file.write_text("[flags]\nfix = true\nuser = true")
-    args = argparse.Namespace(fix=False, user=False, strict=False, verbose=0)
-    apply_config_flags(args, config_file)
-    assert args.fix is True  # config should set it
-    assert args.user is True
-
-
-def test_apply_config_flags_applies_all(tmp_path):
-    config_file = tmp_path / ".ai-lint.toml"
-    config_file.write_text("[flags]\nfix = true\nuser = true\nstrict = false")
-    args = argparse.Namespace(fix=False, user=False, strict=True, verbose=0)
-    apply_config_flags(args, config_file)
-    # Config flags applied; CLI precedence is caller's responsibility via argparse ordering.
-    assert args.fix is True
-    assert args.user is True
-    assert args.strict is False
-
-
-def test_apply_config_flags_no_config():
-    args = argparse.Namespace(fix=False, user=False)
-    apply_config_flags(args, None)
-    assert args.fix is False
-    assert args.user is False
+    assert not res.stdout.lstrip().startswith("{")

@@ -51,13 +51,12 @@ class LlmtrimChecker:
             pass
         return None
 
-    def recommendation(self, token_budget: float, is_configured: bool) -> str | None:
-        """Recommend llmtrim if context is heavy and it's not configured."""
-        if is_configured:
+    def recommendation(
+        self, token_budget: float, is_configured: bool, threshold: float = 10000, installed: bool | None = None
+    ) -> str | None:
+        """Recommend llmtrim when the always-loaded context exceeds `threshold` tokens."""
+        if is_configured or token_budget <= threshold:
             return None
-        if token_budget > 10000:  # Heavy context
-            if self.is_installed():
-                return "llmtrim is installed but not configured — consider `llmtrim setup` to enable compression"
-            else:
-                return "Context is heavy (>10k tokens per-session) — install llmtrim for automatic compression"
-        return None
+        if self.is_installed() if installed is None else installed:
+            return "llmtrim is installed but not configured: run `llmtrim setup` to enable compression"
+        return f"~{int(token_budget)} tokens loaded per session (> {int(threshold)}): install llmtrim to compress them"

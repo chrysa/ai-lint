@@ -127,6 +127,7 @@ from ai_lint._runtime import (
 )
 from ai_lint.agent_contract import AgentContract
 from ai_lint.agent_converter import ADAPTERS, AgentConverter
+from ai_lint.config_flags import ConfigFlags
 from ai_lint.content_validation import CriticalContentValidator as CriticalContentValidator
 from ai_lint.desktop_checker import DesktopChecker
 from ai_lint.feedback_renderer import FeedbackRenderer
@@ -137,6 +138,7 @@ from ai_lint.guard_checker import GUARD_MARKER as GUARD_MARKER
 from ai_lint.guard_checker import GuardChecker
 from ai_lint.hook_checker import HookChecker
 from ai_lint.instruction_checker import InstructionChecker
+from ai_lint.llmtrim_checker import LlmtrimChecker
 from ai_lint.mcp_checker import McpChecker
 from ai_lint.plugin_registry import PluginRegistry
 from ai_lint.project_profile import ProjectProfiler
@@ -216,6 +218,7 @@ DEFAULT_POLICY: dict[str, Any] = {
         "style_checks": True,  # master switch for the style suggestions below
         "prose_block_lines": 4,  # a run of >= N non-list prose lines is flagged (bullet it)
         "prose_line_min_chars": 60,  # only count lines this long as prose (skip short ones)
+        "vague_wording_min": 3,  # hedging verbs / open-ended scope lines before INSTR_VAGUE fires
         "filler_phrases": [  # polite / filler wording to drop for the imperative
             "please",
             "you should",
@@ -682,6 +685,15 @@ HINTS: dict[str, tuple[str, str]] = {  # code -> (why/how, reference)
     ),
     "INSTR_FILLER": (
         "Politeness and hedging add tokens without changing behaviour; write direct imperatives.",
+        DOCS + "memory#write-effective-instructions",
+    ),
+    "LLMTRIM_SUGGESTED": (
+        "llmtrim compresses what is re-sent to the model; worth it once the always-loaded context is heavy.",
+        "https://github.com/llmtrim/llmtrim#install",
+    ),
+    "INSTR_VAGUE": (
+        "Hedging verbs (might, could, try to) and open-ended scope (etc., and so on) leave the agent "
+        "to guess; state what to do and exactly what is included.",
         DOCS + "memory#write-effective-instructions",
     ),
     "AGENTS_IGNORED": (
@@ -3459,6 +3471,12 @@ def token_budget(repo: Path | None, user: bool, policy: dict, rep: Report) -> di
             f"{policy['tokens']['max_always_loaded']}); "
             "top: " + ", ".join(f"{g} ({n}) ~{t}" for g, n, t in grouped[:3]),
         )
+        if LLMTRIM["checked_cli"]:
+            advice = LlmtrimChecker().recommendation(
+                total, False, policy["tokens"]["max_always_loaded"], installed=bool(LLMTRIM["path"])
+            )
+            if advice and not LLMTRIM["path"]:
+                rep.add("info", "LLMTRIM_SUGGESTED", repo or cfg, advice)
     return {
         "total": total,
         "parts": {k: [(str(p), t) for p, t in v] for k, v in parts.items()},
@@ -4484,6 +4502,8 @@ BRIEF_FR = {
     ),
     "INSTR_PROSE": ("tokens", "paragraphes en prose", "remplacer par des puces"),
     "INSTR_FILLER": ("tokens", "formules de politesse / remplissage", "écrire des impératifs directs"),
+    "LLMTRIM_SUGGESTED": ("tokens", "contexte lourd sans llmtrim", "installer llmtrim (optionnel)"),
+    "INSTR_VAGUE": ("tokens", "consignes floues (peut-être, etc.)", "dire quoi faire et la portée exacte"),
     "RULE_UNSCOPED": (
         "tokens",
         "règles chargées partout faute de 'paths:'",
@@ -4623,6 +4643,8 @@ BRIEF_EN = {
     "INSTR_LONG": ("tokens", "instruction files over 200 lines", "-i: move procedures into skills"),
     "INSTR_PROSE": ("tokens", "prose paragraphs", "replace with bullet points"),
     "INSTR_FILLER": ("tokens", "polite / filler wording", "write direct imperatives"),
+    "LLMTRIM_SUGGESTED": ("tokens", "heavy context without llmtrim", "install llmtrim (optional)"),
+    "INSTR_VAGUE": ("tokens", "vague instructions (might, etc.)", "state what to do and its exact scope"),
     "RULE_UNSCOPED": (
         "tokens",
         "rules loaded everywhere for lack of 'paths:'",
@@ -6565,6 +6587,12 @@ def main(argv: list[str] | None = None) -> int:
     if not (argv if argv is not None else sys.argv[1:]):
         ap.print_help()
         return 0
+    raw_argv = argv if argv is not None else sys.argv[1:]
+    if GUARD_MARKER not in raw_argv:  # the guard never reads repository-provided settings
+        flag_defaults, rejected = ConfigFlags(Path.cwd() / ".ai-lint.toml").load()
+        for note in rejected:
+            print(f"warning: [flags] {note}", file=sys.stderr)
+        ap.set_defaults(**flag_defaults)
     args = ap.parse_args(argv)
     if args.full_yes and args.format != "text":
         ap.error("--full-yes requires --format text")
