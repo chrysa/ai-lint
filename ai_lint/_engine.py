@@ -3728,7 +3728,7 @@ def _body_hash(text: str) -> str:
     if stripped.startswith("---") and (end := stripped.find("\n---", 3)) != -1:
         stripped = stripped[end + 4 :]
     norm = re.sub(r"\s+", " ", stripped).strip()
-    return hashlib.sha1(norm.encode(), usedforsecurity=False).hexdigest() if len(norm) > 200 else ""
+    return hashlib.sha256(norm.encode()).hexdigest() if len(norm) > 200 else ""
 
 
 def collect_items(roots: list[Path]) -> list[dict]:
