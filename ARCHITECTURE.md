@@ -48,7 +48,7 @@ section banners:
 | `ai_lint/content_validation.py` | `CriticalContentValidator.validation_reason()` blocks critical content edits until human validation. Covers instruction, doc, config and rule files. |
 | `ai_lint/project_profile.py` | `ProjectProfiler.detect_stack()` and `.detect_profile()` classify the scanned repo (CLI, library, app, etc.). |
 | `ai_lint/self_update.py` | `SelfUpdater.check()` handles release-branch update detection, confirmation and `git pull --ff-only`; config is in `SelfUpdateConfig`. |
-| `ai_lint/config_flags.py` | `CLIFlags` dataclass and `apply_config_flags()` load CLI defaults from `[flags]` section in TOML. Allows per-project flag presets. |
+| `ai_lint/config_flags.py`, `ape_checker.py`, `llmtrim_checker.py`, `account_capabilities.py`, `project_adaptation.py` | Standalone helpers with unit tests, **not wired into the CLI yet**: no `[flags]` loading, no APE / llmtrim / account / adaptation findings in a run. Wire or remove before documenting them as features. |
 | `ai_lint/agent_converter.py` | `AgentConverter` and per-tool adapters (`ClaudeAdapter`, `CodexAdapter`, `AgentsAdapter`) for lossless agent-config conversion (Claude ↔ Codex ↔ AGENTS). |
 | `ai_lint/guard_checker.py` | `GuardChecker` extracts guard logic from engine: PreToolUse checks for loosening config, removed deny rules, attribution, critical content. |
 | `ai_lint/tui_app.py` | `TuiApp` (interactive terminal review) and `TuiServices` provide structured feedback, section selection, critical-diff approval, conversion flows and readiness signals. |
@@ -67,8 +67,7 @@ section banners:
 
 ## Data flow
 
-1. `main` parses args via argparse. `apply_config_flags()` loads `[flags]` from `.ai-lint.toml`
-   as baseline (args override). Sets run options on `ai_lint._runtime.state` (`verbosity`,
+1. `main` parses args via argparse. Sets run options on `ai_lint._runtime.state` (`verbosity`,
    `show_diff`, `scaffold`, `lang`, `min_level`...), loads policy, catalogue, plugins.
 2. `--convert-to` / `--convert-from`: `AgentConverter` plans lossless conversion between
    Claude/Codex/AGENTS formats. `--approve-conversion` + `apply_conversion()` write the target.

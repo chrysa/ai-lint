@@ -62,19 +62,6 @@ extra_skill_fields = []
 extra_agent_fields = []
 docs_checked = ""
 
-[flags]
-# CLI defaults: set here to avoid typing them on every invocation.
-# Command-line args override these settings.
-# fix = false               # apply repairs (--fix)
-# user = false              # include user scope (~/.claude)
-# strict = false            # fail on warnings too
-# no_history = false        # skip git history scan
-# no_scaffold = false       # create missing files
-# verbose = 0               # verbosity level (-v, -vv, -vvv)
-# format = "text"           # output format: text, brief, json
-# detail = false            # show --details
-# graphify = false          # run graphify on repos
-
 [memory]
 max_lines = 200
 max_bytes = 25000
@@ -122,3 +109,4 @@ min_pack_agents = 3
 min_skill_family = 3
 skill_keep_lines = 150
 procedure_min_lines = 15
+

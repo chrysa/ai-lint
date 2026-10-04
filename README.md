@@ -1,6 +1,6 @@
 # ai-lint
 
-[![Tests](https://github.com/chrysa/ai-lint/actions/workflows/ci.yml/badge.svg)](https://github.com/chrysa/ai-lint/actions/workflows/ci.yml) [![PyPI](https://img.shields.io/pypi/v/ai-lint?style=flat)](https://pypi.org/project/ai-lint/) [![License](https://img.shields.io/badge/license-MIT-blue)](pyproject.toml)
+[![Tests](https://github.com/chrysa/ai-lint/actions/workflows/ci.yml/badge.svg)](https://github.com/chrysa/ai-lint/actions/workflows/ci.yml) [![License](https://img.shields.io/badge/license-MIT-blue)](pyproject.toml)
 
 **Linter, fixer and guard for AI coding-agent configuration.** Validates permissions, instructions, hooks, MCP servers, skills and subagents; flags security, token cost and correctness issues; repairs safely. Works with Claude Code, Cursor, Windsurf and others.
 
@@ -40,12 +40,15 @@ Two layers: `ai-lint.py` for deterministic checks (safe to run in CI), and an op
 
 ## Install
 
-No runtime dependencies (Python >= 3.9). Install from PyPI or clone the repo.
+No runtime dependencies (Python >= 3.9). Install from this repository, pinned to a release tag.
 
-### From PyPI (recommended)
+> The `ai-lint` name on PyPI belongs to an unrelated project. Do not `pip install ai-lint`;
+> install from GitHub as shown below.
+
+### With pip (from GitHub)
 
 ```sh
-pip install ai-lint
+pip install "git+https://github.com/chrysa/ai-lint@vX.Y.Z"   # a release tag
 ai-lint --help
 ```
 
@@ -116,7 +119,7 @@ Runs only when agent config changes (`.claude/`, `CLAUDE.md`, `AGENTS.md`, `.mcp
 
 ## Features
 
-**Detection**: stacks (Python, Node, React, Docker, Kubernetes, Terraform, etc.), project maturity, recommended skills/hooks/MCP.
+**Detection**: stacks (Python, Node, React, Docker, Kubernetes, Terraform, etc.) and the project profile (CLI, library, app, infra, config-only...), shown in every report and used by `--generate`.
 
 **Generation**: `.claude/settings.json`, hooks, skills (`/check`, `/review-changes`), subagents (`/test-runner`, `/security-auditor`), MCP servers, `.gitignore` secrets block, `CLAUDE.md` / `AGENTS.md` skeletons.
 
