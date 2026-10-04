@@ -109,4 +109,3 @@ min_pack_agents = 3
 min_skill_family = 3
 skill_keep_lines = 150
 procedure_min_lines = 15
-

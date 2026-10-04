@@ -6637,7 +6637,7 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     if args.print_policy:
-        print(to_toml(DEFAULT_POLICY))
+        print(to_toml(DEFAULT_POLICY).rstrip("\n"))
         return 0
     if args.print_catalog:
         if args.catalog:
