@@ -61,7 +61,7 @@ def load_flags_from_config(config_path: Path) -> dict | None:
         import tomllib
     except ImportError:
         try:
-            import tomli as tomllib  # type: ignore
+            import tomli as tomllib
         except ImportError:
             return None
     try:

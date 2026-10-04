@@ -75,9 +75,9 @@ class TuiApp:
             print("  Run with --generate to preview setup, or --generate --fix to apply.")
             return
         print("  The following configuration will be generated:")
-        print(f"    · Instructions: {sum(1 for f in report.new_files if f.endswith('.md'))}")
-        print(f"    · Settings: {sum(1 for f in report.new_files if 'settings' in f)}")
-        print(f"    · Hooks: {sum(1 for f in report.new_files if 'hooks' in f)}")
+        print(f"    · Instructions: {sum(1 for f in report.new_files if f.suffix == '.md')}")
+        print(f"    · Settings: {sum(1 for f in report.new_files if 'settings' in f.name)}")
+        print(f"    · Hooks: {sum(1 for f in report.new_files if 'hooks' in f.parts)}")
         print("  Review --diff to inspect each file before applying.")
 
     def _count(self, action: str) -> None:

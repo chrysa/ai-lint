@@ -296,3 +296,17 @@ def test_split_skill_restores_original_and_reference_file(review, monkeypatch):
     subprocess.run(["sh", str(app.restore.script)], check=True)
     assert skill.read_text() == old
     assert reference.read_text() == "Existing reference\n"
+
+
+def test_setup_flow_counts_generated_paths(review, capsys):
+    linter, repo, _cfg, _policy, report = review
+    report.new_files = {
+        repo / "CLAUDE.md": ("", 0),
+        repo / ".claude" / "settings.json": ("", 0),
+        repo / ".claude" / "hooks" / "format.py": ("", 0),
+    }
+    linter._tui_app().setup_flow(report, scaffold_mode=True)
+    out = capsys.readouterr().out
+    assert "Instructions: 1" in out
+    assert "Settings: 1" in out
+    assert "Hooks: 1" in out
