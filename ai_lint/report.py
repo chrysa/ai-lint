@@ -5,13 +5,14 @@ from __future__ import annotations
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Optional
 
 from ai_lint.finding import Finding
 
 DisabledCodesProvider = Callable[[], set[str]]
 SeverityOverridesProvider = Callable[[], Mapping[str, str]]
 LogFn = Callable[[int, str], None]
-ReadTextFn = Callable[[Path], str | None]
+ReadTextFn = Callable[[Path], Optional[str]]
 
 
 def _empty_disabled_codes() -> set[str]:

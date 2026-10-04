@@ -81,6 +81,8 @@ class AccountCapabilitiesChecker:
             if not settings_path.exists():
                 return {}
             settings = json.loads(settings_path.read_text())
+            if not isinstance(settings, dict):
+                return {}
             return {
                 "model": settings.get("model"),
                 "has_mcp": bool(settings.get("mcpServers")),

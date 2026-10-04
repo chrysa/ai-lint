@@ -22,10 +22,13 @@ class LlmtrimChecker:
             import json
 
             settings = json.loads(config_path.read_text())
-            # Check for llmtrim MCP or subagents with llmtrim marker
-            mcp = settings.get("mcpServers", {})
-            subagents = settings.get("subagents", {})
-            return bool(mcp) or any("llmtrim" in str(s).lower() for s in subagents.values())
+            if not isinstance(settings, dict):
+                return False
+            mcp = settings.get("mcpServers")
+            subagents = settings.get("subagents")
+            in_mcp = isinstance(mcp, dict) and any("llmtrim" in str(k).lower() for k in mcp)
+            in_agents = isinstance(subagents, dict) and any("llmtrim" in str(v).lower() for v in subagents.values())
+            return in_mcp or in_agents
         except (OSError, json.JSONDecodeError, UnicodeDecodeError):
             return False
 

@@ -55,3 +55,15 @@ def test_llmtrim_checker_recommendation_configured():
     checker = LlmtrimChecker()
     rec = checker.recommendation(token_budget=15000, is_configured=True)
     assert rec is None
+
+
+def test_llmtrim_not_configured_by_unrelated_mcp_server(tmp_path):
+    config = tmp_path / "settings.json"
+    config.write_text('{"mcpServers": {"github": {"command": "gh"}}}')
+    assert LlmtrimChecker().is_configured(config) is False
+
+
+def test_llmtrim_non_object_settings_do_not_crash(tmp_path):
+    config = tmp_path / "settings.json"
+    config.write_text("[1, 2]")
+    assert LlmtrimChecker().is_configured(config) is False

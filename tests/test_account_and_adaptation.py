@@ -66,3 +66,9 @@ def test_project_adaptation_settings_template():
     assert "model" in template
     assert "skills" in template
     assert "mcpServers" in template
+
+
+def test_check_settings_ignores_non_object_json(tmp_path):
+    p = tmp_path / "settings.json"
+    p.write_text("[]")
+    assert AccountCapabilitiesChecker().check_settings(p) == {}
