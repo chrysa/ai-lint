@@ -1,6 +1,6 @@
 # ai-lint
 
-[![Tests](https://github.com/chrysa/ai-lint/actions/workflows/ci.yml/badge.svg)](https://github.com/chrysa/ai-lint/actions/workflows/ci.yml) [![License](https://img.shields.io/badge/license-MIT-blue)](pyproject.toml)
+[![Tests](https://github.com/chrysa/ai-lint/actions/workflows/ci.yml/badge.svg)](https://github.com/chrysa/ai-lint/actions/workflows/ci.yml) [![License](https://img.shields.io/badge/license-MIT-blue)](pyproject.toml) [![Docs](https://img.shields.io/badge/docs-user%20guide-blue)](https://chrysa.github.io/ai-lint/)
 
 **Linter, fixer and guard for AI coding-agent configuration.** Validates permissions, instructions, hooks, MCP servers, skills and subagents; flags security, token cost and correctness issues; repairs safely. Works with Claude Code, Cursor, Windsurf and others.
 
@@ -31,6 +31,10 @@ Two layers: `ai-lint.py` for deterministic checks (safe to run in CI), and an op
 - `examples/plugins/` — sample custom check
 
 ## Documentation
+
+**User guide: <https://chrysa.github.io/ai-lint/>** (install, token savings, checks, configuration, CI, guarded sessions).
+
+For maintainers:
 
 - [ARCHITECTURE.md](ARCHITECTURE.md) — engine map and data flow
 - [CLAUDE.md](CLAUDE.md) — working contract (for Claude Code / agents)

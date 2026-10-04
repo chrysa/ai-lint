@@ -1,0 +1,40 @@
+site_name: ai-lint
+site_description: Cut the tokens your AI coding agents burn on every request, without weakening their safety.
+site_url: https://chrysa.github.io/ai-lint/
+repo_url: https://github.com/chrysa/ai-lint
+repo_name: chrysa/ai-lint
+edit_uri: edit/main/docs/user/
+docs_dir: docs/user
+site_dir: .reports/site
+strict: true
+
+theme:
+  name: material
+  features:
+    - navigation.sections
+    - content.code.copy
+    - search.suggest
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      toggle: {icon: material/weather-night, name: Dark mode}
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      toggle: {icon: material/weather-sunny, name: Light mode}
+
+markdown_extensions:
+  - admonition
+  - tables
+  - toc: {permalink: true}
+  - pymdownx.highlight
+  - pymdownx.superfences
+
+nav:
+  - Home: index.md
+  - Quick start: quickstart.md
+  - Token savings: tokens.md
+  - What it checks: checks.md
+  - Configuration: configuration.md
+  - Pre-commit and CI: automation.md
+  - Guarded sessions: guard.md
+  - Custom checks: plugins.md
