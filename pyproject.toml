@@ -28,6 +28,8 @@ ai-lint = "ai_lint._engine:main"
 catalog = ["PyYAML>=6"]
 # Everything to run the local and CI quality gates.
 dev = ["pytest>=8", "pytest-cov>=5", "ruff>=0.6", "mypy>=1.11", "PyYAML>=6", "pre-commit>=3"]
+# User documentation site (GitHub Pages); never needed to run the linter.
+docs = ["mkdocs==1.6.1", "mkdocs-material==9.7.7"]
 
 [tool.coverage.run]
 # ai_lint.py is imported normally, so coverage attaches to it. parallel +
