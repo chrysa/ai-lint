@@ -1,4 +1,4 @@
-"""Small git command runner used by ai-lint integrations."""
+"""Small git command runner used by prism-ai-lint integrations."""
 
 from __future__ import annotations
 

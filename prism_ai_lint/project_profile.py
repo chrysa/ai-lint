@@ -9,7 +9,7 @@ import subprocess
 from pathlib import Path
 from typing import Any
 
-from ai_lint.desktop_checker import DesktopChecker
+from prism_ai_lint.desktop_checker import DesktopChecker
 
 
 class ProjectProfiler:

@@ -1,4 +1,4 @@
-"""Configuration for ai-lint self-update checks."""
+"""Configuration for prism-ai-lint self-update checks."""
 
 from __future__ import annotations
 
@@ -13,7 +13,7 @@ class SelfUpdateConfig:
     remote: str = "origin"
     interval_seconds: float = 24 * 60 * 60
     source_root: Path = Path(__file__).resolve().parents[1]
-    cache_path: Path = Path(os.path.expanduser("~/.cache/ai-lint/update-check.json"))
+    cache_path: Path = Path(os.path.expanduser("~/.cache/prism-ai-lint/update-check.json"))
 
     @classmethod
     def from_env(cls) -> SelfUpdateConfig:

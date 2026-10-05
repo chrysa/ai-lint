@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from ai_lint.ape_checker import APEChecker
+from prism_ai_lint.ape_checker import APEChecker
 
 
 def _types(text):

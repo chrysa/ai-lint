@@ -1,6 +1,6 @@
-# Claude Code best practices for ai-lint
+# Claude Code best practices for prism-ai-lint
 
-How ai-lint maps the official Claude Code best-practice guidance into checks,
+How prism-ai-lint maps the official Claude Code best-practice guidance into checks,
 scaffolding, maintenance rules and agent workflow. Source reference: official Claude Code
 best practices, accessed 2026-09-30: <https://code.claude.com/docs/fr/best-practices>.
 
@@ -25,7 +25,7 @@ Keep the always-loaded contract in `CLAUDE.md` concise.
 
 ## Project adaptation
 
-ai-lint must profile the scanned project before judging or generating agent configuration.
+prism-ai-lint must profile the scanned project before judging or generating agent configuration.
 The detected stack, repository role, maturity, runtime constraints and local policy decide
 which checks are errors, warnings or advice. A Python CLI, a full-stack web app, a Unity game,
 a config-only repository and a shared standards repo should not receive the same generated
@@ -36,7 +36,7 @@ Adaptation rules:
 - Detect stack signals first: Python, Node/React, Docker/Compose, Kubernetes, Terraform,
   Unity, GitHub remote, Makefile targets, test commands and existing `.claude/` assets.
 - Generate only artifacts that fit the detected project; do not add MCP, agents, hooks or
-  skills just because ai-lint knows how to generate them.
+  skills just because prism-ai-lint knows how to generate them.
 - Treat missing project intent as an interactive question or an info-level hint, not an error.
 - Respect repo-local policy files and documented decisions over generic defaults.
 - Keep fixes conservative across every profile: adaptation may reduce scope or ask the human,
@@ -44,8 +44,8 @@ Adaptation rules:
 
 ## Feedback quality
 
-ai-lint reports should be decision-ready, not just diagnostic. A useful report tells the
-operator what ai-lint inferred, what it changed or refused to change, and what to do next.
+prism-ai-lint reports should be decision-ready, not just diagnostic. A useful report tells the
+operator what prism-ai-lint inferred, what it changed or refused to change, and what to do next.
 
 Report requirements:
 
@@ -62,9 +62,9 @@ Report requirements:
   `manual_reason` and `next_action` so another agent or dashboard can continue from the
   report without re-parsing prose.
 
-## What ai-lint should check or encourage
+## What prism-ai-lint should check or encourage
 
-| Best practice | ai-lint surface | Expected behaviour |
+| Best practice | prism-ai-lint surface | Expected behaviour |
 |---|---|---|
 | Verification exists | Generated `check` skill, CI examples, docs | Prefer commands with success/failure signals: tests, lint, typecheck, selfcheck. |
 | `CLAUDE.md` stays concise | `INSTR_*`, token checks, restructuring | Flag oversized/prose-heavy instruction files; suggest moving procedures to skills. |
@@ -98,7 +98,7 @@ follow these defaults unless policy overrides them:
 
 ## Maintenance guidance
 
-When changing ai-lint's Claude Code support:
+When changing prism-ai-lint's Claude Code support:
 
 1. Start from the documented best-practice intent, not only from the current syntax.
 2. Add or update a deterministic check where the practice can be detected reliably.

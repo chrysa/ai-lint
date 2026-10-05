@@ -12,11 +12,11 @@ import subprocess
 import sys
 from pathlib import Path
 
-from ai_lint.content_validation import CriticalContentValidator
-from ai_lint.report import Report
-from ai_lint.restore_log import RestoreLog
-from ai_lint.terminal_view import Tty
-from ai_lint.tui_services import TuiServices
+from prism_ai_lint.content_validation import CriticalContentValidator
+from prism_ai_lint.report import Report
+from prism_ai_lint.restore_log import RestoreLog
+from prism_ai_lint.terminal_view import Tty
+from prism_ai_lint.tui_services import TuiServices
 
 NOT_DETECTED = "not detected"
 SKIPPED_ACTIONS = "skipped actions"
@@ -219,7 +219,7 @@ class TuiApp:
         self.cfg = self.services.config_dir()
         self.roots = ([self.cfg] if user_scope else []) + [r / ".claude" for r in self.repos]
         stamp = dt.datetime.now().strftime("%Y%m%dT%H%M%S%f")
-        self.trash_root = Path(os.path.expanduser(f"~/.cache/ai-lint/trash/{stamp}"))
+        self.trash_root = Path(os.path.expanduser(f"~/.cache/prism-ai-lint/trash/{stamp}"))
         self.restore = RestoreLog(self.trash_root / "restore.sh")
         self.done: dict[str, int] = {}
 

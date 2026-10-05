@@ -4,11 +4,11 @@ For changes the linter cannot decide alone, let an agent work under the guard:
 
 ```sh
 cp -r skills/config-audit <repo>/.claude/skills/      # or ~/.claude/skills/
-ai-lint --session-settings /tmp/audit.json
+prism-ai-lint --session-settings /tmp/audit.json
 claude --settings /tmp/audit.json                     # then run /config-audit
 ```
 
-The session installs `ai-lint --guard` as a `PreToolUse` hook on every edit and shell command.
+The session installs `prism-ai-lint --guard` as a `PreToolUse` hook on every edit and shell command.
 The guard blocks any change that would:
 
 - add an allow rule, remove a deny or ask rule, enable bypass modes, disable the sandbox;

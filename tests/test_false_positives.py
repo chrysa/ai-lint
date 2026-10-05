@@ -4,8 +4,8 @@
 
 from __future__ import annotations
 
-from ai_lint.instruction_checker import InstructionChecker
-from ai_lint.skill_agent_checker import SkillAgentChecker
+from prism_ai_lint.instruction_checker import InstructionChecker
+from prism_ai_lint.skill_agent_checker import SkillAgentChecker
 
 
 def test_grouping_skill_dir_not_flagged(linter_module, tmp_path):

@@ -7,8 +7,8 @@ import subprocess
 import sys
 from pathlib import Path
 
-from ai_lint._runtime import state
-from ai_lint.content_validation import CriticalContentValidator
+from prism_ai_lint._runtime import state
+from prism_ai_lint.content_validation import CriticalContentValidator
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -22,7 +22,9 @@ def test_generic_defaults_do_not_name_project_documents(tmp_path, monkeypatch):
 
 def test_extra_files_from_policy_are_critical(linter_module, tmp_path, monkeypatch):
     monkeypatch.setattr(state, "critical_extra", ())
-    (tmp_path / ".ai-lint.toml").write_text('[critical]\nextra_files = ["docs/OPS.md", "../escape.md", "/etc/x"]\n')
+    (tmp_path / ".prism-ai-lint.toml").write_text(
+        '[critical]\nextra_files = ["docs/OPS.md", "../escape.md", "/etc/x"]\n'
+    )
     linter_module.load_policy(None, [tmp_path])
     assert state.critical_extra == ("docs/OPS.md",)
     validator = CriticalContentValidator([tmp_path])
@@ -35,10 +37,10 @@ def test_this_repository_keeps_its_documents_protected_under_the_guard():
     target = ROOT / "docs" / "SHARED_STANDARDS_MAPPING.md"
     payload = {
         "tool_name": "Edit",
-        "tool_input": {"file_path": str(target), "old_string": "ai-lint", "new_string": "x"},
+        "tool_input": {"file_path": str(target), "old_string": "prism-ai-lint", "new_string": "x"},
     }
     res = subprocess.run(
-        [sys.executable, str(ROOT / "ai_lint" / "_engine.py"), "--guard"],
+        [sys.executable, str(ROOT / "prism_ai_lint" / "_engine.py"), "--guard"],
         input=json.dumps(payload),
         capture_output=True,
         text=True,

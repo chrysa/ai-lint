@@ -1,6 +1,6 @@
 # Terminal review
 
-Run `python3 ai-lint.py . --interactive` (or `-i`) directly in a terminal. The
+Run `python3 prism-ai-lint.py . --interactive` (or `-i`) directly in a terminal. The
 structured review shows the scanned project profiles, confidence and evidence,
 filesystem readiness signals, and findings grouped by severity, category and
 fix mode. Readiness signals indicate detected files or directories; they do not

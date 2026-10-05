@@ -36,5 +36,5 @@ keys in any file, assistant attribution in files and commits.
 
 **rtk and llmtrim** (when present): installation, hook, permission routing, dead route agents.
 
-Run `ai-lint --dump-reference` to see the documentation snapshot the checks compare against.
+Run `prism-ai-lint --dump-reference` to see the documentation snapshot the checks compare against.
 Unknown keys are reported as info, never as errors.

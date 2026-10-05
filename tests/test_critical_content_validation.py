@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from ai_lint.content_validation import CriticalContentValidator
+from prism_ai_lint.content_validation import CriticalContentValidator
 
 
 def test_instruction_files_are_critical(tmp_path):
@@ -13,7 +13,7 @@ def test_instruction_files_are_critical(tmp_path):
 
 def test_config_files_are_critical(tmp_path):
     validator = CriticalContentValidator(repo_roots=[tmp_path])
-    for name in [".ai-lint.toml", "pyproject.toml", ".mcp.json"]:
+    for name in [".prism-ai-lint.toml", "pyproject.toml", ".mcp.json"]:
         assert validator.is_critical(tmp_path / name), f"{name} should be critical"
 
 
@@ -24,7 +24,7 @@ def test_legacy_config_files_are_critical(tmp_path):
 
 
 def test_docs_files_listed_in_policy_are_critical(tmp_path, monkeypatch):
-    from ai_lint._runtime import state
+    from prism_ai_lint._runtime import state
 
     monkeypatch.setattr(state, "critical_extra", ("docs/FIXER_POLICY.md", "docs/SHARED_STANDARDS_MAPPING.md"))
     validator = CriticalContentValidator(repo_roots=[tmp_path])
@@ -50,14 +50,14 @@ def test_non_critical_files_pass(tmp_path):
 
 def test_validation_reason_for_critical_files(tmp_path):
     validator = CriticalContentValidator(repo_roots=[tmp_path])
-    reason = validator.validation_reason(tmp_path / ".ai-lint.toml", "old", "new")
+    reason = validator.validation_reason(tmp_path / ".prism-ai-lint.toml", "old", "new")
     assert reason is not None
     assert "critical" in reason.lower()
 
 
 def test_validation_skipped_for_unchanged_critical(tmp_path):
     validator = CriticalContentValidator(repo_roots=[tmp_path])
-    reason = validator.validation_reason(tmp_path / ".ai-lint.toml", "same", "same")
+    reason = validator.validation_reason(tmp_path / ".prism-ai-lint.toml", "same", "same")
     assert reason is None, "no change means no validation needed"
 
 

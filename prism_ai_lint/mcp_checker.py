@@ -8,10 +8,10 @@ import os
 import shlex
 from pathlib import Path
 
-from ai_lint._reference import SECRET_VALUE_PATTERNS
-from ai_lint._runtime import config_dir, dump_json, lenient_json, log, read_text
-from ai_lint.report import Report
-from ai_lint.secret_scan import InlineSecretScanner
+from prism_ai_lint._reference import SECRET_VALUE_PATTERNS
+from prism_ai_lint._runtime import config_dir, dump_json, lenient_json, log, read_text
+from prism_ai_lint.report import Report
+from prism_ai_lint.secret_scan import InlineSecretScanner
 
 
 class McpChecker:

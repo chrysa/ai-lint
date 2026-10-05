@@ -3,7 +3,7 @@ bullets and polite/filler wording, both info-level and toggleable via policy."""
 
 from __future__ import annotations
 
-from ai_lint.instruction_checker import InstructionChecker
+from prism_ai_lint.instruction_checker import InstructionChecker
 
 PROSE = (
     "# Rules\n\n"

@@ -7,10 +7,10 @@ import re
 from collections.abc import Callable
 from pathlib import Path
 
-from ai_lint.agent_contract import AgentContract
-from ai_lint.agents_adapter import AgentsAdapter
-from ai_lint.claude_adapter import ClaudeAdapter
-from ai_lint.codex_adapter import CodexAdapter
+from prism_ai_lint.agent_contract import AgentContract
+from prism_ai_lint.agents_adapter import AgentsAdapter
+from prism_ai_lint.claude_adapter import ClaudeAdapter
+from prism_ai_lint.codex_adapter import CodexAdapter
 
 ADAPTERS = {a.name: a for a in (ClaudeAdapter(), CodexAdapter(), AgentsAdapter())}
 

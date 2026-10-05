@@ -1,8 +1,8 @@
-site_name: ai-lint
+site_name: prism-ai-lint
 site_description: Cut the tokens your AI coding agents burn on every request, without weakening their safety.
-site_url: https://chrysa.github.io/ai-lint/
-repo_url: https://github.com/chrysa/ai-lint
-repo_name: chrysa/ai-lint
+site_url: https://chrysa.github.io/prism-ai-lint/
+repo_url: https://github.com/chrysa/prism-ai-lint
+repo_name: chrysa/prism-ai-lint
 edit_uri: edit/main/docs/user/
 docs_dir: docs/user
 site_dir: .reports/site

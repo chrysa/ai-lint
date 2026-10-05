@@ -1,5 +1,5 @@
-# ai-lint policy for this repository. Only what differs from the built-in defaults
-# (python3 ai-lint.py --print-policy shows them all).
+# prism-ai-lint policy for this repository. Only what differs from the built-in defaults
+# (python3 prism-ai-lint.py --print-policy shows them all).
 
 [critical]
 # This repository's own operating documents: guarded sessions need human validation

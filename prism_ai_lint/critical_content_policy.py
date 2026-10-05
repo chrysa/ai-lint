@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from ai_lint._runtime import state
+from prism_ai_lint._runtime import state
 
 
 @dataclass(frozen=True)
@@ -24,6 +24,7 @@ class CriticalContentPolicy:
     extra_paths: frozenset[str] = field(default_factory=lambda: frozenset(state.critical_extra))
     config_files: frozenset[str] = frozenset(
         {
+            ".prism-ai-lint.toml",
             ".ai-lint.toml",
             "pyproject.toml",
             ".mcp.json",

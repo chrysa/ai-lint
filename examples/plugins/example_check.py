@@ -1,8 +1,8 @@
-"""Example ai-lint plugin.
+"""Example prism-ai-lint plugin.
 
 Copy this file into a plugin directory to add a check:
   - <config dir>/plugins/        (user scope, e.g. ~/.claude/plugins/)
-  - <repo>/.ai-lint/plugins/ (per project)
+  - <repo>/.prism-ai-lint/plugins/ (per project)
   - any dir passed with --plugin-dir
 
 A plugin defines register(api) and registers one or more checks. Each check is a

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
-from ai_lint.self_update import SelfUpdateConfig, SelfUpdater
+from prism_ai_lint.self_update import SelfUpdateConfig, SelfUpdater
 
 
 def test_update_prompt_mentions_release_branch():
@@ -36,7 +36,7 @@ def test_update_check_skips_non_interactive_json(monkeypatch):
         called = True
         raise AssertionError("update check should stay silent for JSON output")
 
-    monkeypatch.setattr("ai_lint.self_update.subprocess.run", fail_if_called)
+    monkeypatch.setattr("prism_ai_lint.self_update.subprocess.run", fail_if_called)
     args = SimpleNamespace(no_update_check=False, format="json", quiet=False)
 
     SelfUpdater().check(args)

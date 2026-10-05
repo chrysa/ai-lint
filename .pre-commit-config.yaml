@@ -1,4 +1,4 @@
-# Pre-commit hooks for ai-lint. Install with `make pre-commit-install`,
+# Pre-commit hooks for prism-ai-lint. Install with `make pre-commit-install`,
 # run manually with `make pre-commit`. Mirrors the CI gate so a green local
 # commit stays green in CI.
 default_language_version:
@@ -26,10 +26,10 @@ repos:
       - id: ruff
         name: ruff (lint)
         args: ["--fix"]
-        files: ^(ai_lint/|ai-lint\.py|tests/)
+        files: ^(prism_ai_lint/|prism-ai-lint\.py|tests/)
       - id: ruff-format
         name: ruff (format)
-        files: ^(ai_lint/|ai-lint\.py|tests/)
+        files: ^(prism_ai_lint/|prism-ai-lint\.py|tests/)
 
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: v1.14.1
@@ -44,8 +44,8 @@ repos:
   - repo: local
     hooks:
       # Fail on a real attribution trace or leaked secret introduced in-repo.
-      - id: ai-lint-selfcheck
-        name: ai-lint selfcheck (no in-repo traces/secrets)
+      - id: prism-ai-lint-selfcheck
+        name: prism-ai-lint selfcheck (no in-repo traces/secrets)
         entry: python3 tests/_selfcheck.py
         language: system
         pass_filenames: false

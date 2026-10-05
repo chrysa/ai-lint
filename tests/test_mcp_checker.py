@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import json
 
-from ai_lint.mcp_checker import McpChecker
-from ai_lint.report import Report
-from ai_lint.secret_scan import InlineSecretScanner
+from prism_ai_lint.mcp_checker import McpChecker
+from prism_ai_lint.report import Report
+from prism_ai_lint.secret_scan import InlineSecretScanner
 
 POLICY = {"mcp": {"max_servers": 2}}
 

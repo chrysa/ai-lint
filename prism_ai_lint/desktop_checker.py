@@ -6,7 +6,7 @@ import json
 import re
 from pathlib import Path
 
-from ai_lint.report import Report
+from prism_ai_lint.report import Report
 
 OS_NAMES = ("linux", "macos", "windows")
 PYTHON_FRAMEWORKS = ("pyside6", "pyside2", "pyqt6", "pyqt5", "tkinter", "wxpython", "kivy")

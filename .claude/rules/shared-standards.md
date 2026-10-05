@@ -1,6 +1,6 @@
-# shared-standards compliance for ai-lint
+# shared-standards compliance for prism-ai-lint
 
-ai-lint validates, repairs and guards agent configurations. These rules prevent regressions:
+prism-ai-lint validates, repairs and guards agent configurations. These rules prevent regressions:
 
 ## Never loosen
 
@@ -28,7 +28,7 @@ See [docs/FIXER_POLICY.md](../../docs/FIXER_POLICY.md).
 ## Critical content requires human validation
 
 - `CLAUDE.md`, `AGENTS.md`, `README.md`, architecture/decision/testing docs, `.claude/rules/*.md`
-- Config files: `.ai-lint.toml`, `pyproject.toml`, `.mcp.json`
+- Config files: `.prism-ai-lint.toml`, `pyproject.toml`, `.mcp.json`
 - Guard blocks unvalidated writes. `--approve-conversion` required for agent-config edits.
 
 ## Python packaging single-source
@@ -56,6 +56,6 @@ See [docs/FIXER_POLICY.md](../../docs/FIXER_POLICY.md).
 
 ## Refactoring targets
 
-- Reduce `ai_lint/_engine.py` gradually; currently ~8500 lines (procedural, by design).
+- Reduce `prism_ai_lint/_engine.py` gradually; currently ~8500 lines (procedural, by design).
 - One class per file when extracting thematic modules (see `content_validation.py`, `project_profile.py`).
-- Always backward-compatible public API (`ai-lint.py` entry point, `main()` function).
+- Always backward-compatible public API (`prism-ai-lint.py` entry point, `main()` function).

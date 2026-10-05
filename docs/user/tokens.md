@@ -9,7 +9,7 @@ potential savings of acting on them.
 
 ## Levers
 
-| Lever | How ai-lint applies it |
+| Lever | How prism-ai-lint applies it |
 |---|---|
 | Instruction files under 200 lines; HTML comments for maintainer notes (not loaded) | lint (`INSTR_*`, `TOKEN_IMPORTS`) |
 | Bullet points instead of prose, no filler or hedging wording | lint (`INSTR_PROSE`, `INSTR_FILLER`, `INSTR_VAGUE`) |

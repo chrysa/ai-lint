@@ -1,4 +1,4 @@
-"""Interactive self-update prompt for clone-based ai-lint installs."""
+"""Interactive self-update prompt for clone-based prism-ai-lint installs."""
 
 from __future__ import annotations
 
@@ -11,8 +11,8 @@ import time
 from pathlib import Path
 from typing import Any
 
-from ai_lint.git_runner import GitRunner
-from ai_lint.self_update_config import SelfUpdateConfig
+from prism_ai_lint.git_runner import GitRunner
+from prism_ai_lint.self_update_config import SelfUpdateConfig
 
 
 class SelfUpdater:
@@ -28,7 +28,7 @@ class SelfUpdater:
 
     def prompt(self, local_sha: str, remote_sha: str) -> str:
         return (
-            f"ai-lint update available on {self.config.remote}/{self.config.release_branch}: "
+            f"prism-ai-lint update available on {self.config.remote}/{self.config.release_branch}: "
             f"{local_sha[:12]} -> {remote_sha[:12]}."
         )
 
@@ -47,7 +47,7 @@ class SelfUpdater:
         if current != self.config.release_branch:
             if force:
                 print(
-                    "ai-lint update check skipped: current branch is "
+                    "prism-ai-lint update check skipped: current branch is "
                     f"{current!r}, release branch is {self.config.release_branch!r}."
                 )
             self._mark_checked()
@@ -57,14 +57,14 @@ class SelfUpdater:
             fetched = git.run("fetch", "--quiet", self.config.remote, self.config.release_branch, timeout=15)
         except (OSError, subprocess.TimeoutExpired) as e:
             if force:
-                print(f"ai-lint update check failed: {e}", file=sys.stderr)
+                print(f"prism-ai-lint update check failed: {e}", file=sys.stderr)
             self._mark_checked()
             return
         self._mark_checked()
         if fetched.returncode != 0:
             if force:
                 err = (fetched.stderr or fetched.stdout or "git fetch failed").strip()
-                print(f"ai-lint update check failed: {err}", file=sys.stderr)
+                print(f"prism-ai-lint update check failed: {err}", file=sys.stderr)
             return
 
         local_sha = (git.output("rev-parse", "HEAD") or "").strip()
@@ -73,13 +73,13 @@ class SelfUpdater:
             return
         if local_sha == remote_sha:
             if force:
-                print(f"ai-lint is up to date on {self.config.remote}/{self.config.release_branch}.")
+                print(f"prism-ai-lint is up to date on {self.config.remote}/{self.config.release_branch}.")
             return
         ancestor = git.run("merge-base", "--is-ancestor", local_sha, remote_sha, timeout=10)
         if ancestor.returncode != 0:
             if force:
                 print(
-                    "ai-lint update check found a non-fast-forward difference on "
+                    "prism-ai-lint update check found a non-fast-forward difference on "
                     f"{self.config.remote}/{self.config.release_branch}; update manually.",
                     file=sys.stderr,
                 )
@@ -144,13 +144,13 @@ class SelfUpdater:
         except EOFError:
             return
         if not self.wants_update(answer):
-            print("ai-lint update skipped.", file=sys.stderr)
+            print("prism-ai-lint update skipped.", file=sys.stderr)
             return
         dirty = (git.output("status", "--porcelain") or "").strip()
         if dirty:
             root = shlex.quote(str(git.root))
             print(
-                "ai-lint update skipped: working tree is not clean. Run manually after committing/stashing:\n"
+                "prism-ai-lint update skipped: working tree is not clean. Run manually after committing/stashing:\n"
                 f"  git -C {root} pull --ff-only {self.config.remote} {self.config.release_branch}",
                 file=sys.stderr,
             )
@@ -158,7 +158,7 @@ class SelfUpdater:
         pulled = git.run("pull", "--ff-only", self.config.remote, self.config.release_branch, timeout=60)
         if pulled.returncode == 0:
             self.updated = True
-            print("ai-lint updated. Re-run the command to use the new code.", file=sys.stderr)
+            print("prism-ai-lint updated. Re-run the command to use the new code.", file=sys.stderr)
         else:
             err = (pulled.stderr or pulled.stdout or "git pull failed").strip()
-            print(f"ai-lint update failed: {err}", file=sys.stderr)
+            print(f"prism-ai-lint update failed: {err}", file=sys.stderr)

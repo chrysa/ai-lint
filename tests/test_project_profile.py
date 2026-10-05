@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import json
 
-from ai_lint.feedback_renderer import FeedbackRenderer
-from ai_lint.finding import Finding
-from ai_lint.project_profile import ProjectProfiler
+from prism_ai_lint.feedback_renderer import FeedbackRenderer
+from prism_ai_lint.finding import Finding
+from prism_ai_lint.project_profile import ProjectProfiler
 
 
 def test_detect_project_profile_python_cli(tmp_path):

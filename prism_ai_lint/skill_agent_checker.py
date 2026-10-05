@@ -5,7 +5,7 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-from ai_lint._markup import (
+from prism_ai_lint._markup import (
     derive_description,
     frontmatter_of,
     frontmatter_values,
@@ -14,7 +14,7 @@ from ai_lint._markup import (
     slugify,
     split_frontmatter,
 )
-from ai_lint._reference import (
+from prism_ai_lint._reference import (
     AGENT_FIELDS,
     AGENT_TYPOS,
     KNOWN_TOOLS,
@@ -23,9 +23,9 @@ from ai_lint._reference import (
     SKILL_SPEC_FIELDS,
     SKILL_TYPOS,
 )
-from ai_lint._runtime import _writable, log, read_text
-from ai_lint.instruction_checker import InstructionChecker
-from ai_lint.report import Report
+from prism_ai_lint._runtime import _writable, log, read_text
+from prism_ai_lint.instruction_checker import InstructionChecker
+from prism_ai_lint.report import Report
 
 
 class SkillAgentChecker:

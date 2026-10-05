@@ -7,7 +7,7 @@ import subprocess
 
 import pytest
 
-from ai_lint.tui_app import TuiApp
+from prism_ai_lint.tui_app import TuiApp
 
 
 @pytest.fixture

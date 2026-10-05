@@ -42,6 +42,7 @@ def test_files_filter_targets_agent_config_only():
         "CLAUDE.local.md",
         "AGENTS.md",
         ".mcp.json",
+        ".prism-ai-lint.toml",
         ".ai-lint.toml",
         ".github/workflows/ci.yml",
     ):
@@ -56,7 +57,7 @@ def test_print_policy_matches_the_committed_example_byte_for_byte():
     import sys
 
     out = subprocess.run(
-        [sys.executable, str(ROOT / "ai-lint.py"), "--print-policy"], capture_output=True, text=True, check=True
+        [sys.executable, str(ROOT / "prism-ai-lint.py"), "--print-policy"], capture_output=True, text=True, check=True
     ).stdout
     assert out.endswith("\n") and not out.endswith("\n\n")
-    assert out == (ROOT / "ai-lint.example.toml").read_text(encoding="utf-8")
+    assert out == (ROOT / "prism-ai-lint.example.toml").read_text(encoding="utf-8")

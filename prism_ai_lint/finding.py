@@ -1,4 +1,4 @@
-"""Finding model emitted by ai-lint checks."""
+"""Finding model emitted by prism-ai-lint checks."""
 
 from __future__ import annotations
 
