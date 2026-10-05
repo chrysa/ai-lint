@@ -67,7 +67,7 @@ jobs:
       - name: Build the distribution (version from the new tag)
         if: steps.release.outputs.released == 'true' && env.PYPI_API_TOKEN != ''
         run: |
-          python -m pip install build
+          python -m pip install --only-binary :all: "build==1.6.1"
           python -m build
 
       - name: Publish to PyPI
