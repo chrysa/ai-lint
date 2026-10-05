@@ -1,11 +1,11 @@
-"""Shared run state and base helpers (ai_lint._runtime)."""
+"""Shared run state and base helpers (prism_ai_lint._runtime)."""
 
 from __future__ import annotations
 
 import io
 
-from ai_lint import _runtime
-from ai_lint._runtime import _loc, dedupe, log, read_text, state
+from prism_ai_lint import _runtime
+from prism_ai_lint._runtime import _loc, dedupe, log, read_text, state
 
 
 def test_engine_shares_the_runtime_state(linter_module):

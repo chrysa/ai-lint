@@ -19,6 +19,8 @@ concurrency:
 jobs:
   release:
     runs-on: ubuntu-latest
+    env:
+      PYPI_API_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
@@ -58,9 +60,18 @@ jobs:
           git tag -a "$TAG" -m "Release $TAG"
           git push origin "$TAG"
           gh release create "$TAG" --title "$TAG" --notes-file RELEASE_NOTES.md
+          echo "released=true" >> "$GITHUB_OUTPUT"
+        id: release
+
+      # PyPI publication is opt-in: it runs only once the PYPI_API_TOKEN secret exists.
+      - name: Build the distribution (version from the new tag)
+        if: steps.release.outputs.released == 'true' && env.PYPI_API_TOKEN != ''
+        run: |
+          python -m pip install --only-binary :all: "build==1.6.1"
+          python -m build
 
       - name: Publish to PyPI
-        if: ${{ steps.version.outputs.tag != '' && !contains(steps.version.outputs.tag, 'dev') }}
+        if: steps.release.outputs.released == 'true' && env.PYPI_API_TOKEN != ''
         uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # release/v1
         with:
           password: ${{ secrets.PYPI_API_TOKEN }}

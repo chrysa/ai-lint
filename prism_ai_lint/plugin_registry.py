@@ -8,7 +8,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
 
-from ai_lint.report import Report
+from prism_ai_lint.report import Report
 
 ReadTextFn = Callable[[Path], str | None]
 ConfigDirFn = Callable[[], Path]
@@ -33,7 +33,11 @@ class PluginRegistry:
         self.loaded: list = []
 
     def plugin_dirs(self, extra: list[Path] | None = None) -> list[Path]:
-        dirs = [self._config_dir_fn() / "plugins", Path.cwd() / ".ai-lint" / "plugins"]
+        dirs = [
+            self._config_dir_fn() / "plugins",
+            Path.cwd() / ".prism-ai-lint" / "plugins",
+            Path.cwd() / ".ai-lint" / "plugins",
+        ]
         dirs += list(extra or [])
         return [directory for directory in dirs if directory.is_dir()]
 

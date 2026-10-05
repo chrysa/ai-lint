@@ -14,7 +14,7 @@ BLOCKERS = {"ATTR_TRACE", "API_KEY_LEAK", "SECRET_INLINE"}
 proc = subprocess.run(
     [
         sys.executable,
-        str(ROOT / "ai-lint.py"),
+        str(ROOT / "prism-ai-lint.py"),
         ".",
         "--no-cli",
         "--no-history",

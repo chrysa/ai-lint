@@ -1,20 +1,20 @@
 # Architecture
 
-How ai-lint is built, so a change lands in the right place. User-facing behaviour lives in
+How prism-ai-lint is built, so a change lands in the right place. User-facing behaviour lives in
 [README.md](README.md); the rationale behind the choices here is in [DECISIONS.md](DECISIONS.md).
 
 ## Shape
 
-- **`ai-lint.py`** — thin CLI wrapper: `from ai_lint import main`. Kept as a hyphenated,
+- **`prism-ai-lint.py`** — thin CLI wrapper: `from prism_ai_lint import main`. Kept as a hyphenated,
   directly runnable entry point.
-- **`ai_lint/_engine.py`** — legacy orchestration module: checks, repairs, generation,
+- **`prism_ai_lint/_engine.py`** — legacy orchestration module: checks, repairs, generation,
   guard, catalogue, plugins and rendering. It is importable (tests, mypy and coverage
   attach to it); the hyphenated name could not be imported, hence the split.
-- **`ai_lint/content_validation.py`** — object-oriented validation gate for critical
+- **`prism_ai_lint/content_validation.py`** — object-oriented validation gate for critical
   content files in guarded sessions (`CriticalContentValidator`, `CriticalContentPolicy`).
-- **`ai_lint/project_profile.py`** — object-oriented stack and project-profile detection
+- **`prism_ai_lint/project_profile.py`** — object-oriented stack and project-profile detection
   (`ProjectProfiler`) used by reports, JSON and future generation branching.
-- **`ai_lint/self_update.py`** — object-oriented self-update prompt (`SelfUpdater`,
+- **`prism_ai_lint/self_update.py`** — object-oriented self-update prompt (`SelfUpdater`,
   `SelfUpdateConfig`, `GitRunner`). New isolated domains should follow this pattern:
   one thematic module, empty package `__init__.py`, small objects with explicit methods.
 - No runtime dependencies (standard library only). PyYAML is optional and used **only** by
@@ -23,13 +23,13 @@ How ai-lint is built, so a change lands in the right place. User-facing behaviou
 
 ## Module map
 
-`ai_lint/_engine.py` still carries most historical behaviour. Navigate by the `# ----`
+`prism_ai_lint/_engine.py` still carries most historical behaviour. Navigate by the `# ----`
 section banners:
 
 | Region (approx.) | Contents |
 |---|---|
 | `# Policy` | `DEFAULT_POLICY` (nested dict), `load_policy` (TOML overlay via `deep_merge`), `to_toml`. Every knob defaults here. |
-| `ai_lint/_reference.py` (docs snapshot) | Known settings keys, hook events, tools, skill/agent fields, dead keys; also the attribution patterns and the scaffold templates (`COMMIT_MSG_HOOK`, `PRE_COMPACT_HOOK`, `SECRETS_GITIGNORE`, `AGENTS_SKELETON`). Pure data shared by every module. The source of truth the checks compare against; carries the doc date. |
+| `prism_ai_lint/_reference.py` (docs snapshot) | Known settings keys, hook events, tools, skill/agent fields, dead keys; also the attribution patterns and the scaffold templates (`COMMIT_MSG_HOOK`, `PRE_COMPACT_HOOK`, `SECRETS_GITIGNORE`, `AGENTS_SKELETON`). Pure data shared by every module. The source of truth the checks compare against; carries the doc date. |
 | `# Hints and references` | `HINTS[code] = (why/how, doc_url)`. |
 | checks | `check_*` functions (settings, permissions, plugins, workflows, secrets). Each appends `Finding`s to a `Report`. |
 | `# Token budget` | `token_budget`, `check_token_levers`, `check_effort_levels`, `render_token_budget` — the always-loaded weight estimate and its levers. |
@@ -38,25 +38,25 @@ section banners:
 | `# Guard` | `guard_check`, `run_guard` — the PreToolUse hook. |
 | `# Plugin system` | `CheckContext`, `PluginAPI`, `load_plugins`, `run_plugin_checks`. |
 | catalogue | `catalog_data`, `dump_catalog`, `load_catalog`. |
-| `ai_lint/_runtime.py` | `RunState` (`state`): per-run options set by `main()`, plus base helpers `log`, `read_text`, `_loc`, `dedupe`, `_writable`, `config_dir`, `lenient_json`, `dump_json`, and the git helpers `git`, `is_tracked`, `is_ignored`, `add_gitignore`. Extracted check modules import these from here, never from `_engine` (D-022). |
-| `ai_lint/hook_checker.py` | `HookChecker`: hook events, matchers, handlers, script paths and exec form. The engine holds one instance (`_HOOKS`) and injects `check_env_secrets`. |
-| `ai_lint/secret_scan.py` | `InlineSecretScanner.check_env_secrets`: literal secrets in env, headers and args; reports, or replaces them by `${VAR}` / removes them. One engine instance (`_SECRETS`), injected into the hook and MCP checkers. |
-| `ai_lint/mcp_checker.py` | `McpChecker`: `.mcp.json` servers (shape, type, command/args split, inline secrets, count) and the read-only `~/.claude.json`. Engine instance `_MCP`. |
-| `ai_lint/_markup.py` | Markdown helpers: frontmatter (`split_frontmatter`, `set_frontmatter`...), `strip_code`, `strip_html_comments`, `@import` parsing (`IMPORT_RE`, `import_targets`), `slugify`, `derive_description`, `frontmatter_of`, `move_to_metadata`. |
-| `ai_lint/instruction_checker.py` | `InstructionChecker`: instruction file size and style, `@imports`, `AGENTS.md` wiring, rendered files, `.claude/rules` frontmatter, auto-memory `MEMORY.md`. Engine instance `_INSTRUCTIONS`. |
-| `ai_lint/skill_agent_checker.py` | `SkillAgentChecker`: skill and subagent frontmatter, names, descriptions, tools, Agent Skills spec portability, asset directories. Receives the `InstructionChecker` for rules inside asset dirs. Engine instance `_SKILLS`. |
-| `ai_lint/content_validation.py` | `CriticalContentValidator.validation_reason()` blocks critical content edits until human validation. Covers instruction, doc, config and rule files. Generic defaults; repository-specific files come from `[critical] extra_files` (`state.critical_extra`). |
-| `ai_lint/project_profile.py` | `ProjectProfiler.detect_stack()` and `.detect_profile()` classify the scanned repo (CLI, library, app, etc.). Standards-repository markers come from `[profile] standards_markers`; none by default. |
-| `ai_lint/self_update.py` | `SelfUpdater.check()` handles release-branch update detection, confirmation and `git pull --ff-only`; config is in `SelfUpdateConfig`. |
-| `ai_lint/config_flags.py` | `ConfigFlags`: CLI defaults from the `[flags]` table of `.ai-lint.toml` in the current directory, limited to options that never write (`SAFE_FLAGS`); the command line wins, other keys are rejected with a warning, guard mode never reads it. |
-| `ai_lint/ape_checker.py` | `APEChecker`: hedging verbs and open-ended scope in instruction files; `InstructionChecker` reports one `INSTR_VAGUE` (info) per file above `instructions.vague_wording_min`. |
-| `ai_lint/llmtrim_checker.py` | `LlmtrimChecker`: `token_budget` adds `LLMTRIM_SUGGESTED` (info) when the always-loaded context exceeds `tokens.max_always_loaded` and llmtrim is absent (skipped with `--no-cli`). |
-| `ai_lint/agent_converter.py` | `AgentConverter` and per-tool adapters (`ClaudeAdapter`, `CodexAdapter`, `AgentsAdapter`) for lossless agent-config conversion (Claude ↔ Codex ↔ AGENTS). |
-| `ai_lint/guard_checker.py` | `GuardChecker` extracts guard logic from engine: PreToolUse checks for loosening config, removed deny rules, attribution, critical content. |
-| `ai_lint/tui_app.py` | `TuiApp` (interactive terminal review) and `TuiServices` provide structured feedback, section selection, critical-diff approval, conversion flows and readiness signals. |
-| `ai_lint/plugin_registry.py` | `CheckContext`, `PluginAPI`, `PluginRegistry` for user-defined checks via plugins. |
-| `ai_lint/finding.py`, `report.py`, `feedback_renderer.py` | Core finding/report model + rendering layer. |
-| `ai_lint/desktop_checker.py` | `DesktopChecker` detects desktop-app frameworks (Electron, Tauri, .NET, Java) and OS-specific config paths. |
+| `prism_ai_lint/_runtime.py` | `RunState` (`state`): per-run options set by `main()`, plus base helpers `log`, `read_text`, `_loc`, `dedupe`, `_writable`, `config_dir`, `lenient_json`, `dump_json`, and the git helpers `git`, `is_tracked`, `is_ignored`, `add_gitignore`. Extracted check modules import these from here, never from `_engine` (D-022). |
+| `prism_ai_lint/hook_checker.py` | `HookChecker`: hook events, matchers, handlers, script paths and exec form. The engine holds one instance (`_HOOKS`) and injects `check_env_secrets`. |
+| `prism_ai_lint/secret_scan.py` | `InlineSecretScanner.check_env_secrets`: literal secrets in env, headers and args; reports, or replaces them by `${VAR}` / removes them. One engine instance (`_SECRETS`), injected into the hook and MCP checkers. |
+| `prism_ai_lint/mcp_checker.py` | `McpChecker`: `.mcp.json` servers (shape, type, command/args split, inline secrets, count) and the read-only `~/.claude.json`. Engine instance `_MCP`. |
+| `prism_ai_lint/_markup.py` | Markdown helpers: frontmatter (`split_frontmatter`, `set_frontmatter`...), `strip_code`, `strip_html_comments`, `@import` parsing (`IMPORT_RE`, `import_targets`), `slugify`, `derive_description`, `frontmatter_of`, `move_to_metadata`. |
+| `prism_ai_lint/instruction_checker.py` | `InstructionChecker`: instruction file size and style, `@imports`, `AGENTS.md` wiring, rendered files, `.claude/rules` frontmatter, auto-memory `MEMORY.md`. Engine instance `_INSTRUCTIONS`. |
+| `prism_ai_lint/skill_agent_checker.py` | `SkillAgentChecker`: skill and subagent frontmatter, names, descriptions, tools, Agent Skills spec portability, asset directories. Receives the `InstructionChecker` for rules inside asset dirs. Engine instance `_SKILLS`. |
+| `prism_ai_lint/content_validation.py` | `CriticalContentValidator.validation_reason()` blocks critical content edits until human validation. Covers instruction, doc, config and rule files. Generic defaults; repository-specific files come from `[critical] extra_files` (`state.critical_extra`). |
+| `prism_ai_lint/project_profile.py` | `ProjectProfiler.detect_stack()` and `.detect_profile()` classify the scanned repo (CLI, library, app, etc.). Standards-repository markers come from `[profile] standards_markers`; none by default. |
+| `prism_ai_lint/self_update.py` | `SelfUpdater.check()` handles release-branch update detection, confirmation and `git pull --ff-only`; config is in `SelfUpdateConfig`. |
+| `prism_ai_lint/config_flags.py` | `ConfigFlags`: CLI defaults from the `[flags]` table of `.prism-ai-lint.toml` in the current directory, limited to options that never write (`SAFE_FLAGS`); the command line wins, other keys are rejected with a warning, guard mode never reads it. |
+| `prism_ai_lint/ape_checker.py` | `APEChecker`: hedging verbs and open-ended scope in instruction files; `InstructionChecker` reports one `INSTR_VAGUE` (info) per file above `instructions.vague_wording_min`. |
+| `prism_ai_lint/llmtrim_checker.py` | `LlmtrimChecker`: `token_budget` adds `LLMTRIM_SUGGESTED` (info) when the always-loaded context exceeds `tokens.max_always_loaded` and llmtrim is absent (skipped with `--no-cli`). |
+| `prism_ai_lint/agent_converter.py` | `AgentConverter` and per-tool adapters (`ClaudeAdapter`, `CodexAdapter`, `AgentsAdapter`) for lossless agent-config conversion (Claude ↔ Codex ↔ AGENTS). |
+| `prism_ai_lint/guard_checker.py` | `GuardChecker` extracts guard logic from engine: PreToolUse checks for loosening config, removed deny rules, attribution, critical content. |
+| `prism_ai_lint/tui_app.py` | `TuiApp` (interactive terminal review) and `TuiServices` provide structured feedback, section selection, critical-diff approval, conversion flows and readiness signals. |
+| `prism_ai_lint/plugin_registry.py` | `CheckContext`, `PluginAPI`, `PluginRegistry` for user-defined checks via plugins. |
+| `prism_ai_lint/finding.py`, `report.py`, `feedback_renderer.py` | Core finding/report model + rendering layer. |
+| `prism_ai_lint/desktop_checker.py` | `DesktopChecker` detects desktop-app frameworks (Electron, Tauri, .NET, Java) and OS-specific config paths. |
 
 ## Core types
 
@@ -69,7 +69,7 @@ section banners:
 
 ## Data flow
 
-1. `main` reads safe `[flags]` defaults (`ConfigFlags`, skipped in guard mode), parses args via argparse. Sets run options on `ai_lint._runtime.state` (`verbosity`,
+1. `main` reads safe `[flags]` defaults (`ConfigFlags`, skipped in guard mode), parses args via argparse. Sets run options on `prism_ai_lint._runtime.state` (`verbosity`,
    `show_diff`, `scaffold`, `lang`, `min_level`...), loads policy, catalogue, plugins.
 2. `--convert-to` / `--convert-from`: `AgentConverter` plans lossless conversion between
    Claude/Codex/AGENTS formats. `--approve-conversion` + `apply_conversion()` write the target.
@@ -82,7 +82,7 @@ section banners:
    Guard fails closed on any error.
 5. Read-only run → render (`render_brief` default, `render_text` for `--details`).
 6. `--fix`: loop ≤5 passes — `apply(rep)` writes `edits`/`new_files`/`chmods`/`moves` (backup
-   to `~/.cache/ai-lint/<stamp>/`), then re-scan. Fixes unlock further fixes; stops when nothing
+   to `~/.cache/prism-ai-lint/<stamp>/`), then re-scan. Fixes unlock further fixes; stops when nothing
    pending. `CHANGE_LOG` accumulates `(path, before, after)` for `-v`/`--diff`.
 7. `-i` interactive / `--full-yes`: `TuiApp` guides judgment calls (duplicates, families,
    restructure, descriptions, model). `preview_conversion()` shows plans; `apply_conversion_interactive()`
@@ -100,7 +100,7 @@ section banners:
 
 ## Configuration surfaces
 
-- **Policy** (`.ai-lint.toml`, TOML) — thresholds, expected model/effort/scopes, generation
+- **Policy** (`.prism-ai-lint.toml`, TOML) — thresholds, expected model/effort/scopes, generation
   switches, security scaffolding. Deep-merged over `DEFAULT_POLICY`. Legacy filenames
   `.claude-lint.toml` / `.agent-lint.toml` still accepted.
 - **Catalogue** (YAML, optional) — per-code severity/enabled/action overrides and extra

@@ -11,7 +11,7 @@ coverage.json
 htmlcov/
 .reports/
 
-# ai-lint: keep secrets and local config out of git
+# prism-ai-lint: keep secrets and local config out of git
 .env
 .env.*
 !.env.example

@@ -1,10 +1,21 @@
-- id: ai-lint
-  name: ai-lint (agent configuration)
+- id: prism-ai-lint
+  name: prism-ai-lint (agent configuration)
   description: Read-only lint of AI coding-agent configuration; fails on errors.
-  entry: ai-lint
+  entry: prism-ai-lint
   language: python
   args: [".", "--no-cli", "--no-scaffold", "--no-history", "--no-update-check", "--details", "--min-level", "error"]
-  files: ^(\.claude/.*|CLAUDE(\.local)?\.md|AGENTS\.md|GEMINI\.md|\.mcp\.json|\.ai-lint\.toml|\.cursorrules|\.windsurfrules|\.github/copilot-instructions\.md|\.github/workflows/.*\.ya?ml)$
+  files: ^(\.claude/.*|CLAUDE(\.local)?\.md|AGENTS\.md|GEMINI\.md|\.mcp\.json|\.(prism-)?ai-lint\.toml|\.cursorrules|\.windsurfrules|\.github/copilot-instructions\.md|\.github/workflows/.*\.ya?ml)$
+  pass_filenames: false
+  require_serial: true
+  stages: [pre-commit, manual]
+
+- id: ai-lint
+  name: ai-lint (former id of prism-ai-lint)
+  description: Read-only lint of AI coding-agent configuration; fails on errors.
+  entry: prism-ai-lint
+  language: python
+  args: [".", "--no-cli", "--no-scaffold", "--no-history", "--no-update-check", "--details", "--min-level", "error"]
+  files: ^(\.claude/.*|CLAUDE(\.local)?\.md|AGENTS\.md|GEMINI\.md|\.mcp\.json|\.(prism-)?ai-lint\.toml|\.cursorrules|\.windsurfrules|\.github/copilot-instructions\.md|\.github/workflows/.*\.ya?ml)$
   pass_filenames: false
   require_serial: true
   stages: [pre-commit, manual]

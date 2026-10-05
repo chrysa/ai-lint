@@ -6,7 +6,7 @@ from collections.abc import Mapping, Sequence
 from dataclasses import asdict, dataclass
 from typing import Any
 
-from ai_lint.finding import Finding
+from prism_ai_lint.finding import Finding
 
 _WHY_MANUAL_FR = {
     "IMPORT_MISSING": "l'import cible un fichier absent ; le corriger ou le retirer est un choix",

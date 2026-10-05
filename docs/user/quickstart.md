@@ -3,23 +3,23 @@
 ## Install
 
 ```sh
-pip install "git+https://github.com/chrysa/ai-lint@vX.Y.Z"   # pin a release tag
-ai-lint --help
+pip install "git+https://github.com/chrysa/prism-ai-lint@vX.Y.Z"   # pin a release tag
+prism-ai-lint --help
 ```
 
 From a clone instead:
 
 ```sh
-git clone https://github.com/chrysa/ai-lint && cd ai-lint
-./ai-lint.py --help
+git clone https://github.com/chrysa/prism-ai-lint && cd prism-ai-lint
+./prism-ai-lint.py --help
 ```
 
 ## First run (read-only)
 
 ```sh
-ai-lint .              # this repository
-ai-lint . --user       # plus ~/.claude (or $CLAUDE_CONFIG_DIR)
-ai-lint ~/dev          # every git repository under ~/dev (3 levels deep)
+prism-ai-lint .              # this repository
+prism-ai-lint . --user       # plus ~/.claude (or $CLAUDE_CONFIG_DIR)
+prism-ai-lint ~/dev          # every git repository under ~/dev (3 levels deep)
 ```
 
 A run never writes unless you ask. The brief report lists, in priority order: security issues,
@@ -29,9 +29,9 @@ steps. `--details` prints every finding with a `→ fix` line.
 ## Apply what is safe
 
 ```sh
-ai-lint . --fix        # automatic repairs, in passes until stable; backups in ~/.cache/ai-lint/
-ai-lint . -i           # interactive review: duplicates, packs, long descriptions, model...
-ai-lint --restore      # undo the last interactive session
+prism-ai-lint . --fix        # automatic repairs, in passes until stable; backups in ~/.cache/prism-ai-lint/
+prism-ai-lint . -i           # interactive review: duplicates, packs, long descriptions, model...
+prism-ai-lint --restore      # undo the last interactive session
 ```
 
 `--diff` shows exactly what changed.
@@ -39,8 +39,8 @@ ai-lint --restore      # undo the last interactive session
 ## Generate a configuration for your stack
 
 ```sh
-ai-lint . --generate          # preview
-ai-lint . --generate --fix    # write it, then lint and repair the result
+prism-ai-lint . --generate          # preview
+prism-ai-lint . --generate --fix    # write it, then lint and repair the result
 ```
 
 The stack is detected (Python, Node, Docker, Kubernetes, Terraform, GitHub...) and only what is

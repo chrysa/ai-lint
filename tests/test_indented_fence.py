@@ -4,7 +4,7 @@ CLAUDE.md @import (IMPORT_MISSING false positive)."""
 
 from __future__ import annotations
 
-from ai_lint.instruction_checker import InstructionChecker
+from prism_ai_lint.instruction_checker import InstructionChecker
 
 MD = """# Guide
 

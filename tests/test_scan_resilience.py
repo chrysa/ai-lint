@@ -9,9 +9,9 @@ from types import SimpleNamespace
 
 import pytest
 
-from ai_lint.git_runner import GitRunner
-from ai_lint.project_profile import ProjectProfiler
-from ai_lint.self_update import SelfUpdater
+from prism_ai_lint.git_runner import GitRunner
+from prism_ai_lint.project_profile import ProjectProfiler
+from prism_ai_lint.self_update import SelfUpdater
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -52,7 +52,7 @@ def test_cli_scans_real_non_utf8_history(legacy_repo):
     result = subprocess.run(
         [
             sys.executable,
-            str(ROOT / "ai-lint.py"),
+            str(ROOT / "prism-ai-lint.py"),
             str(legacy_repo),
             "--format",
             "json",
@@ -74,15 +74,15 @@ def test_cli_scans_real_non_utf8_history(legacy_repo):
 def test_cli_interrupt_exits_130_without_traceback():
     script = """
 import runpy
-from ai_lint import _engine
+from prism_ai_lint import _engine
 def interrupt():
     raise KeyboardInterrupt
 _engine.main = interrupt
-runpy.run_path('ai-lint.py', run_name='__main__')
+runpy.run_path('prism-ai-lint.py', run_name='__main__')
 """
     result = subprocess.run([sys.executable, "-c", script], cwd=ROOT, capture_output=True, text=True, timeout=15)
     assert result.returncode == 130
-    assert "ai-lint interrupted." in result.stderr
+    assert "prism-ai-lint interrupted." in result.stderr
     assert "Traceback" not in result.stderr
 
 

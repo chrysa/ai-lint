@@ -50,7 +50,7 @@ A PreToolUse hook that **blocks** (exit 2 + reason) any Edit/Write/Bash that wou
 - edit a protected path;
 - turn valid strict-JSON config into something looser or invalid.
 
-It **fails closed**: any internal error blocks by default. It recognises ai-lint's own
+It **fails closed**: any internal error blocks by default. It recognises prism-ai-lint's own
 edits by *behaviour*, not filename, so renaming the tool cannot bypass it. Running the
 linter itself is allowed (it only tightens); running it with permission-adding flags
 (`--session-settings`, `--policy`, `-i`, `--generate --fix`) is left to the human.

@@ -6,7 +6,7 @@ import os
 import re
 from pathlib import Path
 
-from ai_lint._markup import (
+from prism_ai_lint._markup import (
     frontmatter_block,
     import_targets,
     set_frontmatter,
@@ -14,10 +14,10 @@ from ai_lint._markup import (
     strip_code,
     strip_html_comments,
 )
-from ai_lint._reference import RULE_TYPOS
-from ai_lint._runtime import add_gitignore, is_ignored, is_tracked, log, read_text, state
-from ai_lint.ape_checker import APEChecker
-from ai_lint.report import Report
+from prism_ai_lint._reference import RULE_TYPOS
+from prism_ai_lint._runtime import add_gitignore, is_ignored, is_tracked, log, read_text, state
+from prism_ai_lint.ape_checker import APEChecker
+from prism_ai_lint.report import Report
 
 
 class InstructionChecker:

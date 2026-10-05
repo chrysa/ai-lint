@@ -7,14 +7,14 @@ How this repo is tested and what "green" means. Structure: [ARCHITECTURE.md](ARC
 - `make test` — the pytest suite (`tests/`, ~30 files).
 - `make check` — lint + typecheck + test; the gate before declaring work done.
 - `make cov` — tests with coverage, floor 60% (target 90%).
-- `make selfcheck` — runs ai-lint on its own repo (see below).
+- `make selfcheck` — runs prism-ai-lint on its own repo (see below).
 - `make docker-test` — the suite in `python:3.14-slim`, the CI entry point.
 
 No global install: everything runs through `make`, invoking `python3 -m ruff/pytest/mypy`.
 
 ## How the tests work
 
-- The engine is imported directly (`import ai_lint`) via the `linter_module` fixture — most
+- The engine is imported directly (`import prism_ai_lint`) via the `linter_module` fixture — most
   unit tests call functions (`check_*`, `scaffold_*`, `guard_check`, `load_policy`) and
   assert on the resulting `Report.findings` / `new_files` / `edits`.
 - Integration tests use the `env` fixture: a miniature HOME + `~/.claude-perso` + sample
@@ -27,7 +27,7 @@ No global install: everything runs through `make`, invoking `python3 -m ruff/pyt
 
 ## `make selfcheck` semantics
 
-`tests/_selfcheck.py` runs ai-lint on this repo and **fails only on a real in-repo
+`tests/_selfcheck.py` runs prism-ai-lint on this repo and **fails only on a real in-repo
 attribution trace or leaked secret** (`ATTR_TRACE`, `API_KEY_LEAK`, `SECRET_INLINE`).
 Advisory findings (a missing hook, unscoped rules, long descriptions) do **not** fail it.
 Expected terminal line: `traces in repo: 0`.
@@ -41,6 +41,6 @@ Expected terminal line: `traces in repo: 0`.
 
 ## Conventions
 
-- Tests are unannotated (mypy checks `ai_lint.py` / `ai-lint.py`, not `tests/`).
+- Tests are unannotated (mypy checks `prism_ai_lint.py` / `prism-ai-lint.py`, not `tests/`).
 - Keep fixtures minimal and hermetic; never touch the developer's real `~/.claude*`.
 - Do not lower the coverage floor to make a change pass.

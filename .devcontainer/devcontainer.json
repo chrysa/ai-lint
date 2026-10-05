@@ -1,5 +1,5 @@
 {
-  "name": "ai-lint",
+  "name": "prism-ai-lint",
   "image": "mcr.microsoft.com/devcontainers/python:3.13",
   "features": {
     "ghcr.io/devcontainers/features/git:1": {}

@@ -7,7 +7,7 @@ import os
 import re
 from pathlib import Path
 
-from ai_lint._runtime import read_text
+from prism_ai_lint._runtime import read_text
 
 IMPORT_RE = re.compile(r"(?<![\w@`])@((?:~/|\.{1,2}/|/)?[\w.\-/]+[\w/])")
 

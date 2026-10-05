@@ -107,7 +107,7 @@ def test_scopes_configurable_via_toml(linter_module, tmp_path):
     m = linter_module
     repo = tmp_path / "repo"
     repo.mkdir()
-    (repo / ".ai-lint.toml").write_text('[scopes]\nsecret = ["project", "local"]\n')
+    (repo / ".prism-ai-lint.toml").write_text('[scopes]\nsecret = ["project", "local"]\n')
     pol = m.load_policy(None, [repo])
     assert pol["scopes"]["secret"] == ["project", "local"]
     assert pol["tokens"]["preferred_model"] == "sonnet"  # untouched default survives merge

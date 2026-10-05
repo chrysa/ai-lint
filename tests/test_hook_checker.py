@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from ai_lint.hook_checker import HookChecker
-from ai_lint.report import Report
+from prism_ai_lint.hook_checker import HookChecker
+from prism_ai_lint.report import Report
 
 
 def _checker(calls=None):

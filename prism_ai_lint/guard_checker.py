@@ -10,7 +10,7 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any, TextIO
 
-from ai_lint.content_validation import CriticalContentValidator
+from prism_ai_lint.content_validation import CriticalContentValidator
 
 GUARD_MARKER = "--guard"
 CONFIG_HINT = re.compile(
@@ -224,7 +224,7 @@ class GuardChecker:
 
     def lint_toml_violations(self, old: str, new: str) -> list[str]:
         if self.tomllib is None:
-            return ["cannot verify .ai-lint.toml: no TOML parser available"]
+            return ["cannot verify .prism-ai-lint.toml: no TOML parser available"]
         try:
             o = self.tomllib.loads(old) if old.strip() else {}
             n = self.tomllib.loads(new)
@@ -238,7 +238,7 @@ class GuardChecker:
         rp = p.resolve()
         s = str(rp)
         package = self.engine_path.parent
-        if rp in (self.engine_path, Path(__file__).resolve(), package.parent / "ai-lint.py") or rp.is_relative_to(
+        if rp in (self.engine_path, Path(__file__).resolve(), package.parent / "prism-ai-lint.py") or rp.is_relative_to(
             package
         ):
             return "the linter itself"
@@ -320,7 +320,7 @@ class GuardChecker:
         return None
 
     def _command_reason(self, cmd: str) -> str | None:
-        linter = r"\S*(ai-lint\.py|ai_lint[/\\]_engine\.py)"
+        linter = r"\S*(prism-ai-lint\.py|prism_ai_lint[/\\]_engine\.py)"
         if re.fullmatch(rf"\s*(rtk\s+)?(\S*python[\d.]*\s+)?{linter}(\s+[\w\-./=~:]+)*\s*", cmd):
             human_only = r"--session-settings\b|--policy\b|\s-i\b|--interactive\b|--full-yes\b|--plugin-dir\b"
             if re.search(human_only, cmd) or (re.search(r"--generate\b", cmd) and re.search(r"--fix\b", cmd)):
@@ -332,7 +332,7 @@ class GuardChecker:
         if CONFIG_HINT.search(cmd) and BASH_WRITE_HINT.search(cmd):
             return (
                 "guard: agent configuration files may only be changed with Edit/Write "
-                "(so the change can be inspected), or by running ai-lint.py"
+                "(so the change can be inspected), or by running prism-ai-lint.py"
             )
         for pat in self._attribution_patterns:
             if pat.search(cmd):
@@ -394,7 +394,7 @@ class GuardChecker:
         violations: list[str] = []
         if path.suffix in (".yml", ".yaml") and "/.github/workflows/" in str(path) and "claude-code" in new:
             violations = self._workflow_violations(old, new)
-        elif name in (".ai-lint.toml", ".claude-lint.toml", ".agent-lint.toml"):
+        elif name in (".prism-ai-lint.toml", ".ai-lint.toml", ".claude-lint.toml", ".agent-lint.toml"):
             violations = self.lint_toml_violations(old, new)
         elif name.endswith(".md") and (
             "/.claude/skills/" in str(path) or "/.claude/agents/" in str(path) or "/.claude/commands/" in str(path)

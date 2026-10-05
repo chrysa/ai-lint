@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from ai_lint.llmtrim_checker import LlmtrimChecker
+from prism_ai_lint.llmtrim_checker import LlmtrimChecker
 
 
 def test_llmtrim_checker_is_installed():

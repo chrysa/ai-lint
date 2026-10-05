@@ -4,24 +4,24 @@
 
 ```yaml
 # .pre-commit-config.yaml
-- repo: https://github.com/chrysa/ai-lint
+- repo: https://github.com/chrysa/prism-ai-lint
   rev: vX.Y.Z   # a release tag; `pre-commit autoupdate` picks the latest
   hooks:
-    - id: ai-lint
+    - id: prism-ai-lint
 ```
 
 It runs only when agent configuration changes (`.claude/`, `CLAUDE.md`, `AGENTS.md`,
-`.mcp.json`, `.ai-lint.toml`, workflows...). It is read-only: no `--fix`, no external CLI, and it
+`.mcp.json`, `.prism-ai-lint.toml`, workflows...). It is read-only: no `--fix`, no external CLI, and it
 blocks the commit on errors only, each listed with its `→ fix`. Run it on demand:
 
 ```sh
-pre-commit run ai-lint --hook-stage manual
+pre-commit run prism-ai-lint --hook-stage manual
 ```
 
 ## CI
 
 ```sh
-ai-lint . --strict --format json --no-cli --no-scaffold
+prism-ai-lint . --strict --format json --no-cli --no-scaffold
 ```
 
 `--strict` fails on warnings too. `--format json` returns `findings`, `fixed`, `not_fixed`,
@@ -30,5 +30,5 @@ ai-lint . --strict --format json --no-cli --no-scaffold
 
 ## Run log
 
-Every run appends one JSON line to `~/.cache/ai-lint/logs/<date>.log`: counts and codes only,
+Every run appends one JSON line to `~/.cache/prism-ai-lint/logs/<date>.log`: counts and codes only,
 never file contents or secrets.

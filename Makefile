@@ -1,18 +1,18 @@
-# ai-lint Makefile.
+# prism-ai-lint Makefile.
 # Structure and conventions based on Forge-Stack-Workshop/base-makefile
-# (lib tier: no docker-compose — ai-lint is a dependency-free Python tool run
+# (lib tier: no docker-compose — prism-ai-lint is a dependency-free Python tool run
 # locally). shared-standards: invariant target names, single entry point (run
 # every task through `make <target>`, never call ruff/pytest/mypy by hand),
 # caches kept out of the source tree.
 
 PY ?= python3
-SOURCE := ai_lint ai-lint.py
+SOURCE := prism_ai_lint prism-ai-lint.py
 TESTS := tests
 REPORTS_DIR := .reports
 
 # Keep tool caches out of the working tree (shared-standards).
-export RUFF_CACHE_DIR := /tmp/ai-lint-ruff-cache
-export MYPY_CACHE_DIR := /tmp/ai-lint-mypy-cache
+export RUFF_CACHE_DIR := /tmp/prism-ai-lint-ruff-cache
+export MYPY_CACHE_DIR := /tmp/prism-ai-lint-mypy-cache
 
 .DEFAULT_GOAL := help
 
@@ -53,12 +53,12 @@ cov:  ## Tests with coverage incl. CLI subprocesses (floor 60%, target 90%)
 	@COVERAGE_FILE=$(CURDIR)/.coverage $(PY) -m coverage xml --rcfile=$(CURDIR)/pyproject.toml \
 		-o $(REPORTS_DIR)/coverage.xml
 
-selfcheck:  ## Run ai-lint on its own repo; fail only on real traces/secrets in-repo
+selfcheck:  ## Run prism-ai-lint on its own repo; fail only on real traces/secrets in-repo
 	@$(PY) tests/_selfcheck.py
 
 build:  ## Validate the script parses and runs (no build step: dependency-free)
-	@$(PY) -c "import ast; ast.parse(open('ai_lint/_engine.py').read()); print('ai_lint/_engine.py OK')"
-	@$(PY) ai-lint.py --version
+	@$(PY) -c "import ast; ast.parse(open('prism_ai_lint/_engine.py').read()); print('prism_ai_lint/_engine.py OK')"
+	@$(PY) prism-ai-lint.py --version
 
 docker-test:  ## Run the test suite in a container (CI parity)
 	@docker run --rm -v "$(CURDIR)":/w -w /w python:3.14-slim sh -c \

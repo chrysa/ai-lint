@@ -5,8 +5,8 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-from ai_lint._reference import SECRET_KEY_RE, SECRET_VALUE_PATTERNS
-from ai_lint.report import Report
+from prism_ai_lint._reference import SECRET_KEY_RE, SECRET_VALUE_PATTERNS
+from prism_ai_lint.report import Report
 
 
 class InlineSecretScanner:

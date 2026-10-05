@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""ai-lint: validate, repair and optimize coding-agent configurations.
+"""prism-ai-lint: validate, repair and optimize coding-agent configurations.
 
 No third-party dependencies. Python >= 3.13.
 
@@ -15,27 +15,27 @@ Scopes checked:
            .claude/rules, skills, agents, commands, git hooks, git history
 
 Usage:
-  ai-lint.py [PATH ...] [--user|--user-only] [--fix] [--no-scaffold]
+  prism-ai-lint.py [PATH ...] [--user|--user-only] [--fix] [--no-scaffold]
                        [--format text|json] [--policy FILE] [--strict]
                        [--no-history] [--no-cli] [-v|-vv|-vvv|-q]
-  ai-lint.py --print-policy
+  prism-ai-lint.py --print-policy
 
 PATH may be a repository or a folder of repositories (searched 3 levels deep).
 Default mode is read-only: findings + the unified diff --fix would apply.
 --fix applies safe repairs in passes until stable, re-lints, and reports what was
-fixed versus what needs manual action. Originals go to ~/.cache/ai-lint/.
+fixed versus what needs manual action. Originals go to ~/.cache/prism-ai-lint/.
 
 Verbosity (stderr; --format json stays clean on stdout):
   -q  errors + summary   -v  progress, why/how hints, doc references
   -vv every transformation   -vvv debug (files scanned, git calls, resolved policy)
 
 Guarded audit session (for an AI agent doing the judgment calls):
-  ai-lint.py --session-settings FILE   write a --settings file that installs --guard
+  prism-ai-lint.py --session-settings FILE   write a --settings file that installs --guard
   claude --settings FILE                         agent edits are now checked by --guard:
       no widening of allow rules, no removal of deny/ask rules or hooks, no bypass modes,
       no new MCP servers/env/helpers, no attribution, protected files untouchable,
-      .ai-lint.toml editable only in [reference]. Fails closed.
-  ai-lint.py --dump-reference          built-in reference data, to diff against docs
+      .prism-ai-lint.toml editable only in [reference]. Fails closed.
+  prism-ai-lint.py --dump-reference          built-in reference data, to diff against docs
 
 Exit codes: 0 clean, 1 errors (or warnings with --strict), 2 usage error / guard block.
 """
@@ -65,7 +65,7 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
 
-# The --guard hook runs this file as a script (`python …/ai_lint/_engine.py --guard`), so the
+# The --guard hook runs this file as a script (`python …/prism_ai_lint/_engine.py --guard`), so the
 # package root is not on sys.path; a failed import would exit 1, which Claude Code treats as
 # non-blocking. Make the package importable so the guard can run and fail closed.
 if not __package__:
@@ -73,7 +73,7 @@ if not __package__:
 
 import tomllib  # noqa: E402
 
-from ai_lint._markup import (  # noqa: E402
+from prism_ai_lint._markup import (  # noqa: E402
     frontmatter_block,
     frontmatter_of,
     import_targets,
@@ -85,7 +85,7 @@ from ai_lint._markup import (  # noqa: E402
     strip_html_comments,
     yaml_scalar,
 )
-from ai_lint._reference import (
+from prism_ai_lint._reference import (
     ABS_ROOTS,
     AGENT_FIELDS,
     AGENTS_SKELETON,
@@ -110,7 +110,7 @@ from ai_lint._reference import (
     SPECIFIER_TOOLS,
     _is_attribution,
 )
-from ai_lint._runtime import (
+from prism_ai_lint._runtime import (
     _loc,
     _writable,
     add_gitignore,
@@ -125,31 +125,31 @@ from ai_lint._runtime import (
     read_text,
     state,
 )
-from ai_lint.agent_contract import AgentContract
-from ai_lint.agent_converter import ADAPTERS, AgentConverter
-from ai_lint.config_flags import ConfigFlags
-from ai_lint.content_validation import CriticalContentValidator as CriticalContentValidator
-from ai_lint.desktop_checker import DesktopChecker
-from ai_lint.feedback_renderer import FeedbackRenderer
-from ai_lint.finding import Finding
-from ai_lint.guard_checker import BASH_WRITE_HINT as BASH_WRITE_HINT
-from ai_lint.guard_checker import CONFIG_HINT as CONFIG_HINT
-from ai_lint.guard_checker import GUARD_MARKER as GUARD_MARKER
-from ai_lint.guard_checker import GuardChecker
-from ai_lint.hook_checker import HookChecker
-from ai_lint.instruction_checker import InstructionChecker
-from ai_lint.llmtrim_checker import LlmtrimChecker
-from ai_lint.mcp_checker import McpChecker
-from ai_lint.plugin_registry import PluginRegistry
-from ai_lint.project_profile import ProjectProfiler
-from ai_lint.report import Report, configure_report_context
-from ai_lint.restore_log import RestoreLog as RestoreLog
-from ai_lint.secret_scan import InlineSecretScanner
-from ai_lint.self_update import SelfUpdater
-from ai_lint.skill_agent_checker import SkillAgentChecker
-from ai_lint.terminal_view import Tty
-from ai_lint.tui_app import TuiApp
-from ai_lint.tui_services import TuiServices
+from prism_ai_lint.agent_contract import AgentContract
+from prism_ai_lint.agent_converter import ADAPTERS, AgentConverter
+from prism_ai_lint.config_flags import ConfigFlags
+from prism_ai_lint.content_validation import CriticalContentValidator as CriticalContentValidator
+from prism_ai_lint.desktop_checker import DesktopChecker
+from prism_ai_lint.feedback_renderer import FeedbackRenderer
+from prism_ai_lint.finding import Finding
+from prism_ai_lint.guard_checker import BASH_WRITE_HINT as BASH_WRITE_HINT
+from prism_ai_lint.guard_checker import CONFIG_HINT as CONFIG_HINT
+from prism_ai_lint.guard_checker import GUARD_MARKER as GUARD_MARKER
+from prism_ai_lint.guard_checker import GuardChecker
+from prism_ai_lint.hook_checker import HookChecker
+from prism_ai_lint.instruction_checker import InstructionChecker
+from prism_ai_lint.llmtrim_checker import LlmtrimChecker
+from prism_ai_lint.mcp_checker import McpChecker
+from prism_ai_lint.plugin_registry import PluginRegistry
+from prism_ai_lint.project_profile import ProjectProfiler
+from prism_ai_lint.report import Report, configure_report_context
+from prism_ai_lint.restore_log import RestoreLog as RestoreLog
+from prism_ai_lint.secret_scan import InlineSecretScanner
+from prism_ai_lint.self_update import SelfUpdater
+from prism_ai_lint.skill_agent_checker import SkillAgentChecker
+from prism_ai_lint.terminal_view import Tty
+from prism_ai_lint.tui_app import TuiApp
+from prism_ai_lint.tui_services import TuiServices
 
 
 def _detect_version() -> str:
@@ -159,7 +159,7 @@ def _detect_version() -> str:
         from importlib.metadata import PackageNotFoundError, version
 
         try:
-            return version("ai-lint")
+            return version("prism-ai-lint")
         except PackageNotFoundError:
             pass
     except ImportError:
@@ -890,13 +890,21 @@ def deep_merge(base: dict, override: dict) -> dict:
 
 
 def load_policy(path: Path | None, repos: list[Path]) -> dict:
-    # Prefer .ai-lint.toml; accept the former .claude-lint.toml / .agent-lint.toml names too.
+    # Prefer .prism-ai-lint.toml; accept the former .ai-lint.toml / .claude-lint.toml / .agent-lint.toml names too.
     candidates = (
-        [path] if path else [r / n for r in repos for n in (".ai-lint.toml", ".claude-lint.toml", ".agent-lint.toml")]
+        [path]
+        if path
+        else [
+            r / n
+            for r in repos
+            for n in (".prism-ai-lint.toml", ".ai-lint.toml", ".claude-lint.toml", ".agent-lint.toml")
+        ]
     )
     policy, source = copy.deepcopy(DEFAULT_POLICY), "built-in defaults"
     for c in candidates:
         if c and c.is_file():
+            if c.name != ".prism-ai-lint.toml" and not path:
+                print(f"warning: {c} is a former policy name; rename it to .prism-ai-lint.toml", file=sys.stderr)
             with c.open("rb") as fh:
                 policy = deep_merge(policy, tomllib.load(fh))
             source = str(c)
@@ -4793,7 +4801,7 @@ def render_brief(rep: Report, fixed: list[Finding], fix: bool, repos_count: int,
     b, dim, r0 = ("\033[1m", "\033[2m", "\033[0m") if color else ("", "", "")
     red, yel, grn = ("\033[31m", "\033[33m", "\033[32m") if color else ("", "", "")
     out = [
-        f"{b}ai-lint {VERSION}{r0} - "
+        f"{b}prism-ai-lint {VERSION}{r0} - "
         + _loc(f"{repos_count} dépôt(s) analysé(s)", f"{repos_count} repository(ies) scanned")
         + (
             _loc(" + configuration utilisateur", " + user configuration")
@@ -5095,8 +5103,9 @@ def restore_trash(target: str | None) -> int:
     Returns 1 when the requested session is missing or nothing could be restored."""
     # A trash session written by an older, differently-named build is still
     # restorable by passing its folder explicitly (--restore <dir>).
-    base = Path(os.path.expanduser("~/.cache/ai-lint/trash"))
-    sessions = sorted(d for d in base.iterdir() if d.is_dir()) if base.is_dir() else []
+    bases = [Path(os.path.expanduser(f"~/.cache/{n}/trash")) for n in ("prism-ai-lint", "ai-lint")]
+    # Sessions are named by timestamp: the latest across the current and former cache wins.
+    sessions = sorted((d for b in bases if b.is_dir() for d in b.iterdir() if d.is_dir()), key=lambda d: d.name)
     if target:
         root = Path(target).expanduser()
         if not root.is_dir():
@@ -5622,7 +5631,7 @@ def run_lint(repos: list[Path], policy: dict, args: argparse.Namespace, history:
 
 
 def log_dir() -> Path:
-    return Path(os.path.expanduser("~/.cache/ai-lint/logs"))
+    return Path(os.path.expanduser("~/.cache/prism-ai-lint/logs"))
 
 
 def write_run_log(
@@ -5634,7 +5643,7 @@ def write_run_log(
     elapsed: float,
     code: int,
 ) -> None:
-    """Append one JSON line per run to ~/.cache/ai-lint/logs/<date>.log.
+    """Append one JSON line per run to ~/.cache/prism-ai-lint/logs/<date>.log.
     Best-effort: a logging failure never affects the run's exit code, and no file
     contents or secrets are recorded, only counts and finding codes."""
     try:
@@ -5662,7 +5671,7 @@ def write_run_log(
 
 
 def backup(paths: list[Path]) -> Path:
-    root = Path(os.path.expanduser(f"~/.cache/ai-lint/{dt.datetime.now():%Y%m%dT%H%M%S%f}"))
+    root = Path(os.path.expanduser(f"~/.cache/prism-ai-lint/{dt.datetime.now():%Y%m%dT%H%M%S%f}"))
     for p in paths:
         if p.exists():
             dest = root / str(p.resolve()).lstrip("/")
@@ -6057,13 +6066,13 @@ def render_summary(
     lines = ["", rule]
     if fix:
         lines.append(
-            f"{b}SUMMARY{r0}  (ai-lint {VERSION})  {len(fixed)} issue(s) fixed, "
+            f"{b}SUMMARY{r0}  (prism-ai-lint {VERSION})  {len(fixed)} issue(s) fixed, "
             f"{len(applied)} change(s) written" + (f", {len(failures)} write failure(s)" if failures else "")
         )
         done = fixed
         title_done, mark_done = "FIXED OR GENERATED", f"{g}✔{r0}"
     else:
-        lines.append(f"{b}SUMMARY{r0}  read-only run: nothing was modified  (ai-lint {VERSION})")
+        lines.append(f"{b}SUMMARY{r0}  read-only run: nothing was modified  (prism-ai-lint {VERSION})")
         done = [f for f in rep.findings if f.fixable]
         title_done, mark_done = "WOULD BE FIXED OR GENERATED by --fix", f"{g}○{r0}"
     manual = [f for f in visible_findings(rep.findings) if not f.fixable or fix]
@@ -6254,7 +6263,7 @@ def session_settings(policy: dict) -> dict:
 # `api.check(name, scope=...)` as a decorator on a function `fn(ctx)`; the
 # function inspects `ctx.repo` / `ctx.path(...)` and reports via `ctx.add(...)`.
 # Findings flow into the same report and honour the catalog (severity/enable).
-# Discovery: <config dir>/plugins, <repo>/.ai-lint/plugins, and --plugin-dir.
+# Discovery: <config dir>/plugins, <repo>/.prism-ai-lint/plugins, and --plugin-dir.
 # --------------------------------------------------------------------------- #
 
 _PLUGIN_REGISTRY = PluginRegistry(
@@ -6351,7 +6360,7 @@ def dump_catalog() -> str:
     if yaml is None:
         return "# PyYAML not installed: run `pip install pyyaml` to use the catalog.\n"
     header = (
-        "# ai-lint catalog. Edit and pass with --catalog FILE.\n"
+        "# prism-ai-lint catalog. Edit and pass with --catalog FILE.\n"
         "# reference.*: extend the known keys/events/tools/fields the linter accepts.\n"
         "# checks.<CODE>.severity: error|warn|info|off  ·  enabled: false to silence.\n"
         "# checks.<CODE>.action_fr/action_en: the '-> fix' line shown in --details.\n\n"
@@ -6401,14 +6410,14 @@ def load_catalog(path: Path) -> None:
 
 def _apply_conversions(converter: AgentConverter, roots: list[Path], source: str, args: argparse.Namespace) -> int:
     """Apply --convert-to to each root, only with --approve-conversion. Backs up
-    the replaced target under ~/.cache/ai-lint/trash/<stamp>/ with a restore.sh,
+    the replaced target under ~/.cache/prism-ai-lint/trash/<stamp>/ with a restore.sh,
     so the write is undoable. Critical target files require approval (issue #16)."""
     approved = bool(args.approve_conversion)
     if not approved:
         print("Refusing to apply: --apply-conversion writes a critical instruction file; pass --approve-conversion.")
         return 2
     stamp = dt.datetime.now().strftime("%Y%m%dT%H%M%S")
-    trash_root = Path(os.path.expanduser(f"~/.cache/ai-lint/trash/{stamp}"))
+    trash_root = Path(os.path.expanduser(f"~/.cache/prism-ai-lint/trash/{stamp}"))
     restore = RestoreLog(trash_root / "restore.sh")
 
     def backup(path: Path, old: str) -> None:
@@ -6441,20 +6450,20 @@ def main(argv: list[str] | None = None) -> int:
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=(
             "examples:\n"
-            "  ai-lint.py .                      read-only report for the current repo\n"
-            "  ai-lint.py . --fix               apply safe repairs (backup kept)\n"
-            "  ai-lint.py . --user              include user scope (~/.claude or "
+            "  prism-ai-lint.py .                      read-only report for the current repo\n"
+            "  prism-ai-lint.py . --fix               apply safe repairs (backup kept)\n"
+            "  prism-ai-lint.py . --user              include user scope (~/.claude or "
             "$CLAUDE_CONFIG_DIR)\n"
-            "  ai-lint.py ~/dev --user          every git repo under ~/dev, plus user scope\n"
-            "  ai-lint.py . --generate          preview config to generate for the stack\n"
-            "  ai-lint.py . -i                  interactive review (duplicates, packs, "
+            "  prism-ai-lint.py ~/dev --user          every git repo under ~/dev, plus user scope\n"
+            "  prism-ai-lint.py . --generate          preview config to generate for the stack\n"
+            "  prism-ai-lint.py . -i                  interactive review (duplicates, packs, "
             "restructurings)\n"
-            "  ai-lint.py . --full-yes          apply repairs and local review actions without prompts\n"
-            "  ai-lint.py --restore             undo the last interactive session\n"
-            "  ai-lint.py . --strict --format json --no-cli   CI-friendly run\n"
+            "  prism-ai-lint.py . --full-yes          apply repairs and local review actions without prompts\n"
+            "  prism-ai-lint.py --restore             undo the last interactive session\n"
+            "  prism-ai-lint.py . --strict --format json --no-cli   CI-friendly run\n"
             "\n"
             "read-only by default; --fix and -i are the only writing modes, both reversible.\n"
-            "each run appends a JSON line to ~/.cache/ai-lint/logs/<date>.log.\n"
+            "each run appends a JSON line to ~/.cache/prism-ai-lint/logs/<date>.log.\n"
             "docs snapshot follows code.claude.com/docs; unknown keys are reported, never errors.\n"
             "\n"
             "defaults:\n"
@@ -6463,7 +6472,7 @@ def main(argv: list[str] | None = None) -> int:
             "  report            brief; language from $LANG (fr if it starts with 'fr', else en)\n"
             "  scaffolding       on (missing baseline files created; --no-scaffold to disable)\n"
             "  CLIs              claude, rtk and llmtrim are called when present (--no-cli to skip; --no-rtk skips only rtk)\n"
-            "  policy file       <repo>/.ai-lint.toml if present, else built-in defaults\n"
+            "  policy file       <repo>/.prism-ai-lint.toml if present, else built-in defaults\n"
             "  instruction file  warns above 200 lines; user scope above 150\n"
             "  always-loaded     token budget warns above 10000 tokens/turn\n"
             "  skill description warns above 1024 chars in the listing\n"
@@ -6499,7 +6508,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     ap.add_argument("--no-scaffold", action="store_true", help="do not create missing files")
     ap.add_argument("--format", choices=("text", "json"), default="text", help="output format (default: text)")
-    ap.add_argument("--policy", type=Path, help="policy TOML (default: <repo>/.ai-lint.toml)")
+    ap.add_argument("--policy", type=Path, help="policy TOML (default: <repo>/.prism-ai-lint.toml)")
     ap.add_argument("--strict", action="store_true", help="fail on warnings too")
     ap.add_argument("--no-history", action="store_true", help="skip git history scan")
     ap.add_argument("--debug-log", type=Path, metavar="FILE", help="write detailed diagnostic logs to FILE")
@@ -6509,12 +6518,12 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument(
         "--no-update-check",
         action="store_true",
-        help="skip the interactive ai-lint self-update prompt",
+        help="skip the interactive prism-ai-lint self-update prompt",
     )
     ap.add_argument(
         "--update-check",
         action="store_true",
-        help="check the release branch for an ai-lint update, prompt if possible, then exit",
+        help="check the release branch for an prism-ai-lint update, prompt if possible, then exit",
     )
     ap.add_argument(
         "--generate",
@@ -6562,7 +6571,7 @@ def main(argv: list[str] | None = None) -> int:
         help="-v progress+hints+refs, -vv transformations, -vvv debug",
     )
     vg.add_argument("-q", "--quiet", action="store_true", help="errors and summary only")
-    ap.add_argument("--version", action="version", version=f"ai-lint {VERSION}")
+    ap.add_argument("--version", action="version", version=f"prism-ai-lint {VERSION}")
     ap.add_argument("--print-policy", action="store_true", help="print the default policy as TOML")
     ap.add_argument(
         "--guard",
@@ -6593,7 +6602,7 @@ def main(argv: list[str] | None = None) -> int:
         action="append",
         metavar="DIR",
         help="extra directory of check plugins (repeatable); also loaded from "
-        "<config dir>/plugins and <repo>/.ai-lint/plugins",
+        "<config dir>/plugins and <repo>/.prism-ai-lint/plugins",
     )
     ap.add_argument("--list-plugins", action="store_true", help="list discovered check plugins and exit")
     # No arguments at all: show help (with defaults) instead of silently scanning cwd.
@@ -6602,7 +6611,11 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     raw_argv = argv if argv is not None else sys.argv[1:]
     if GUARD_MARKER not in raw_argv:  # the guard never reads repository-provided settings
-        flag_defaults, rejected = ConfigFlags(Path.cwd() / ".ai-lint.toml").load()
+        flags_file = next(
+            (f for f in (Path.cwd() / ".prism-ai-lint.toml", Path.cwd() / ".ai-lint.toml") if f.is_file()),
+            Path.cwd() / ".prism-ai-lint.toml",
+        )
+        flag_defaults, rejected = ConfigFlags(flags_file).load()
         for note in rejected:
             print(f"warning: [flags] {note}", file=sys.stderr)
         ap.set_defaults(**flag_defaults)
@@ -6698,7 +6711,7 @@ def main(argv: list[str] | None = None) -> int:
         target.chmod(0o444)
         print(f"wrote {target} (read-only). Start the audit with:\n  claude --settings {target}")
         return 0
-    log(1, f"ai-lint {VERSION}")
+    log(1, f"prism-ai-lint {VERSION}")
     detect_rtk(not args.no_cli and not args.no_rtk)
     detect_llmtrim(not args.no_cli)
     RTK["checked_cli"] = not args.no_cli and not args.no_rtk

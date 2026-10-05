@@ -6,13 +6,13 @@ import subprocess
 import sys
 from pathlib import Path
 
-from ai_lint.config_flags import ConfigFlags
+from prism_ai_lint.config_flags import ConfigFlags
 
 ROOT = Path(__file__).resolve().parent.parent
 
 
 def _write(tmp_path, body):
-    p = tmp_path / ".ai-lint.toml"
+    p = tmp_path / ".prism-ai-lint.toml"
     p.write_text(body)
     return ConfigFlags(p)
 
@@ -43,8 +43,8 @@ def test_missing_or_broken_file(tmp_path):
 
 
 def test_cli_run_honours_flags_and_command_line_wins(tmp_path):
-    (tmp_path / ".ai-lint.toml").write_text('[flags]\nformat = "json"\nfix = true\n')
-    base = [sys.executable, str(ROOT / "ai-lint.py"), ".", "--no-cli", "--no-scaffold", "--no-history"]
+    (tmp_path / ".prism-ai-lint.toml").write_text('[flags]\nformat = "json"\nfix = true\n')
+    base = [sys.executable, str(ROOT / "prism-ai-lint.py"), ".", "--no-cli", "--no-scaffold", "--no-history"]
     env = {"PATH": "/usr/bin:/bin", "HOME": str(tmp_path), "AI_LINT_UPDATE_CHECK": "0"}
     res = subprocess.run(base, cwd=tmp_path, capture_output=True, text=True, env=env, timeout=120)
     assert res.stdout.lstrip().startswith("{")

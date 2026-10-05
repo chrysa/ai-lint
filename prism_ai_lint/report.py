@@ -6,7 +6,7 @@ from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from ai_lint.finding import Finding
+from prism_ai_lint.finding import Finding
 
 DisabledCodesProvider = Callable[[], set[str]]
 SeverityOverridesProvider = Callable[[], Mapping[str, str]]

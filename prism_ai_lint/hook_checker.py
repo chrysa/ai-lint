@@ -9,7 +9,7 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
-from ai_lint._reference import (
+from prism_ai_lint._reference import (
     HOOK_TYPES,
     KNOWN_HOOK_EVENTS,
     KNOWN_TOOLS,
@@ -18,8 +18,8 @@ from ai_lint._reference import (
     SHELL_META,
     TOOL_EVENTS,
 )
-from ai_lint._runtime import dedupe, log, read_text
-from ai_lint.report import Report
+from prism_ai_lint._runtime import dedupe, log, read_text
+from prism_ai_lint.report import Report
 
 PLACEHOLDER_RE = re.compile(r"^[\"']?\$\{?CLAUDE_(PROJECT_DIR|PLUGIN_ROOT|PLUGIN_DATA)\}?[\"']?")
 

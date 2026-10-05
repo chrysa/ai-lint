@@ -1,10 +1,10 @@
 # Configuration
 
-ai-lint reads `.ai-lint.toml` at the root of each scanned repository. Start from the defaults
+prism-ai-lint reads `.prism-ai-lint.toml` at the root of each scanned repository. Start from the defaults
 and keep only what you change:
 
 ```sh
-ai-lint --print-policy > .ai-lint.toml
+prism-ai-lint --print-policy > .prism-ai-lint.toml
 ```
 
 ## Main tables
@@ -22,7 +22,7 @@ ai-lint --print-policy > .ai-lint.toml
 
 ## CLI defaults: `[flags]`
 
-`[flags]` in the `.ai-lint.toml` of the current directory sets command-line defaults. Only
+`[flags]` in the `.prism-ai-lint.toml` of the current directory sets command-line defaults. Only
 options that never write are accepted:
 
 ```toml
@@ -42,8 +42,8 @@ line always wins.
 ## Editable catalogue
 
 ```sh
-ai-lint --print-catalog > ai-lint.catalog.yaml   # needs PyYAML
-ai-lint . --catalog ai-lint.catalog.yaml
+prism-ai-lint --print-catalog > prism-ai-lint.catalog.yaml   # needs PyYAML
+prism-ai-lint . --catalog prism-ai-lint.catalog.yaml
 ```
 
 The catalogue extends the reference sets (new settings keys, hook events, tools, fields) and

@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from ai_lint.report import Report
+    from prism_ai_lint.report import Report
 
 
 @dataclass

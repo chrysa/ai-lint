@@ -7,9 +7,9 @@ from pathlib import Path
 
 import pytest
 
-from ai_lint.desktop_checker import DesktopChecker
-from ai_lint.project_profile import ProjectProfiler
-from ai_lint.report import Report
+from prism_ai_lint.desktop_checker import DesktopChecker
+from prism_ai_lint.project_profile import ProjectProfiler
+from prism_ai_lint.report import Report
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -117,7 +117,7 @@ def test_cli_json_exposes_desktop_and_categorized_findings(tmp_path):
     result = subprocess.run(
         [
             sys.executable,
-            str(ROOT / "ai-lint.py"),
+            str(ROOT / "prism-ai-lint.py"),
             str(tmp_path),
             "--format",
             "json",
@@ -140,7 +140,7 @@ def test_cli_json_exposes_desktop_and_categorized_findings(tmp_path):
 
 
 def test_tui_renders_os_readiness(tmp_path, capsys):
-    from ai_lint import _engine
+    from prism_ai_lint import _engine
 
     (tmp_path / "main.py").write_text("import tkinter\n")
     rep = Report()

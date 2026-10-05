@@ -1,6 +1,6 @@
 # Custom checks
 
-Add a `.py` file to `<repo>/.ai-lint/plugins/`, `<config dir>/plugins/` or any `--plugin-dir`:
+Add a `.py` file to `<repo>/.prism-ai-lint/plugins/`, `<config dir>/plugins/` or any `--plugin-dir`:
 
 ```python
 def register(api):
@@ -15,6 +15,6 @@ def register(api):
 `ctx` provides `root`, `path(*parts)`, `read(path)`, `glob(pattern)` and
 `add(level, code, path, message, action_fr=..., action_en=..., fixable=...)`. Plugin findings
 appear in the normal report and obey the catalogue. A plugin that raises is reported and
-skipped; it never crashes a run. `ai-lint --list-plugins` shows what loaded.
+skipped; it never crashes a run. `prism-ai-lint --list-plugins` shows what loaded.
 
 Plugins are code: only load plugins you trust. They never run in guard mode.

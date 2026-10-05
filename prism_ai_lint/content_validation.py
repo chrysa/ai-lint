@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from ai_lint.critical_content_policy import CriticalContentPolicy
+from prism_ai_lint.critical_content_policy import CriticalContentPolicy
 
 
 @dataclass

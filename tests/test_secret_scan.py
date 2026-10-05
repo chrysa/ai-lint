@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from ai_lint.report import Report
-from ai_lint.secret_scan import InlineSecretScanner
+from prism_ai_lint.report import Report
+from prism_ai_lint.secret_scan import InlineSecretScanner
 
 ENV = {"API_TOKEN": "literal-value-not-secret", "SAFE": "${FROM_ENV}", "PORT": "8080"}
 

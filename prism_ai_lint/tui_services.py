@@ -6,7 +6,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 
-from ai_lint.report import Report
+from prism_ai_lint.report import Report
 
 
 @dataclass(frozen=True)

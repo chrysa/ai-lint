@@ -3,9 +3,9 @@
 Use the selected project root to preview an instruction mapping:
 
 ```sh
-python3 ai-lint.py . --convert-from claude --convert-to codex --format json
-python3 ai-lint.py . --convert-from codex --convert-to claude --interactive
-python3 ai-lint.py . --convert-from claude --convert-to agents
+python3 prism-ai-lint.py . --convert-from claude --convert-to codex --format json
+python3 prism-ai-lint.py . --convert-from codex --convert-to claude --interactive
+python3 prism-ai-lint.py . --convert-from claude --convert-to agents
 ```
 
 The preview is strictly read-only. It exits before linting, scaffolding, plugins,
@@ -19,12 +19,12 @@ The target instruction file (`CLAUDE.md` / `AGENTS.md`) is **critical content**,
 writing it requires explicit human approval (see issue #16):
 
 ```sh
-python3 ai-lint.py . --convert-from claude --convert-to codex \
+python3 prism-ai-lint.py . --convert-from claude --convert-to codex \
   --apply-conversion --approve-conversion
 ```
 
 - Without `--approve-conversion`, `--apply-conversion` refuses and exits non-zero.
-- The previous target content is backed up under `~/.cache/ai-lint/trash/<stamp>/`
+- The previous target content is backed up under `~/.cache/prism-ai-lint/trash/<stamp>/`
   with a `restore.sh`, so the write is undoable.
 - A **stale preview** is refused: if the target changed on disk since it was read,
   nothing is written — re-run to see the new diff first.

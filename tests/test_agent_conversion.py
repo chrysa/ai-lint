@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from ai_lint.agent_converter import AgentConverter
+from prism_ai_lint.agent_converter import AgentConverter
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -105,7 +105,7 @@ def test_redaction_covers_canonical_output_and_diff(tmp_path):
 def test_cli_preview_is_read_only_and_does_not_scan_or_prompt(tmp_path, mode):
     (tmp_path / "CLAUDE.md").write_text("Never loosen security rules.\n")
     before = sorted(p.name for p in tmp_path.iterdir())
-    args = [sys.executable, str(ROOT / "ai-lint.py"), str(tmp_path), "--convert-to", "codex"]
+    args = [sys.executable, str(ROOT / "prism-ai-lint.py"), str(tmp_path), "--convert-to", "codex"]
     args += ["--format", "json"] if mode == "json" else ["--interactive"]
     result = subprocess.run(args, input="", capture_output=True, text=True, timeout=15)
     assert result.returncode == 0, result.stderr
@@ -121,7 +121,7 @@ def test_cli_preview_is_read_only_and_does_not_scan_or_prompt(tmp_path, mode):
 @pytest.mark.parametrize("args", [["--fix"], ["--generate"], ["--user"], ["--guard"], ["--restore"]])
 def test_conversion_cannot_enter_writing_or_other_modes(tmp_path, args):
     result = subprocess.run(
-        [sys.executable, str(ROOT / "ai-lint.py"), str(tmp_path), "--convert-to", "claude", *args],
+        [sys.executable, str(ROOT / "prism-ai-lint.py"), str(tmp_path), "--convert-to", "claude", *args],
         capture_output=True,
         text=True,
         timeout=15,

@@ -412,21 +412,21 @@ SECRET_KEY_RE = re.compile(r"(TOKEN|SECRET|PASSWORD|PASSWD|API_?KEY|PRIVATE_KEY|
 
 COMMIT_MSG_HOOK = """#!/usr/bin/env sh
 # Strip AI-assistant attribution trailers from commit messages.
-# Installed by ai-lint. Deterministic and agent-agnostic.
+# Installed by prism-ai-lint. Deterministic and agent-agnostic.
 sed -i -E \\
   -e '/^Co-Authored-By:.*(claude|anthropic)/Id' \\
   -e '/Generated with \\[?Claude Code/Id' \\
   "$1"
 sed -i -e :a -e '/^\\n*$/{$d;N;ba' -e '}' "$1"
 """
-HOOK_SIGNATURE = "ai-lint"
+HOOK_SIGNATURE = "prism-ai-lint"
 
 # Portable, tool-agnostic PreCompact hook. No project-specific coupling: it writes
 # a small session snapshot (git state + working dir) so context survives a compact.
 # Referenced by settings that declare a PreCompact hook but ship no script.
 PRE_COMPACT_HOOK = """#!/usr/bin/env bash
 # PreCompact hook — snapshot session state before context compaction.
-# Portable scaffold written by ai-lint. Safe to edit or extend.
+# Portable scaffold written by prism-ai-lint. Safe to edit or extend.
 set -uo pipefail
 SNAP_DIR="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/pre-compact-snapshots"
 mkdir -p "$SNAP_DIR"
@@ -456,7 +456,7 @@ SECRETS_GITIGNORE = [
     "secrets/",
     ".claude/settings.local.json",
 ]
-SECRETS_GITIGNORE_HEADER = "# ai-lint: keep secrets and local config out of git"
+SECRETS_GITIGNORE_HEADER = "# prism-ai-lint: keep secrets and local config out of git"
 
 AGENTS_SKELETON = """# {name}
 

@@ -1,9 +1,9 @@
-# ai-lint
+# prism-ai-lint
 
 **Cut the tokens your AI coding agents burn on every request, without weakening their safety.**
 
 Everything in your instruction files, rules, skill and subagent listings and MCP servers is
-re-sent to the model on **every** request. ai-lint measures that always-loaded weight, names the
+re-sent to the model on **every** request. prism-ai-lint measures that always-loaded weight, names the
 biggest contributors, and removes or restructures what does not earn its place. It also repairs
 broken configuration and refuses any change that would loosen permissions.
 
@@ -24,15 +24,15 @@ It reads the configuration of Claude Code and of other agent tools: `CLAUDE.md`,
 ## Start here
 
 ```sh
-pip install "git+https://github.com/chrysa/ai-lint@vX.Y.Z"   # a release tag
-ai-lint .            # read-only report for the current repository
-ai-lint . --user     # include your user configuration (~/.claude)
+pip install "git+https://github.com/chrysa/prism-ai-lint@vX.Y.Z"   # a release tag
+prism-ai-lint .            # read-only report for the current repository
+prism-ai-lint . --user     # include your user configuration (~/.claude)
 ```
 
 Then follow [Quick start](quickstart.md).
 
-!!! warning "Not the PyPI package"
-    The `ai-lint` name on PyPI belongs to an unrelated project. Install from GitHub as shown.
+!!! note "PyPI"
+    prism-ai-lint is not published on PyPI yet. Install from GitHub as shown.
 
 ## Requirements
 

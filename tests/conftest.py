@@ -1,4 +1,4 @@
-"""Test harness for ai-lint.
+"""Test harness for prism-ai-lint.
 
 Builds a miniature reproduction of the real environment (user scope +
 project repos) inside temporary directories, with HOME and CLAUDE_CONFIG_DIR
@@ -18,7 +18,7 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parent.parent
-SCRIPT = ROOT / "ai-lint.py"
+SCRIPT = ROOT / "prism-ai-lint.py"
 
 
 def _load_module():
@@ -26,7 +26,7 @@ def _load_module():
     so coverage and mypy see it directly)."""
     if str(ROOT) not in sys.path:
         sys.path.insert(0, str(ROOT))
-    from ai_lint import _engine
+    from prism_ai_lint import _engine
 
     return _engine
 

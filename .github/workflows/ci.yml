@@ -40,7 +40,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # ai-lint supports Python 3.13 and newer, never lower.
+        # prism-ai-lint supports Python 3.13 and newer, never lower.
         python-version: ["3.13", "3.14"]
     env:
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
@@ -63,9 +63,9 @@ jobs:
           subprocess.check_call([sys.executable, "-m", "pip", "install", "--upgrade", *deps])
           PY
       - name: Ruff check
-        run: python -m ruff check ai_lint ai-lint.py tests
+        run: python -m ruff check prism_ai_lint prism-ai-lint.py tests
       - name: Ruff format check
-        run: python -m ruff format --check ai_lint ai-lint.py tests
+        run: python -m ruff format --check prism_ai_lint prism-ai-lint.py tests
       - name: Type check
         run: python -m mypy
       - name: Run tests
