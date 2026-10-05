@@ -102,7 +102,11 @@ prism-ai-lint . --user --fix       # include user scope (~/.claude)
 | `--strict` | Exit 1 on warnings (for CI) |
 | `--format json` | Machine-readable output |
 
-**More**: `--policy FILE`, `--catalog FILE`, `--plugin-dir DIR`, `--guard`, `--dump-reference`, `--print-policy`, `--list-plugins`, `--restore [DIR]`, `--no-cli`, `--no-rtk`, `--no-scaffold`, `--no-update-check`, `--graphify`, `--rtk-report`.
+**More**: `--policy FILE`, `--catalog FILE`, `--plugin-dir DIR`, `--guard`, `--dump-reference`, `--print-policy`, `--list-plugins`, `--restore [DIR]`, `--no-cli`, `--no-rtk`, `--no-scaffold`, `--no-update-check`, `--graphify`, `--rtk-report`, `--report-issue`.
+
+`--report-issue` prints an anonymized Markdown body for the findings that have no automatic fix (paths, hosts, e-mails, URLs, names and quoted values replaced by stable tokens; secrets removed). It is a local preview: nothing is ever sent. Forbid it with `PRISM_AI_LINT_REPORTING=off` or `[reporting] mode = "off"`.
+
+Token-saving signals (info): `PDF_HEAVY` (a large PDF the agent can load; export it to text) and `COMPRESSION_DOUBLE` (rtk, llmtrim or a local gateway stacked on the same traffic).
 
 Exit codes: `0` clean, `1` errors/warnings (`--strict`), `2` usage or guard block.
 

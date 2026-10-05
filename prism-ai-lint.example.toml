@@ -89,6 +89,10 @@ rtk_exclude_commands = []
 safe_make_targets = ["test", "lint", "fmt", "format", "check", "build", "typecheck", "up", "down", "logs", "ps", "dev", "run", "help", "doctor", "validate"]
 gated_make_targets = ["deploy", "release", "publish", "push", "promote", "rollback"]
 
+[reporting]
+mode = "ask"
+extra_patterns = []
+
 [tokens]
 max_always_loaded = 10000
 skill_description_chars = 400
@@ -97,6 +101,7 @@ hold_cross_session = true
 compact_instructions = true
 mcp_server_estimate = 150
 agent_pack_tokens = 1000
+pdf_min_bytes = 200000
 preferred_model = "sonnet"
 heavy_models = ["opus"]
 subagent_model = "haiku"
