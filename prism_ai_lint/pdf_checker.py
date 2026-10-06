@@ -6,7 +6,8 @@ import re
 import shutil
 from pathlib import Path
 
-PDF_REF_RE = re.compile(r"""(?<![\w/.-])((?:\.{0,2}/)?[\w@./-]*?[\w-]\.pdf)\b""", re.IGNORECASE)
+PDF_REF_RE = re.compile(r"\.pdf$", re.IGNORECASE)
+TOKEN_SPLIT_RE = re.compile(r"[\s'\"`()<>\[\],;]+")
 CONTEXT_FILES = ("CLAUDE.md", ".claude/CLAUDE.md", "AGENTS.md", ".claude/AGENTS.md", "CLAUDE.local.md")
 MAX_DOC_BYTES = 200_000
 
@@ -35,7 +36,7 @@ class PdfChecker:
             docs += sorted(dot.rglob("*.md"))
         for doc in docs:
             for ref in self._references(doc):
-                target = (doc.parent / ref).resolve() if not ref.startswith("/") else Path(ref)
+                target = (doc.parent / ref).resolve()
                 if self._inside(target, repo) and target.is_file():
                     found[target] = None
         return list(found)
@@ -64,12 +65,12 @@ class PdfChecker:
     @staticmethod
     def _references(doc: Path) -> list[str]:
         try:
-            if doc.stat().st_size > MAX_DOC_BYTES:
+            if doc.is_symlink() or doc.stat().st_size > MAX_DOC_BYTES:
                 return []
             text = doc.read_text(encoding="utf-8", errors="replace")
         except OSError:
             return []
-        return [m.group(1).strip() for m in PDF_REF_RE.finditer(text) if "://" not in m.group(1)]
+        return [t for t in TOKEN_SPLIT_RE.split(text) if PDF_REF_RE.search(t) and "://" not in t]
 
     @staticmethod
     def _inside(path: Path, repo: Path) -> bool:

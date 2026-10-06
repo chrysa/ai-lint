@@ -18,7 +18,13 @@ from pathlib import Path
 from prism_ai_lint.finding import Finding
 
 URL_RE = re.compile(r"\b[a-z][a-z0-9+.-]*://\S+", re.IGNORECASE)
-EMAIL_RE = re.compile(r"[\w.+-]+@[\w-]+(?:\.[\w-]+)+")
+SCP_RE = re.compile(r"[\w.-]{1,64}@[\w.-]{1,255}:\S{1,512}")
+EMAIL_RE = re.compile(r"[\w.+-]{1,64}@[\w-]{1,63}(?:\.[\w-]{1,63}){1,8}")
+HOME_RE = re.compile(r"(?:/home/|/Users/|[A-Za-z]:\\Users\\)[^\n'\"`]*")
+UNC_RE = re.compile(r"\\\\[^\s'\"`]+")
+REL_PATH_RE = re.compile(r"(?<![\w:/.-])[\w.@-]{1,64}(?:/[\w.@-]{1,64})+")
+PLACEHOLDER_RE = re.compile(r"<[A-Z]+_\d+>")
+MAX_SCRUB = 4000
 IPV4_RE = re.compile(r"\b\d{1,3}(?:\.\d{1,3}){3}\b")
 ABS_PATH_RE = re.compile(r"(?<![\w:])(?:~|[A-Za-z]:\\|/)[^\s'\"`,;)\]]*[/\\][^\s'\"`,;)\]]*")
 QUOTED_RE = re.compile(r"`[^`\n]*`|\"[^\"\n]*\"|'[^'\n]*'")
@@ -35,34 +41,40 @@ class Anonymizer:
         extra_patterns: Iterable[str] = (),
     ) -> None:
         self._redact_secrets = redact_secrets
-        self._names = sorted({n for n in known_names if len(n) >= 3}, key=len, reverse=True)
-        self._extra = [re.compile(p) for p in extra_patterns]
+        self._names = sorted({n for n in known_names if n}, key=len, reverse=True)
+        self._extra = [re.compile(p) for p in extra_patterns]  # invalid pattern raises: caller fails closed
+        self._counts: Counter[str] = Counter()
         self._tokens: dict[tuple[str, str], str] = {}
 
     def token(self, kind: str, value: str) -> str:
         """Stable token for a value: the same input always maps to the same placeholder."""
         key = (kind, value)
         if key not in self._tokens:
-            count = sum(1 for k, _ in self._tokens if k == kind) + 1
-            self._tokens[key] = f"<{kind}_{count}>"
+            self._counts[kind] += 1
+            self._tokens[key] = f"<{kind}_{self._counts[kind]}>"
         return self._tokens[key]
 
     def scrub(self, text: str) -> str:
         """Anonymize free text: secrets, URLs, emails, IPs, paths, names, quoted values."""
-        text = self._redact_secrets(text)
+        text = self._redact_secrets(text[:MAX_SCRUB])
         for rx in self._extra:
             text = rx.sub("<REDACTED>", text)
         text = URL_RE.sub(lambda m: self.token("URL", m.group(0)), text)
+        text = SCP_RE.sub(lambda m: self.token("URL", m.group(0)), text)
         text = EMAIL_RE.sub(lambda m: self.token("EMAIL", m.group(0)), text)
         text = IPV4_RE.sub(lambda m: self.token("IP", m.group(0)), text)
+        text = HOME_RE.sub(lambda m: self.token("PATH", m.group(0)), text)
+        text = UNC_RE.sub(lambda m: self.token("PATH", m.group(0)), text)
         text = ABS_PATH_RE.sub(lambda m: self.token("PATH", m.group(0)), text)
+        text = REL_PATH_RE.sub(lambda m: self.token("PATH", m.group(0)), text)
         for name in self._names:
-            text = re.sub(re.escape(name), lambda m: self.token("NAME", m.group(0)), text, flags=re.IGNORECASE)
+            pat = re.escape(name) if len(name) >= 3 else rf"\b{re.escape(name)}\b"
+            text = re.sub(pat, lambda m: self.token("NAME", m.group(0)), text, flags=re.IGNORECASE)
         return QUOTED_RE.sub(self._quoted, text)
 
     def _quoted(self, match: re.Match[str]) -> str:
         inner = match.group(0)[1:-1].strip()
-        if inner in KEEP_QUOTED or re.fullmatch(r"[A-Z][A-Z0-9_]{2,}", inner) or inner.startswith("<"):
+        if inner in KEEP_QUOTED or PLACEHOLDER_RE.fullmatch(inner):
             return match.group(0)
         return "<VALUE>"
 

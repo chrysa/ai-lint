@@ -33,10 +33,10 @@ def test_tokens_are_stable():
     assert a.scrub("10.1.2.3 and 10.1.2.3") == "<IP_1> and <IP_1>"
 
 
-def test_quoted_values_removed_but_codes_kept():
+def test_quoted_values_removed_but_known_keys_kept():
     out = _anon().scrub('server `my-private-server` uses `API_KEY` and "allow"')
     assert "my-private-server" not in out
-    assert "API_KEY" in out and '"allow"' in out
+    assert "API_KEY" not in out and '"allow"' in out
 
 
 def test_extra_patterns_are_removed():
@@ -67,3 +67,35 @@ def test_cli_flag_and_env_off(env, monkeypatch):
     monkeypatch.setenv("PRISM_AI_LINT_REPORTING", "off")
     off = env.run("--user-only", "--no-cli", "--report-issue", expect_ok=True)
     assert "disabled" in off.stdout
+
+
+@pytest.mark.parametrize(
+    "leak",
+    [
+        "/Users/John Smith/proj",
+        "git@github.com:acme-org/private-repo.git",
+        "clients/acme/x.json",
+        "\\\\fileserver\\share",
+    ],
+)
+def test_review_leak_cases(leak):
+    out = Anonymizer().scrub(f"error in {leak} here")
+    for part in ("Smith", "acme", "private-repo", "fileserver"):
+        assert part not in out
+
+
+def test_quoted_uppercase_and_angle_values_are_removed():
+    out = Anonymizer().scrub('keys "ACME_CORP" and "<corp-host>"')
+    assert "ACME_CORP" not in out and "corp-host" not in out
+
+
+def test_short_names_scrubbed_with_word_boundary():
+    assert "al" not in Anonymizer(known_names=["al"]).scrub("user al logged in").split()
+
+
+def test_scrub_input_is_bounded():
+    import time
+
+    t0 = time.perf_counter()
+    Anonymizer().scrub("a@" * 100_000)
+    assert time.perf_counter() - t0 < 10

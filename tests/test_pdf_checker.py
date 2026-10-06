@@ -52,3 +52,20 @@ def test_lint_emits_pdf_heavy_as_info(linter_module, tmp_path):
     rep = m.Report()
     m.check_pdfs(tmp_path, pol, rep)
     assert [(f.level, f.code) for f in rep.findings] == [("info", "PDF_HEAVY")]
+
+
+def test_hostile_reference_line_is_fast(tmp_path):
+    import time
+
+    (tmp_path / "CLAUDE.md").write_text("a@" * 90_000)
+    t0 = time.perf_counter()
+    PdfChecker().candidates(tmp_path)
+    assert time.perf_counter() - t0 < 5
+
+
+def test_absolute_reference_with_dotdot_escape_is_ignored(tmp_path):
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    _pdf(tmp_path / "out.pdf", 300_000)
+    (repo / "CLAUDE.md").write_text(f"see {repo}/../out.pdf\n")
+    assert PdfChecker().heavy(repo) == []

@@ -6504,7 +6504,11 @@ def print_issue_report(rep: Report, repos: list[Path], policy: dict) -> None:
     if os.environ.get("PRISM_AI_LINT_REPORTING", "").lower() == "off" or policy["reporting"]["mode"] == "off":
         print('\nissue reporting is disabled (PRISM_AI_LINT_REPORTING=off or [reporting] mode = "off")')
         return
-    anon = Anonymizer(redact, local_identity(repos), policy["reporting"]["extra_patterns"])
+    try:
+        anon = Anonymizer(redact, local_identity(repos), policy["reporting"]["extra_patterns"])
+    except re.error as e:
+        print(f"\nissue report skipped (fail closed): invalid [reporting] extra_patterns: {e}")
+        return
     print("\n" + IssueReporter(anon, VERSION).render(rep.findings))
 
 
