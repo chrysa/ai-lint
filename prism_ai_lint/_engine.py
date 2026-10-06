@@ -127,6 +127,7 @@ from prism_ai_lint._runtime import (
 )
 from prism_ai_lint.agent_contract import AgentContract
 from prism_ai_lint.agent_converter import ADAPTERS, AgentConverter
+from prism_ai_lint.compression_checker import CompressionChecker
 from prism_ai_lint.config_flags import ConfigFlags
 from prism_ai_lint.content_validation import CriticalContentValidator as CriticalContentValidator
 from prism_ai_lint.desktop_checker import DesktopChecker
@@ -138,8 +139,10 @@ from prism_ai_lint.guard_checker import GUARD_MARKER as GUARD_MARKER
 from prism_ai_lint.guard_checker import GuardChecker
 from prism_ai_lint.hook_checker import HookChecker
 from prism_ai_lint.instruction_checker import InstructionChecker
+from prism_ai_lint.issue_reporter import Anonymizer, IssueReporter, local_identity
 from prism_ai_lint.llmtrim_checker import LlmtrimChecker
 from prism_ai_lint.mcp_checker import McpChecker
+from prism_ai_lint.pdf_checker import PdfChecker
 from prism_ai_lint.plugin_registry import PluginRegistry
 from prism_ai_lint.project_profile import ProjectProfiler
 from prism_ai_lint.report import Report, configure_report_context
@@ -695,6 +698,14 @@ HINTS: dict[str, tuple[str, str]] = {  # code -> (why/how, reference)
     "LLMTRIM_SUGGESTED": (
         "llmtrim compresses what is re-sent to the model; worth it once the always-loaded context is heavy.",
         "https://github.com/llmtrim/llmtrim#install",
+    ),
+    "COMPRESSION_DOUBLE": (
+        "rtk, llmtrim and a routing gateway each compress traffic; stacking them can drop context twice for little gain.",
+        "https://github.com/rtk-ai/rtk#installation",
+    ),
+    "PDF_HEAVY": (
+        "A PDF the agent can load costs far more tokens than the same content as text; export it to text or Markdown.",
+        DOCS + "memory#write-effective-instructions",
     ),
     "INSTR_VAGUE": (
         "Hedging verbs (might, could, try to) and open-ended scope (etc., and so on) leave the agent "
@@ -3245,6 +3256,11 @@ mode = "sqlite"
 # Token budget: what is loaded into every session, and levers to shrink it
 # --------------------------------------------------------------------------- #
 
+DEFAULT_POLICY["reporting"] = {
+    "mode": "ask",  # "off" forbids --report-issue for this project; the report is never sent anywhere
+    "extra_patterns": [],  # extra regexes whose matches are removed from the report
+}
+
 DEFAULT_POLICY["tokens"] = {
     "max_always_loaded": 10000,  # warn above this estimate (tokens, bytes/4)
     "skill_description_chars": 400,  # listing cost per skill, every turn
@@ -3253,6 +3269,7 @@ DEFAULT_POLICY["tokens"] = {
     "compact_instructions": True,  # generated CLAUDE.md gets a compaction section
     "mcp_server_estimate": 150,  # deferred tool listing: names + server instructions, per server
     "agent_pack_tokens": 1000,  # warn when one agents/ subdirectory lists more than this
+    "pdf_min_bytes": 200_000,  # PDFs in agent context at or above this size get PDF_HEAVY (info)
     # Configurable model / effort expectations. The token checks read these
     # instead of hard-coding "sonnet"/"opus": a team can set its own preferred
     # default model, the models it considers heavy (flagged as a session default),
@@ -4523,6 +4540,12 @@ BRIEF_FR = {
     "INSTR_PROSE": ("tokens", "paragraphes en prose", "remplacer par des puces"),
     "INSTR_FILLER": ("tokens", "formules de politesse / remplissage", "écrire des impératifs directs"),
     "LLMTRIM_SUGGESTED": ("tokens", "contexte lourd sans llmtrim", "installer llmtrim (optionnel)"),
+    "COMPRESSION_DOUBLE": (
+        "tokens",
+        "plusieurs couches de compression actives",
+        "n'en garder qu'une par chemin et mesurer",
+    ),
+    "PDF_HEAVY": ("tokens", "PDF lourd dans le contexte agent", "exporter en texte (pdftotext) et référencer le texte"),
     "INSTR_VAGUE": ("tokens", "consignes floues (peut-être, etc.)", "dire quoi faire et la portée exacte"),
     "RULE_UNSCOPED": (
         "tokens",
@@ -4664,6 +4687,8 @@ BRIEF_EN = {
     "INSTR_PROSE": ("tokens", "prose paragraphs", "replace with bullet points"),
     "INSTR_FILLER": ("tokens", "polite / filler wording", "write direct imperatives"),
     "LLMTRIM_SUGGESTED": ("tokens", "heavy context without llmtrim", "install llmtrim (optional)"),
+    "COMPRESSION_DOUBLE": ("tokens", "several compression layers active", "keep one per path and measure"),
+    "PDF_HEAVY": ("tokens", "heavy PDF in agent context", "export to text (pdftotext) and reference the text"),
     "INSTR_VAGUE": ("tokens", "vague instructions (might, etc.)", "state what to do and its exact scope"),
     "RULE_UNSCOPED": (
         "tokens",
@@ -5488,6 +5513,36 @@ def lint_user(policy: dict, rep: Report, repos: list[Path]) -> str | None:
     return _INSTRUCTIONS.check_instruction_file(home / "CLAUDE.md", "user", policy, rep, None)
 
 
+def check_pdfs(repo: Path, policy: dict, rep: Report) -> None:
+    """Report heavy PDFs reachable from agent context; read-only, nothing is converted."""
+    checker = PdfChecker(policy["tokens"]["pdf_min_bytes"])
+    for pdf, size in checker.heavy(repo):
+        rep.add("info", "PDF_HEAVY", pdf, checker.advice(size))
+
+
+def check_compression(repo: Path, rep: Report) -> None:
+    """Flag stacked compression layers (rtk, llmtrim, local gateway) across user and project settings."""
+    parsed = []
+    for f in (
+        config_dir() / "settings.json",
+        repo / ".claude" / "settings.json",
+        repo / ".claude" / "settings.local.json",
+    ):
+        raw = read_text(f)
+        if not raw:
+            continue
+        try:
+            data, _ = lenient_json(raw)
+        except ValueError:
+            continue
+        if isinstance(data, dict):
+            parsed.append(data)
+    checker = CompressionChecker()
+    advice = checker.advice(checker.layers(parsed))
+    if advice:
+        rep.add("info", "COMPRESSION_DOUBLE", repo / ".claude", advice)
+
+
 def lint_repo(repo: Path, policy: dict, rep: Report, history: bool, user_text: str | None) -> None:
     log(1, f"project scope: {repo}")
     check_misplaced(repo, rep)
@@ -5522,6 +5577,8 @@ def lint_repo(repo: Path, policy: dict, rep: Report, history: bool, user_text: s
         check_marketplace(proot, rep, policy)
     check_workflows(repo, rep)
     check_repo_secrets(repo, rep)
+    check_pdfs(repo, policy, rep)
+    check_compression(repo, rep)
     texts = []
     for rel in [
         "CLAUDE.md",
@@ -6442,6 +6499,19 @@ def _apply_conversions(converter: AgentConverter, roots: list[Path], source: str
     return 1 if failed else 0
 
 
+def print_issue_report(rep: Report, repos: list[Path], policy: dict) -> None:
+    """Print the anonymized issue body (local preview, never sent); env or policy can forbid it."""
+    if os.environ.get("PRISM_AI_LINT_REPORTING", "").lower() == "off" or policy["reporting"]["mode"] == "off":
+        print('\nissue reporting is disabled (PRISM_AI_LINT_REPORTING=off or [reporting] mode = "off")')
+        return
+    try:
+        anon = Anonymizer(redact, local_identity(repos), policy["reporting"]["extra_patterns"])
+    except re.error as e:
+        print(f"\nissue report skipped (fail closed): invalid [reporting] extra_patterns: {e}")
+        return
+    print("\n" + IssueReporter(anon, VERSION).render(rep.findings))
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(
         description="Validate, repair and optimize coding-agent configurations "
@@ -6554,6 +6624,12 @@ def main(argv: list[str] | None = None) -> int:
         choices=("error", "warn", "info"),
         default="info",
         help="hide findings below this level (e.g. --min-level warn drops info noise)",
+    )
+    ap.add_argument(
+        "--report-issue",
+        action="store_true",
+        help="print an anonymized Markdown issue body for findings without an automatic fix "
+        "(local preview only, never sent; PRISM_AI_LINT_REPORTING=off disables it)",
     )
     ap.add_argument("--rtk-report", action="store_true", help="append 'rtk gain' and 'rtk discover' output")
     ap.add_argument(
@@ -6804,6 +6880,8 @@ def main(argv: list[str] | None = None) -> int:
         print(render_brief(rep, fixed, args.fix, len(repos), sys.stdout.isatty()))
         for bk in sorted(set(backups)):
             print(_loc("Sauvegarde des fichiers modifiés : ", "Backup of modified files: ") + bk)
+        if args.report_issue:
+            print_issue_report(rep, repos, policy)
         code = 1 if rep.count("error") or (args.strict and rep.count("warn")) else 0
         write_run_log(
             argv or sys.argv[1:],
@@ -6866,6 +6944,8 @@ def main(argv: list[str] | None = None) -> int:
         if args.rtk_report:
             report = rtk_report()
             print("\n== rtk report\n" + (report or "rtk not available"))
+    if args.report_issue:
+        print_issue_report(rep, repos, policy)
     code = 1 if rep.count("error") or (args.strict and rep.count("warn")) else 0
     write_run_log(argv or sys.argv[1:], repos, rep, fixed, applied, time.perf_counter() - run_started, code)
     close_debug_log()
