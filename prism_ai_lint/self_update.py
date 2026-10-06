@@ -13,6 +13,7 @@ from typing import Any
 
 from prism_ai_lint.git_runner import GitRunner
 from prism_ai_lint.self_update_config import SelfUpdateConfig
+from prism_ai_lint.update_followup import UpdateFollowUp
 
 
 class SelfUpdater:
@@ -158,7 +159,9 @@ class SelfUpdater:
         pulled = git.run("pull", "--ff-only", self.config.remote, self.config.release_branch, timeout=60)
         if pulled.returncode == 0:
             self.updated = True
-            print("prism-ai-lint updated. Re-run the command to use the new code.", file=sys.stderr)
+            print("prism-ai-lint updated.", file=sys.stderr)
+            UpdateFollowUp(git).offer(local_sha, remote_sha)
+            print("Re-run the command to use the new code.", file=sys.stderr)
         else:
             err = (pulled.stderr or pulled.stdout or "git pull failed").strip()
             print(f"prism-ai-lint update failed: {err}", file=sys.stderr)
