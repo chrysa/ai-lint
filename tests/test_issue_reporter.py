@@ -36,7 +36,8 @@ def test_tokens_are_stable():
 def test_quoted_values_removed_but_known_keys_kept():
     out = _anon().scrub('server `my-private-server` uses `API_KEY` and "allow"')
     assert "my-private-server" not in out
-    assert "API_KEY" not in out and '"allow"' in out
+    assert "API_KEY" not in out
+    assert '"allow"' in out
 
 
 def test_extra_patterns_are_removed():
@@ -51,7 +52,8 @@ def test_report_lists_only_unfixed_findings_grouped():
         Finding("info", "FIXED_ONE", "/home/alice/z", "auto", fixable=True),
     ]
     body = IssueReporter(_anon(), "1.2.3").render(findings, ["python-cli"])
-    assert "FOO_BAR" in body and "x2" in body
+    assert "FOO_BAR" in body
+    assert "x2" in body
     assert "FIXED_ONE" not in body
     assert "alice" not in body
     assert "python-cli" in body
@@ -86,7 +88,8 @@ def test_review_leak_cases(leak):
 
 def test_quoted_uppercase_and_angle_values_are_removed():
     out = Anonymizer().scrub('keys "ACME_CORP" and "<corp-host>"')
-    assert "ACME_CORP" not in out and "corp-host" not in out
+    assert "ACME_CORP" not in out
+    assert "corp-host" not in out
 
 
 def test_short_names_scrubbed_with_word_boundary():

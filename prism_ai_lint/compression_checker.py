@@ -6,7 +6,7 @@ import json
 import re
 from typing import Any
 
-LOCAL_GATEWAY_RE = re.compile(r"^https?://(localhost|127\.0\.0\.1|\[::1\])[:/]|omniroute", re.IGNORECASE)
+LOCAL_GATEWAY_RE = re.compile(r"(?:^https?://(?:localhost|127\.0\.0\.1|\[::1\])[:/])|(?:omniroute)", re.IGNORECASE)
 
 
 class CompressionChecker:
