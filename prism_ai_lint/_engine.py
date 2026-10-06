@@ -2810,7 +2810,7 @@ import json, os, shutil, subprocess, sys
 def main() -> int:
     try:
         data = json.load(sys.stdin)
-    except Exception:
+    except ValueError:
         return 0
     path = (data.get("tool_input") or {}).get("file_path") or ""
     if not path or not os.path.isfile(path):
@@ -2830,7 +2830,7 @@ def main() -> int:
     if cmd:
         try:
             subprocess.run(cmd, cwd=root, timeout=25, capture_output=True)
-        except Exception:
+        except (OSError, subprocess.SubprocessError):
             pass
     return 0
 
@@ -3390,7 +3390,9 @@ def _unscoped_rules(root: Path, seen: set) -> list[tuple[Path, int]]:
     return out
 
 
-def _skill_listing(roots: list[Path], rep: Report, policy: dict) -> list[tuple[Path, int]]:
+def _skill_listing(
+    roots: list[Path], rep: Report, policy: dict, quiet_roots: frozenset[Path] = frozenset()
+) -> list[tuple[Path, int]]:
     out = []
     limit = policy["tokens"]["skill_description_chars"]
     for root in roots:
@@ -3402,7 +3404,7 @@ def _skill_listing(roots: list[Path], rep: Report, policy: dict) -> list[tuple[P
             if meta.get("disable-model-invocation", "").lower() in ("true", "yes", "on", "1"):
                 continue
             desc = meta.get("description", "") + meta.get("when_to_use", "")
-            if len(desc) > limit:
+            if len(desc) > limit and root not in quiet_roots:
                 rep.add(
                     "info",
                     "TOKEN_SKILL_DESC",
@@ -3474,7 +3476,7 @@ def token_budget(repo: Path | None, user: bool, policy: dict, rep: Report) -> di
         servers.update(((cj.get("projects") or {}).get(str(repo.resolve())) or {}).get("mcpServers") or {})
         per = policy["tokens"]["mcp_server_estimate"]
         parts["mcp"] = [(Path(f"mcp:{n}"), per) for n in servers]
-    parts["listing"] += _skill_listing(roots, rep, policy)
+    parts["listing"] += _skill_listing(roots, rep, policy, frozenset() if user else frozenset({cfg}))
     total = sum(t for items in parts.values() for _, t in items)
     groups: dict[str, list[int]] = {}
     for p, t in parts["instructions"] + parts["rules"] + parts["memory"]:
@@ -5510,6 +5512,7 @@ def lint_user(policy: dict, rep: Report, repos: list[Path]) -> str | None:
     _INSTRUCTIONS.check_auto_memory(home, policy, rep)
     _MCP.check_claude_json(rep, repos)
     check_user_extras(rep)
+    _report_compression(rep, home, _settings_objects((home / "settings.json", home / "settings.local.json")))
     return _INSTRUCTIONS.check_instruction_file(home / "CLAUDE.md", "user", policy, rep, None)
 
 
@@ -5520,14 +5523,10 @@ def check_pdfs(repo: Path, policy: dict, rep: Report) -> None:
         rep.add("info", "PDF_HEAVY", pdf, checker.advice(size))
 
 
-def check_compression(repo: Path, rep: Report) -> None:
-    """Flag stacked compression layers (rtk, llmtrim, local gateway) across user and project settings."""
+def _settings_objects(files: tuple[Path, ...]) -> list[dict]:
+    """Parsed settings objects among `files`; unreadable or non-object files are skipped."""
     parsed = []
-    for f in (
-        config_dir() / "settings.json",
-        repo / ".claude" / "settings.json",
-        repo / ".claude" / "settings.local.json",
-    ):
+    for f in files:
         raw = read_text(f)
         if not raw:
             continue
@@ -5537,10 +5536,22 @@ def check_compression(repo: Path, rep: Report) -> None:
             continue
         if isinstance(data, dict):
             parsed.append(data)
+    return parsed
+
+
+def _report_compression(rep: Report, where: Path, parsed: list[dict]) -> None:
     checker = CompressionChecker()
     advice = checker.advice(checker.layers(parsed))
     if advice:
-        rep.add("info", "COMPRESSION_DOUBLE", repo / ".claude", advice)
+        rep.add("info", "COMPRESSION_DOUBLE", where, advice)
+
+
+def check_compression(repo: Path, rep: Report) -> None:
+    """Project scope: flag stacked layers only when the project itself adds one, so user-level
+    layers are not repeated in every repository (they are reported once by `lint_user`)."""
+    project = _settings_objects((repo / ".claude" / "settings.json", repo / ".claude" / "settings.local.json"))
+    if CompressionChecker().layers(project):
+        _report_compression(rep, repo / ".claude", [*_settings_objects((config_dir() / "settings.json",)), *project])
 
 
 def lint_repo(repo: Path, policy: dict, rep: Report, history: bool, user_text: str | None) -> None:

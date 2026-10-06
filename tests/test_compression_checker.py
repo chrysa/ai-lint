@@ -45,3 +45,37 @@ def test_lint_emits_compression_double_as_info(linter_module, tmp_path, monkeypa
     rep = m.Report()
     m.check_compression(tmp_path / "repo", rep)
     assert [(f.level, f.code) for f in rep.findings] == [("info", "COMPRESSION_DOUBLE")]
+
+
+def _cfg(tmp_path, monkeypatch, user, project):
+    import json
+
+    home = tmp_path / "home"
+    home.mkdir()
+    (home / "settings.json").write_text(json.dumps(user))
+    monkeypatch.setenv("CLAUDE_CONFIG_DIR", str(home))
+    dot = tmp_path / "repo" / ".claude"
+    dot.mkdir(parents=True)
+    (dot / "settings.json").write_text(json.dumps(project))
+    return tmp_path / "repo", home
+
+
+def test_user_layers_are_not_repeated_in_every_repo(linter_module, tmp_path, monkeypatch):
+    repo, _ = _cfg(tmp_path, monkeypatch, {**RTK, **TRIM}, {})
+    rep = linter_module.Report()
+    linter_module.check_compression(repo, rep)
+    assert rep.findings == []
+
+
+def test_user_double_is_reported_once_at_user_scope(linter_module, tmp_path, monkeypatch):
+    _, home = _cfg(tmp_path, monkeypatch, {**RTK, **TRIM}, {})
+    rep = linter_module.Report()
+    linter_module.lint_user(linter_module.load_policy(None, [tmp_path]), rep, [])
+    assert [f.code for f in rep.findings if f.code == "COMPRESSION_DOUBLE"] == ["COMPRESSION_DOUBLE"]
+
+
+def test_project_layer_on_top_of_user_layer_is_reported(linter_module, tmp_path, monkeypatch):
+    repo, _ = _cfg(tmp_path, monkeypatch, RTK, TRIM)
+    rep = linter_module.Report()
+    linter_module.check_compression(repo, rep)
+    assert [f.code for f in rep.findings] == ["COMPRESSION_DOUBLE"]
