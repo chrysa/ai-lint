@@ -6831,30 +6831,38 @@ def main(argv: list[str] | None = None) -> int:
     backups: list[str] = []
     fixed: list[Finding] = []
 
-    if args.fix:
-        log(1, "starting automatic fix passes")
+    def fix_passes(current: Report) -> Report:
+        """Apply pending repairs and re-scan until stable (at most 5 passes)."""
         for n in range(1, 6):
-            if not (rep.edits or rep.new_files or rep.chmods or rep.moves):
+            if not (current.edits or current.new_files or current.chmods or current.moves):
                 break
             log(
                 1,
-                f"fix pass {n}: {len(rep.edits) + len(rep.new_files) + len(rep.chmods)} change(s)",
+                f"fix pass {n}: {len(current.edits) + len(current.new_files) + len(current.chmods)} change(s)",
             )
-            where, done, failed = apply(rep)
-            applied += done
-            failures += failed
+            where, done, failed = apply(current)
+            applied.extend(done)
+            failures.extend(failed)
             if where:
                 backups.append(str(where))
-            rep = run_lint(repos, policy, args, history, phase=f"scan after fix {n}")
+            current = run_lint(repos, policy, args, history, phase=f"scan after fix {n}")
             if failed:
                 break
-        remaining = {(f.code, f.path) for f in rep.findings}
+        return current
+
+    def record_fixed(current: Report) -> None:
+        remaining = {(f.code, f.path) for f in current.findings}
         seen: set[tuple[str, str, str]] = set()
         for f in first.findings:
             key = (f.code, f.path, f.message)
             if f.fixable and (f.code, f.path) not in remaining and key not in seen:
                 fixed.append(f)
                 seen.add(key)
+
+    if args.fix:
+        log(1, "starting automatic fix passes")
+        rep = fix_passes(rep)
+        record_fixed(rep)
         for p, msg in failures:
             rep.add("error", "WRITE_FAILED", p, msg)
 
@@ -6863,6 +6871,9 @@ def main(argv: list[str] | None = None) -> int:
         state.interactive_ran = True
         if interactive(rep, repos, policy, bool(args.user or args.user_only), full_yes=args.full_yes):
             rep = run_lint(repos, policy, args, history, phase="scan after interactive review")
+            if args.fix:  # the review (e.g. commands -> skills) unlocks further repairs
+                rep = fix_passes(rep)
+                record_fixed(rep)
     if args.graphify:
         log(1, f"starting Graphify for {len(repos)} repositories")
         graphify = shutil.which("graphify")
