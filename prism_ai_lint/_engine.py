@@ -3322,6 +3322,10 @@ HINTS.update(
             "Skill descriptions are listed every turn; keep the key use case in a sentence or two.",
             DOCS + "skills#skill-descriptions-are-cut-short",
         ),
+        "MCP_BROKEN": (
+            "A stdio server whose command is not installed never starts, yet its entry is still loaded.",
+            DOCS + "mcp",
+        ),
         "MCP_PREFER_CLI": (
             "A CLI adds no per-tool listing: prefer it to the MCP server when installed.",
             DOCS + "costs#reduce-mcp-server-overhead",
@@ -4596,6 +4600,11 @@ BRIEF_FR = {
         "serveurs MCP sans plafond de sortie",
         "définir env.MAX_MCP_OUTPUT_TOKENS (défaut 25000) pour borner un résultat",
     ),
+    "MCP_BROKEN": (
+        "broken",
+        "serveur MCP dont la commande est introuvable",
+        "installer la commande ou retirer le serveur",
+    ),
     "MCP_PREFER_CLI": (
         "tokens",
         "serveur MCP alors que la CLI équivalente est installée",
@@ -4738,6 +4747,11 @@ BRIEF_EN = {
         "tokens",
         "MCP servers without an output cap",
         "set env.MAX_MCP_OUTPUT_TOKENS (default 25000) to bound one tool result",
+    ),
+    "MCP_BROKEN": (
+        "broken",
+        "MCP server whose command is not installed",
+        "install the command or remove the server",
     ),
     "MCP_PREFER_CLI": (
         "tokens",

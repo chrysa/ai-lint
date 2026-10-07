@@ -6,6 +6,7 @@ import copy
 import json
 import os
 import shlex
+import shutil
 from pathlib import Path
 
 from prism_ai_lint._reference import SECRET_VALUE_PATTERNS
@@ -19,6 +20,22 @@ class McpChecker:
 
     def __init__(self, secrets: InlineSecretScanner) -> None:
         self._secrets = secrets
+
+    @staticmethod
+    def _command_found(command: str, config: Path) -> bool:
+        """True when the command can run: on PATH, or an existing file (relative to the config's folder).
+        Commands with variables are not judged; a malformed command is left to MCP_COMMAND_ARGS."""
+        try:
+            parts = shlex.split(command)
+        except ValueError:
+            return True
+        if not parts or "$" in parts[0]:
+            return True
+        first = os.path.expanduser(parts[0])
+        if os.sep in first:
+            target = Path(first) if os.path.isabs(first) else config.parent / first
+            return target.exists()
+        return shutil.which(first) is not None
 
     def check_servers(self, servers: dict, path: Path, rep: Report, ctx: str, writable: bool) -> dict:
         out = {}
@@ -43,6 +60,18 @@ class McpChecker:
                 rep.add("info", "MCP_SSE", path, f"{ctx}.{name}: SSE transport is deprecated")
             elif cfg.get("type") not in (None, "stdio", "http", "sse", "ws"):
                 rep.add("error", "MCP_TYPE", path, f"{ctx}.{name}: unknown type {cfg.get('type')!r}")
+            if (
+                kind == "stdio"
+                and isinstance(cfg.get("command"), str)
+                and not self._command_found(cfg["command"], path)
+            ):
+                rep.add(
+                    "info",
+                    "MCP_BROKEN",
+                    path,
+                    f"{ctx}.{name}: command {shlex.split(cfg['command'])[0]!r} not found; the server cannot "
+                    "start but its entry is still loaded",
+                )
             if (
                 cfg.get("command")
                 and " " in str(cfg["command"]).strip()
