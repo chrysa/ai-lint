@@ -3588,6 +3588,18 @@ def check_scopes(repo: Path, policy: dict, rep: Report) -> None:
             )
 
 
+WRITE_TOOLS = frozenset({"write", "edit", "multiedit", "notebookedit"})
+
+
+def _can_write(meta: dict[str, str]) -> bool:
+    """True when a subagent may write files: a write tool is listed, or no tool list restricts it."""
+    tools = (meta or {}).get("tools")
+    if not tools:
+        return True
+    listed = {t.strip().strip("[]'\"").lower() for t in re.split(r"[,\s]+", tools) if t.strip()}
+    return bool(listed & WRITE_TOOLS)
+
+
 def check_token_levers(repo: Path, policy: dict, rep: Report, stack: dict | None = None) -> None:
     if policy["tokens"]["prefer_cli_over_mcp"]:
         servers = load_json_file(repo / ".mcp.json").get("mcpServers") or {}
@@ -3618,17 +3630,29 @@ def check_token_levers(repo: Path, policy: dict, rep: Report, stack: dict | None
                     f"{len(servers)} MCP server(s) and no MAX_MCP_OUTPUT_TOKENS: a large tool "
                     "result can flood the context (default cap 25000, warns at 10000)",
                 )
+    kept: list[str] = []
     for sub in sorted((repo / ".claude" / "agents").glob("*.md")) if (repo / ".claude" / "agents").is_dir() else []:
         meta = frontmatter_of(sub)
         text = f"{sub.stem} {(meta or {}).get('description', '')}".lower()
         sub_model = policy["tokens"].get("subagent_model", "haiku")
         if re.search(r"\b(test|lint|log|triage|format)", text) and not (meta or {}).get("model"):
+            if _can_write(meta):
+                kept.append(sub.stem)
+                continue
             rep.add(
                 "info",
                 "TOKEN_SUBAGENT_MODEL",
                 sub,
-                f"mechanical subagent without 'model': consider model: {sub_model}",
+                f"mechanical read-only subagent without 'model': consider model: {sub_model}",
             )
+    if kept:
+        rep.add(
+            "info",
+            "TOKEN_SUBAGENT_MODEL",
+            repo / ".claude" / "agents",
+            f"{len(kept)} mechanical subagent(s) left on the inherited model because they can write "
+            f"(write tools declared or no tool restriction): {', '.join(kept[:5])}" + (" ..." if len(kept) > 5 else ""),
+        )
     heavy = [m.lower() for m in policy["tokens"].get("heavy_models", ["opus"])]
     preferred = policy["tokens"].get("preferred_model", "sonnet")
     user_s = read_text(config_dir() / "settings.json")
