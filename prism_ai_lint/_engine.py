@@ -3390,6 +3390,26 @@ def _unscoped_rules(root: Path, seen: set) -> list[tuple[Path, int]]:
     return out
 
 
+SENTENCE_END_RE = re.compile(r"(?<=[.!?])\s+")
+
+
+def shorten_description(desc: str, limit: int) -> str:
+    """A deterministic shorter description: whole leading sentences that fit `limit`, else a word-boundary cut."""
+    text = " ".join(desc.split())
+    if len(text) <= limit:
+        return text
+    kept = ""
+    for sentence in SENTENCE_END_RE.split(text):
+        candidate = f"{kept} {sentence}".strip()
+        if len(candidate) > limit:
+            break
+        kept = candidate
+    if kept:
+        return kept
+    cut = text[: limit - 1].rsplit(" ", 1)[0].rstrip(",;:")
+    return cut + "…"
+
+
 def _skill_listing(
     roots: list[Path], rep: Report, policy: dict, quiet_roots: frozenset[Path] = frozenset()
 ) -> list[tuple[Path, int]]:
@@ -3405,11 +3425,14 @@ def _skill_listing(
                 continue
             desc = meta.get("description", "") + meta.get("when_to_use", "")
             if len(desc) > limit and root not in quiet_roots:
+                short = shorten_description(desc, limit)
                 rep.add(
                     "info",
                     "TOKEN_SKILL_DESC",
                     sk,
-                    f"description {len(desc)} chars, listed every turn (target <= {limit})",
+                    f"description {len(desc)} chars, listed every turn (target <= {limit}); "
+                    f"shorter proposal, {len(short)} chars, ~{(len(desc) - len(short)) // 4} tokens/turn saved "
+                    f"(not applied): {short}",
                 )
             out.append((sk, (len(sk.parent.name) + min(len(desc), 1536) + 20) // 4))
         for ag in sorted(root.glob("agents/**/*.md")):
