@@ -12,6 +12,7 @@ import subprocess
 import sys
 from pathlib import Path
 
+from prism_ai_lint._markup import shorten_description
 from prism_ai_lint.content_validation import CriticalContentValidator
 from prism_ai_lint.report import Report
 from prism_ai_lint.restore_log import RestoreLog
@@ -560,13 +561,7 @@ class TuiApp:
                 break
 
     def _short_description(self, desc: str) -> str:
-        short, acc = [], 0
-        for s in re.split(r"(?<=[.!?])\s+", desc):
-            if acc + len(s) > self.limit and short:
-                break
-            short.append(s)
-            acc += len(s) + 1
-        return " ".join(short)[: self.limit]
+        return shorten_description(desc, self.limit)
 
     def _review_description(self, n: int, sk: Path) -> bool:
         text = self.services.read_text(sk) or ""

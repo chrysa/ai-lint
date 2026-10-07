@@ -43,3 +43,22 @@ def test_finding_message_has_the_proposal_and_file_is_untouched(linter_module, t
     assert "tokens/turn saved" in msg
     assert "(not applied)" in msg
     assert f.read_bytes() == before
+
+
+def test_report_and_interactive_review_share_one_shortener(linter_module):
+    from prism_ai_lint import _markup, tui_app
+
+    assert tui_app.shorten_description is _markup.shorten_description
+    assert linter_module.shorten_description is _markup.shorten_description
+
+
+def test_interactive_proposal_never_cuts_inside_a_word(linter_module):
+    from prism_ai_lint import tui_app
+
+    class Probe:
+        limit = 50
+
+    out = tui_app.TuiApp._short_description(Probe(), "word " * 200)
+    assert len(out) <= 50
+    assert out.endswith("…")
+    assert not out[:-1].endswith("wor")
