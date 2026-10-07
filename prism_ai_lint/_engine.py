@@ -1455,12 +1455,9 @@ def check_settings(path: Path, base: Path, scope: str, policy: dict, rep: Report
 
     for k in data:
         if k not in KNOWN_SETTINGS_KEYS and k != "mcpServers":
-            rep.add(
-                "info",
-                "SETTINGS_UNKNOWN_KEY",
-                path,
-                f"unrecognised key {k!r} (schema may be newer)",
-            )
+            close = difflib.get_close_matches(k, KNOWN_SETTINGS_KEYS, n=1, cutoff=0.8)
+            hint = f"; did you mean {close[0]!r}?" if close else " (schema may be newer)"
+            rep.add("info", "SETTINGS_UNKNOWN_KEY", path, f"unrecognised key {k!r}{hint} (docs snapshot 2026-09)")
         if scope == "project" and k in PROJECT_DEAD_KEYS:
             # A key a project settings file cannot set (managed-settings only) is
             # dead here: removing it changes nothing at runtime and only ever
