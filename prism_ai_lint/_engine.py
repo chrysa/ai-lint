@@ -79,6 +79,7 @@ from prism_ai_lint._markup import (  # noqa: E402
     import_targets,
     move_to_metadata,
     set_frontmatter,
+    shorten_description,
     slugify,
     split_frontmatter,
     strip_code,
@@ -3385,26 +3386,6 @@ def _unscoped_rules(root: Path, seen: set) -> list[tuple[Path, int]]:
         if not meta or "paths" not in meta:
             out += _with_imports(f, seen)
     return out
-
-
-SENTENCE_END_RE = re.compile(r"(?<=[.!?])\s+")
-
-
-def shorten_description(desc: str, limit: int) -> str:
-    """A deterministic shorter description: whole leading sentences that fit `limit`, else a word-boundary cut."""
-    text = " ".join(desc.split())
-    if len(text) <= limit:
-        return text
-    kept = ""
-    for sentence in SENTENCE_END_RE.split(text):
-        candidate = f"{kept} {sentence}".strip()
-        if len(candidate) > limit:
-            break
-        kept = candidate
-    if kept:
-        return kept
-    cut = text[: limit - 1].rsplit(" ", 1)[0].rstrip(",;:")
-    return cut + "…"
 
 
 def _skill_listing(

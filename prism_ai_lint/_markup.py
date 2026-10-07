@@ -166,3 +166,23 @@ def move_to_metadata(text: str, keys: list[str]) -> str:
     else:
         keep[meta_idx] = [re.sub(r"^metadata\s*:.*$", "metadata:", keep[meta_idx][0])] + keep[meta_idx][1:] + block
     return "---\n" + "\n".join(l for e in keep for l in e) + "\n---" + body
+
+
+SENTENCE_END_RE = re.compile(r"(?<=[.!?])\s+")
+
+
+def shorten_description(desc: str, limit: int) -> str:
+    """A deterministic shorter description: whole leading sentences that fit `limit`, else a word-boundary cut."""
+    text = " ".join(desc.split())
+    if len(text) <= limit:
+        return text
+    kept = ""
+    for sentence in SENTENCE_END_RE.split(text):
+        candidate = f"{kept} {sentence}".strip()
+        if len(candidate) > limit:
+            break
+        kept = candidate
+    if kept:
+        return kept
+    cut = text[: limit - 1].rsplit(" ", 1)[0].rstrip(",;:")
+    return cut + "…"
