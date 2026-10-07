@@ -3514,8 +3514,13 @@ def token_budget(repo: Path | None, user: bool, policy: dict, rep: Report) -> di
             )
             if advice and not LLMTRIM["path"]:
                 rep.add("info", "LLMTRIM_SUGGESTED", repo or cfg, advice)
+    heaviest = sorted(
+        ((short_path(str(p)), t) for k, items in parts.items() if k != "mcp" for p, t in items),
+        key=lambda x: -x[1],
+    )[:5]
     return {
         "total": total,
+        "heaviest": [{"item": name, "tokens": tokens} for name, tokens in heaviest],
         "parts": {k: [(str(p), t) for p, t in v] for k, v in parts.items()},
         "sums": {k: sum(t for _, t in v) for k, v in parts.items()},
         "groups": [{"group": g, "items": n, "tokens": t} for g, n, t in grouped],
@@ -3716,6 +3721,10 @@ def render_token_budget(budget: dict, color: bool, before: dict | None = None) -
     if groups:
         lines.append("  biggest groups:")
         lines += [f"    {g_['group']:52} {g_['items']:>4} item(s)  ~{g_['tokens']}" for g_ in groups]
+    heavy = budget.get("heaviest", [])
+    if heavy:
+        lines.append("  heaviest items:")
+        lines += [f"    {h['item']:52} ~{h['tokens']}" for h in heavy]
     if budget.get("potential"):
         lines.append(
             f"  {g}potential: ~{budget['potential']} tokens/session reclaimable"
