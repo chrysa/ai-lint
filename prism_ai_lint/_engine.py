@@ -3901,6 +3901,11 @@ def session_duplicates(user_roots: list[Path], project_roots: list[Path]) -> lis
     return out
 
 
+def suggest_keeper(members: list[dict]) -> dict:
+    """The member worth keeping among near-duplicates: the richest description, then the shortest path."""
+    return min(members, key=lambda m: (-len(m["desc"]), len(str(m["path"])), str(m["path"])))
+
+
 def check_duplicates(user_roots: list[Path], project_roots: list[Path], rep: Report) -> list[tuple[str, list[dict]]]:
     dups = session_duplicates(user_roots, project_roots)
     rep.stats["duplicate groups"] = len(dups)
@@ -3919,11 +3924,13 @@ def check_duplicates(user_roots: list[Path], project_roots: list[Path], rep: Rep
             )
             continue
         level = "warn" if why in ("DUP_EXACT", "DUP_NAME") else "info"
+        keeper = suggest_keeper(members)
         rep.add(
             level,
             why,
             members[0]["path"],
-            f"{len(members)} items loaded together: {names} (review with -i)",
+            f"{len(members)} items loaded together: {names}; suggested keeper: "
+            f"{keeper['kind']}:{keeper['name']}; nothing is moved until you run -i",
         )
     copies: dict[str, int] = {}
     for pr in project_roots:
