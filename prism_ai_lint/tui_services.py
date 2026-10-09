@@ -40,3 +40,4 @@ class TuiServices:
     feedback_rows: Callable[[Report], list[dict]]
     proposal_edits: Callable[[dict, dict], dict[Path, tuple[str, str]]]
     redact: Callable[[str], str]
+    readonly_mechanical_agents: Callable[[list[Path]], list[Path]]

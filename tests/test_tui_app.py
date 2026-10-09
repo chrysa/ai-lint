@@ -310,3 +310,41 @@ def test_setup_flow_counts_generated_paths(review, capsys):
     assert "Instructions: 1" in out
     assert "Settings: 1" in out
     assert "Hooks: 1" in out
+
+
+def _agent(root, name, tools, desc="Run the test suite and summarize failures"):
+    path = root / "agents" / f"{name}.md"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fm = f"---\nname: {name}\ndescription: {desc}\n" + (f"tools: {tools}\n" if tools else "") + "---\nbody\n"
+    path.write_text(fm)
+    return path, fm
+
+
+def test_subagent_model_offer_applies_with_working_undo(review, monkeypatch):
+    mod, repo, cfg, policy, report = review
+    path, old = _agent(cfg, "test-runner", "Read, Grep, Bash")
+    answers(monkeypatch, ["", "o"])
+    app = mod._tui_app()
+    assert app.run(report, [repo], policy, True) == 1
+    assert "model: haiku" in path.read_text()
+    subprocess.run(["sh", str(app.restore.script)], check=True)
+    assert path.read_text() == old
+
+
+def test_subagent_model_offer_skips_agents_that_can_write(review, monkeypatch):
+    mod, repo, cfg, policy, report = review
+    path, old = _agent(cfg, "test-fixer", "Read, Edit, Write")
+    answers(monkeypatch, ["", "o"])
+    app = mod._tui_app()
+    app.run(report, [repo], policy, True)
+    assert app.agent_models == []
+    assert path.read_text() == old
+
+
+def test_subagent_model_declined_leaves_the_file_identical(review, monkeypatch):
+    mod, repo, cfg, policy, report = review
+    path, old = _agent(cfg, "log-triage", "Read, Grep")
+    answers(monkeypatch, ["", ""])
+    app = mod._tui_app()
+    app.run(report, [repo], policy, True)
+    assert path.read_text() == old

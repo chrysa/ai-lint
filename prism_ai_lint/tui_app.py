@@ -39,6 +39,7 @@ class TuiApp:
             "families": self._review_families,
             "restructure": self._review_proposals,
             "descriptions": self._review_descriptions,
+            "agentmodels": self._review_agent_models,
             "misc": self._review_misc,
         }
 
@@ -234,6 +235,7 @@ class TuiApp:
         self.props = self.services.compute_proposals(self.roots, self.repos, self.policy)
         self.limit = self.policy["tokens"]["skill_description_chars"]
         self._description_inventory()
+        self.agent_models = self.services.readonly_mechanical_agents(list(self.roots))
         self.udata = self.services.load_json_file(self.cfg / "settings.json")
         self.misc = []
         if "opus" in str(self.udata.get("model", "")).lower():
@@ -273,6 +275,11 @@ class TuiApp:
                 len(self.props),
             ),
             ("descriptions", f"Descriptions de skills trop longues ({len(self.long_desc)})", len(self.long_desc)),
+            (
+                "agentmodels",
+                f"Sous-agents mécaniques en lecture seule sans modèle ({len(self.agent_models)})",
+                len(self.agent_models),
+            ),
             ("misc", f"Modèle par défaut et serveurs MCP ({len(self.misc)})", len(self.misc)),
         ]
         self.sections = [s for s in self.sections if s[2]]
@@ -559,6 +566,35 @@ class TuiApp:
         for number, path in enumerate(self.long_desc, 1):
             if not self._review_description(number, path):
                 break
+
+    def _review_agent_models(self) -> None:
+        self._section_rule(f"MODÈLE DES SOUS-AGENTS ({len(self.agent_models)})")
+        model = self.policy["tokens"].get("subagent_model", "haiku")
+        print(
+            f"  {self.t.dim}Ces sous-agents lisent sans écrire et n'ont pas de modèle : ils héritent du modèle "
+            f"principal. Un modèle plus petit ({model}, réglable dans [tokens] subagent_model) coûte moins. "
+            f"Jamais appliqué automatiquement : c'est un choix de qualité.{self.t.r}"
+        )
+        for number, path in enumerate(self.agent_models, 1):
+            text = self.services.read_text(path) or ""
+            desc = (self.services.split_frontmatter(text)[0] or {}).get("description", "")
+            print(
+                f"\n{self.t.b}[{number}/{len(self.agent_models)}] {path.stem}{self.t.r} {self.t.dim}{desc[:120]}{self.t.r}"
+            )
+            ans = (
+                "" if self.full_yes else self.services._ask(f"  o = model: {model} · Entrée = passer · q = fin : ", "")
+            ).lower()
+            if ans == "q":
+                return
+            if ans != "o":
+                self._count(SKIPPED_ACTIONS)
+                continue
+            try:
+                self._write_text(path, self.services.set_frontmatter(text, {"model": model}))
+            except OSError as error:
+                self._failure(error)
+                continue
+            self._count("modèles de sous-agents")
 
     def _short_description(self, desc: str) -> str:
         return shorten_description(desc, self.limit)
