@@ -3604,6 +3604,26 @@ def _can_write(meta: dict[str, str]) -> bool:
     return bool(listed & WRITE_TOOLS)
 
 
+MECHANICAL_RE = re.compile(r"\b(test|lint|log|triage|format)")
+
+
+def mechanical_agents(claude_dir: Path) -> list[tuple[Path, dict[str, str]]]:
+    """Subagents of `claude_dir/agents` that look mechanical (tests, lint, logs...) and set no model."""
+    agents = claude_dir / "agents"
+    found = []
+    for sub in sorted(agents.glob("*.md")) if agents.is_dir() else []:
+        meta = frontmatter_of(sub)
+        text = f"{sub.stem} {(meta or {}).get('description', '')}".lower()
+        if MECHANICAL_RE.search(text) and not (meta or {}).get("model"):
+            found.append((sub, meta))
+    return found
+
+
+def readonly_mechanical_agents(claude_dirs: list[Path]) -> list[Path]:
+    """Writable, mechanical, read-only subagents without a model: the ones a cheaper model can take."""
+    return [sub for d in claude_dirs for sub, meta in mechanical_agents(d) if not _can_write(meta) and _writable(sub)]
+
+
 def check_token_levers(repo: Path, policy: dict, rep: Report, stack: dict | None = None) -> None:
     if policy["tokens"]["prefer_cli_over_mcp"]:
         servers = load_json_file(repo / ".mcp.json").get("mcpServers") or {}
@@ -3635,20 +3655,17 @@ def check_token_levers(repo: Path, policy: dict, rep: Report, stack: dict | None
                     "result can flood the context (default cap 25000, warns at 10000)",
                 )
     kept: list[str] = []
-    for sub in sorted((repo / ".claude" / "agents").glob("*.md")) if (repo / ".claude" / "agents").is_dir() else []:
-        meta = frontmatter_of(sub)
-        text = f"{sub.stem} {(meta or {}).get('description', '')}".lower()
-        sub_model = policy["tokens"].get("subagent_model", "haiku")
-        if re.search(r"\b(test|lint|log|triage|format)", text) and not (meta or {}).get("model"):
-            if _can_write(meta):
-                kept.append(sub.stem)
-                continue
-            rep.add(
-                "info",
-                "TOKEN_SUBAGENT_MODEL",
-                sub,
-                f"mechanical read-only subagent without 'model': consider model: {sub_model}",
-            )
+    sub_model = policy["tokens"].get("subagent_model", "haiku")
+    for sub, meta in mechanical_agents(repo / ".claude"):
+        if _can_write(meta):
+            kept.append(sub.stem)
+            continue
+        rep.add(
+            "info",
+            "TOKEN_SUBAGENT_MODEL",
+            sub,
+            f"mechanical read-only subagent without 'model': consider model: {sub_model}",
+        )
     if kept:
         rep.add(
             "info",
@@ -5146,6 +5163,7 @@ def _tui_app() -> TuiApp:
             feedback_rows=lambda report: [finding_feedback(finding) for finding in report.findings],
             proposal_edits=proposal_edits,
             redact=redact,
+            readonly_mechanical_agents=readonly_mechanical_agents,
         )
     )
 
