@@ -509,3 +509,18 @@ def model_status(name: str) -> str:
     if base in CURRENT_MODELS:
         return "current"
     return "legacy" if base in LEGACY_MODELS else ""
+
+
+MODEL_ALIASES = {"sonnet", "opus", "haiku", "fable"}
+
+
+def safe_model(value: object, fallback: str) -> str:
+    """A model name that is safe to write into settings or frontmatter: a known alias or a known id.
+
+    Policy files come from the scanned project and are untrusted: anything else (a route name, a
+    string with a newline, a path) is replaced by `fallback`, so a repository cannot choose what is
+    written into the user's own configuration."""
+    name = str(value).strip().lower()
+    if name in MODEL_ALIASES or model_status(name):
+        return name
+    return fallback
