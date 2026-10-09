@@ -27,9 +27,14 @@ def _py_repo(tmp_path):
 
 def test_generate_preview_is_readonly(env, tmp_path):
     repo = _py_repo(tmp_path)
-    before = sorted(p.name for p in repo.rglob("*"))
+
+    def listing():
+        # .git is excluded: git may run background maintenance (maintenance.lock) between the two listings
+        return sorted(str(p.relative_to(repo)) for p in repo.rglob("*") if ".git" not in p.relative_to(repo).parts)
+
+    before = listing()
     proc = env.run(str(repo), "--generate", "--no-cli", "--no-history", expect_ok=True)
-    after = sorted(p.name for p in repo.rglob("*"))
+    after = listing()
     assert before == after, "preview must not write anything"
     assert proc.stdout
 
