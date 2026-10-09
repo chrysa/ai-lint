@@ -252,14 +252,14 @@ def test_model_change_has_working_undo_script(review, monkeypatch, heavy):
     assert path.read_text() == old
 
 
-def test_model_review_follows_the_policy_preferred_model(review, monkeypatch):
+def test_model_review_follows_a_known_policy_model(review, monkeypatch):
     mod, repo, cfg, policy, report = review
-    policy["tokens"]["preferred_model"] = "my-default-route"
+    policy["tokens"]["preferred_model"] = "claude-sonnet-5-5"
     (cfg / "settings.json").write_text('{"model": "claude-fable-5-1"}')
     answers(monkeypatch, ["", "o"])
     app = mod._tui_app()
     app.run(report, [repo], policy, True)
-    assert json.loads((cfg / "settings.json").read_text())["model"] == "my-default-route"
+    assert json.loads((cfg / "settings.json").read_text())["model"] == "claude-sonnet-5-5"
 
 
 def test_light_default_model_is_not_offered_a_change(review, monkeypatch):

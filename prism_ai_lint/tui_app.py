@@ -13,6 +13,7 @@ import sys
 from pathlib import Path
 
 from prism_ai_lint._markup import shorten_description
+from prism_ai_lint._reference import safe_model
 from prism_ai_lint.content_validation import CriticalContentValidator
 from prism_ai_lint.report import Report
 from prism_ai_lint.restore_log import RestoreLog
@@ -569,7 +570,7 @@ class TuiApp:
 
     def _review_agent_models(self) -> None:
         self._section_rule(f"MODÈLE DES SOUS-AGENTS ({len(self.agent_models)})")
-        model = self.policy["tokens"].get("subagent_model", "haiku")
+        model = safe_model(self.policy["tokens"].get("subagent_model", "haiku"), "haiku")
         print(
             f"  {self.t.dim}Ces sous-agents lisent sans écrire et n'ont pas de modèle : ils héritent du modèle "
             f"principal. Un modèle plus petit ({model}, réglable dans [tokens] subagent_model) coûte moins. "
@@ -649,7 +650,7 @@ class TuiApp:
         return any(h in model.lower() for h in heavy)
 
     def _review_model(self) -> None:
-        preferred = self.policy["tokens"].get("preferred_model", "sonnet")
+        preferred = safe_model(self.policy["tokens"].get("preferred_model", "sonnet"), "sonnet")
         print(
             f"Modèle par défaut : {self.t.b}{self.udata['model']}{self.t.r}. "
             "Ce modèle sert à chaque session et aux subagents qui en héritent."
