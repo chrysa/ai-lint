@@ -57,6 +57,7 @@ section banners:
 | `prism_ai_lint/tui_app.py` | `TuiApp` (interactive terminal review) and `TuiServices` provide structured feedback, section selection, critical-diff approval, conversion flows and readiness signals. |
 | `prism_ai_lint/plugin_registry.py` | `CheckContext`, `PluginAPI`, `PluginRegistry` for user-defined checks via plugins. |
 | `prism_ai_lint/finding.py`, `report.py`, `feedback_renderer.py` | Core finding/report model + rendering layer. |
+| `prism_ai_lint/portfolio_checker.py` | `PortfolioChecker`: when several projects are scanned in one run, groups agents and skills copied identically into at least `[portfolio] min_projects` of them; the engine reports one `PORTFOLIO_COPIED` (info) per pack with its cost per session and its drift. Needs a multi-project run (a folder of repositories). |
 | `prism_ai_lint/pdf_checker.py` | `PdfChecker`: PDFs inside `.claude/` or referenced from instruction files, at or above `tokens.pdf_min_bytes`; the engine reports `PDF_HEAVY` (info). Read-only, never converts. |
 | `prism_ai_lint/compression_checker.py` | `CompressionChecker`: rtk, llmtrim and a local gateway found in settings; two or more layers give `COMPRESSION_DOUBLE` (info). |
 | `prism_ai_lint/issue_reporter.py` | `Anonymizer` and `IssueReporter`: anonymized Markdown for unfixed findings (`--report-issue`), local preview only. Policy `[reporting]`. |

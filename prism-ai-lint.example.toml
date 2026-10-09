@@ -55,6 +55,9 @@ side_effect_words = ["deploy", "release", "publish", "push", "send", "delete", "
 [mcp]
 max_servers = 6
 
+[portfolio]
+min_projects = 5
+
 [reference]
 extra_settings_keys = []
 extra_hook_events = []
