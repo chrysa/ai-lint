@@ -92,11 +92,13 @@ from prism_ai_lint._reference import (
     AGENTS_SKELETON,
     ATTRIBUTION_PATTERNS,
     COMMIT_MSG_HOOK,
+    CURRENT_MODELS,
     HOOK_SIGNATURE,
     KNOWN_HOOK_EVENTS,
     KNOWN_SETTINGS_KEYS,
     KNOWN_TOOLS,
     LEGACY_TOOLS,
+    MODEL_SNAPSHOT,
     NO_MATCHER_EVENTS,
     PATH_TOOL_REMAP,
     PRE_COMPACT_HOOK,
@@ -110,6 +112,7 @@ from prism_ai_lint._reference import (
     SKILL_FIELDS,
     SPECIFIER_TOOLS,
     _is_attribution,
+    model_status,
 )
 from prism_ai_lint._runtime import (
     _loc,
@@ -3273,7 +3276,7 @@ DEFAULT_POLICY["tokens"] = {
     # default model, the models it considers heavy (flagged as a session default),
     # a lighter model for mechanical subagents, and an effort ceiling.
     "preferred_model": "sonnet",  # recommended default model for a session
-    "heavy_models": ["opus"],  # models flagged when set as the session default
+    "heavy_models": ["opus", "fable"],  # models flagged when set as the session default
     "subagent_model": "haiku",  # suggested model for mechanical subagents
     "max_effort": "high",  # effortLevel above this is flagged; "" disables the check
     "effort_levels": ["low", "medium", "high"],  # ordered, low to high
@@ -3329,6 +3332,10 @@ HINTS.update(
         "MCP_PREFER_CLI": (
             "A CLI adds no per-tool listing: prefer it to the MCP server when installed.",
             DOCS + "costs#reduce-mcp-server-overhead",
+        ),
+        "MODEL_LEGACY": (
+            "Older model ids stay available, but the current generation is the recommended one.",
+            "https://platform.claude.com/docs/en/about-claude/models/overview",
         ),
         "TOKEN_MODEL": (
             "Sonnet handles most coding tasks; reserve Opus for complex reasoning.",
@@ -3683,7 +3690,7 @@ def check_token_levers(repo: Path, policy: dict, rep: Report, stack: dict | None
             f"{len(kept)} mechanical subagent(s) left on the inherited model because they can write "
             f"(write tools declared or no tool restriction): {', '.join(kept[:5])}" + (" ..." if len(kept) > 5 else ""),
         )
-    heavy = [m.lower() for m in policy["tokens"].get("heavy_models", ["opus"])]
+    heavy = [m.lower() for m in policy["tokens"].get("heavy_models", ["opus", "fable"])]
     preferred = policy["tokens"].get("preferred_model", "sonnet")
     user_s = read_text(config_dir() / "settings.json")
     try:
@@ -3698,6 +3705,20 @@ def check_token_levers(repo: Path, policy: dict, rep: Report, stack: dict | None
             f"default model {model!r}: heavy model for every session and inheriting subagents "
             f"(prefer {preferred}, escalate per task)",
         )
+    for f in (
+        config_dir() / "settings.json",
+        repo / ".claude" / "settings.json",
+        repo / ".claude" / "settings.local.json",
+    ):
+        pinned = str(load_json_file(f).get("model", ""))
+        if model_status(pinned) == "legacy":
+            rep.add(
+                "info",
+                "MODEL_LEGACY",
+                f,
+                f"model {pinned!r} is a previous generation (docs snapshot {MODEL_SNAPSHOT}); "
+                f"current: {', '.join(sorted(CURRENT_MODELS))}",
+            )
     check_effort_levels(repo, policy, rep)
     stack = stack or detect_stack(repo)
     typed = stack["python"] or bool(stack["pm"])
@@ -4636,6 +4657,11 @@ BRIEF_FR = {
         "serveur MCP alors que la CLI équivalente est installée",
         "retirer le serveur (gh fait le travail)",
     ),
+    "MODEL_LEGACY": (
+        "tokens",
+        "modèle d'une génération précédente",
+        "passer à la gamme actuelle",
+    ),
     "TOKEN_SUBAGENT_MODEL": (
         "tokens",
         "subagents mécaniques sans modèle léger",
@@ -4783,6 +4809,11 @@ BRIEF_EN = {
         "tokens",
         "MCP server while the equivalent CLI is installed",
         "remove the server (gh does the job)",
+    ),
+    "MODEL_LEGACY": (
+        "tokens",
+        "model from a previous generation",
+        "move to the current lineup",
     ),
     "TOKEN_SUBAGENT_MODEL": (
         "tokens",
