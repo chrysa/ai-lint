@@ -113,6 +113,7 @@ from prism_ai_lint._reference import (
     SPECIFIER_TOOLS,
     _is_attribution,
     model_status,
+    safe_model,
 )
 from prism_ai_lint._runtime import (
     _loc,
@@ -3671,7 +3672,7 @@ def check_token_levers(repo: Path, policy: dict, rep: Report, stack: dict | None
                     "result can flood the context (default cap 25000, warns at 10000)",
                 )
     kept: list[str] = []
-    sub_model = policy["tokens"].get("subagent_model", "haiku")
+    sub_model = safe_model(policy["tokens"].get("subagent_model", "haiku"), "haiku")
     for sub, meta in mechanical_agents(repo / ".claude"):
         if _can_write(meta):
             kept.append(sub.stem)
@@ -3691,7 +3692,7 @@ def check_token_levers(repo: Path, policy: dict, rep: Report, stack: dict | None
             f"(write tools declared or no tool restriction): {', '.join(kept[:5])}" + (" ..." if len(kept) > 5 else ""),
         )
     heavy = [m.lower() for m in policy["tokens"].get("heavy_models", ["opus", "fable"])]
-    preferred = policy["tokens"].get("preferred_model", "sonnet")
+    preferred = safe_model(policy["tokens"].get("preferred_model", "sonnet"), "sonnet")
     user_s = read_text(config_dir() / "settings.json")
     try:
         model = str((json.loads(user_s) if user_s else {}).get("model", ""))

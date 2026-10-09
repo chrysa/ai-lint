@@ -53,10 +53,21 @@ def test_non_mechanical_agent_is_left_alone(linter_module, tmp_path):
     assert _findings(linter_module, tmp_path) == []
 
 
-def test_policy_model_is_used(linter_module, tmp_path):
+def test_policy_model_is_used_when_it_is_a_known_model(linter_module, tmp_path):
+    _agent(tmp_path, "test-runner", tools="Read")
+    pol = linter_module.load_policy(None, [tmp_path])
+    pol["tokens"]["subagent_model"] = "claude-haiku-5-5"
+    rep = linter_module.Report()
+    linter_module.check_token_levers(tmp_path, pol, rep)
+    assert "claude-haiku-5-5" in [f.message for f in rep.findings if f.code == "TOKEN_SUBAGENT_MODEL"][0]
+
+
+def test_unknown_policy_model_falls_back_to_the_default(linter_module, tmp_path):
     _agent(tmp_path, "test-runner", tools="Read")
     pol = linter_module.load_policy(None, [tmp_path])
     pol["tokens"]["subagent_model"] = "my-cheap-route"
     rep = linter_module.Report()
     linter_module.check_token_levers(tmp_path, pol, rep)
-    assert "my-cheap-route" in [f.message for f in rep.findings if f.code == "TOKEN_SUBAGENT_MODEL"][0]
+    message = [f.message for f in rep.findings if f.code == "TOKEN_SUBAGENT_MODEL"][0]
+    assert "my-cheap-route" not in message
+    assert "haiku" in message
