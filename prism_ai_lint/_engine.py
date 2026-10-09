@@ -4276,7 +4276,10 @@ def compute_proposals(roots: list[Path], repos: list[Path], policy: dict) -> lis
 
 
 def _local_marketplace(policy: dict) -> tuple[Path, str]:
-    name = policy["restructure"]["marketplace_name"]
+    # The policy comes from the scanned project: only a plain kebab-case name may reach the user's settings.
+    name = str(policy["restructure"]["marketplace_name"])
+    if not re.fullmatch(r"[a-z0-9][a-z0-9-]{0,63}", name):
+        name = "personal"
     return config_dir() / "local-marketplace", name
 
 
@@ -4405,7 +4408,7 @@ def _move_agent_pack(p: dict, mk: Path, restore: list[str]) -> tuple[str, str]:
         if dest.exists():
             dest = target / f"{slugify(f.parent.name)}-{f.name}"
         shutil.move(str(f), str(dest))
-        restore.append(f"mkdir -p '{f.parent}' && mv '{dest}' '{f}'")
+        restore.append(f"mkdir -p {shlex.quote(str(f.parent))} && mv {shlex.quote(str(dest))} {shlex.quote(str(f))}")
     for d in sorted({f.parent for f in p["files"]}, key=lambda x: -len(x.parts)):
         try:
             d.rmdir()
@@ -4424,7 +4427,7 @@ def _move_skill_family(p: dict, mk: Path, restore: list[str]) -> tuple[str, str]
         if dest.exists():
             dest = target / f"{slugify(d.parent.name)}-{d.name}"
         shutil.move(str(d), str(dest))
-        restore.append(f"mv '{dest}' '{d}'")
+        restore.append(f"mv {shlex.quote(str(dest))} {shlex.quote(str(d))}")
     desc = f"{len(p['dirs'])} {p['prefix']} skills"
     return plugin, desc
 
@@ -4473,7 +4476,7 @@ def _apply_command_proposal(p: dict, restore: list[str]) -> str:
     dest = p["root"] / "skills" / cmd_file.stem / "SKILL.md"
     dest.parent.mkdir(parents=True, exist_ok=True)
     shutil.move(str(cmd_file), str(dest))
-    restore.append(f"mv '{dest}' '{cmd_file}'; rmdir '{dest.parent}'")
+    restore.append(f"mv {shlex.quote(str(dest))} {shlex.quote(str(cmd_file))}; rmdir {shlex.quote(str(dest.parent))}")
     return f"/{cmd_file.stem} is now a skill (same command name)"
 
 
@@ -5182,7 +5185,7 @@ def _family_to_plugin(members: list[dict], name: str, policy: dict, restore: lis
     for m in members:
         dest = target / Path(m["path"]).name
         shutil.move(str(m["path"]), str(dest))
-        restore.append(f"mv '{dest}' '{m['path']}'")
+        restore.append(f"mv {shlex.quote(str(dest))} {shlex.quote(str(m['path']))}")
     _register_plugin(plugin, f"{len(members)} {members[0]['kind']}s ({name})", policy, restore)
     return f"plugin '{plugin}@{mname}' créé ; à installer (portée projet) là où il sert : /plugin → {mname}"
 
@@ -6596,7 +6599,9 @@ def _apply_conversions(converter: AgentConverter, roots: list[Path], source: str
         dest = trash_root / str(path.resolve()).lstrip("/")
         dest.parent.mkdir(parents=True, exist_ok=True)
         dest.write_text(old, encoding="utf-8")
-        restore.append(f"cp '{dest}' '{path.resolve()}'  # undo conversion of {path.name}")
+        restore.append(
+            f"cp {shlex.quote(str(dest))} {shlex.quote(str(path.resolve()))}  # undo conversion of {path.name.encode('unicode_escape').decode()}"
+        )
 
     any_applied = failed = False
     for root in roots:
