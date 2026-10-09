@@ -1,7 +1,6 @@
 # prism-ai-lint Makefile.
-# Structure and conventions based on Forge-Stack-Workshop/base-makefile
-# (lib tier: no docker-compose — prism-ai-lint is a dependency-free Python tool run
-# locally). shared-standards: invariant target names, single entry point (run
+# (No docker-compose: prism-ai-lint is a dependency-free Python tool run
+# locally.) Conventions: invariant target names, single entry point (run
 # every task through `make <target>`, never call ruff/pytest/mypy by hand),
 # caches kept out of the source tree.
 
@@ -10,7 +9,7 @@ SOURCE := prism_ai_lint prism-ai-lint.py
 TESTS := tests
 REPORTS_DIR := .reports
 
-# Keep tool caches out of the working tree (shared-standards).
+# Keep tool caches out of the working tree.
 export RUFF_CACHE_DIR := /tmp/prism-ai-lint-ruff-cache
 export MYPY_CACHE_DIR := /tmp/prism-ai-lint-mypy-cache
 
@@ -37,7 +36,7 @@ format:  ## Format with ruff
 typecheck:  ## Static type check (mypy)
 	@$(PY) -m mypy
 
-type-check: typecheck  ## Alias for typecheck (shared-standards name)
+type-check: typecheck  ## Alias for typecheck
 
 test:  ## Run the test suite
 	@$(PY) -m pytest -q
@@ -75,7 +74,7 @@ pre-commit-update:  ## Update pinned pre-commit hook versions
 
 check: lint typecheck test  ## Lint, type-check, then test
 
-# CI entry points (shared-standards / base-makefile names).
+# CI entry points.
 ci-lint: lint typecheck  ## CI: static checks only
 ci-test: test selfcheck  ## CI: tests + self-check
 ci: lint typecheck test selfcheck  ## Full CI gate

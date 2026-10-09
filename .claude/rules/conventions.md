@@ -1,4 +1,4 @@
-# shared-standards compliance for prism-ai-lint
+# Conventions for prism-ai-lint
 
 prism-ai-lint validates, repairs and guards agent configurations. These rules prevent regressions:
 

@@ -63,7 +63,7 @@ def _make_git_repo(path: Path, files: dict[str, str]) -> Path:
 
 
 def _build_user_scope(cfg: Path) -> None:
-    """~/.claude-perso equivalent: skills, subagents, agency pack, generated
+    """A custom CLAUDE_CONFIG_DIR equivalent: skills, subagents, agency pack, generated
     family, user hooks, settings, a leaked API key, signatures."""
     # settings.json with a hook pointing at a MISSING script
     _write(
@@ -162,13 +162,13 @@ def _build_projects(home: Path) -> list[Path]:
         capture_output=True,
     )
 
-    # a plugins dir: padam-claude-skills/plugins/*
+    # a plugins dir: example-skills/plugins/*
     _write(
-        home / "padam-claude-skills" / "plugins" / "demo" / "plugin.json",
+        home / "example-skills" / "plugins" / "demo" / "plugin.json",
         json.dumps({"name": "demo", "version": "0.1.0"}, indent=2),
     )
     _write(
-        home / "padam-claude-skills" / "plugins" / "demo" / "skills" / "hello" / "SKILL.md",
+        home / "example-skills" / "plugins" / "demo" / "skills" / "hello" / "SKILL.md",
         "---\nname: hello\ndescription: say hello\n---\n\nHi.\n",
     )
 
@@ -182,7 +182,7 @@ def env(tmp_path, monkeypatch):
     overridden."""
     home = tmp_path / "home"
     home.mkdir()
-    cfg = home / ".claude-perso"
+    cfg = home / ".claude-custom"
     cfg.mkdir()
     cache = home / ".cache"
     cache.mkdir()

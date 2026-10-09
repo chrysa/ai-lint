@@ -3,7 +3,7 @@ name: Release
 # On every push to main, compute the next version and release notes from the
 # Conventional Commits since the last tag (git-cliff — the version is derived,
 # never typed), then tag the commit and cut a GitHub release. One commit on main
-# = one release (shared-standards CI-045 / CI-048). No-op when there is nothing
+# = one release. No-op when there is nothing
 # new to release (git-cliff yields the same version).
 on:
   push:

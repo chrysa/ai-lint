@@ -76,11 +76,11 @@ pythonpath = ["."]
 addopts = "-ra -p no:query_optimizer -p no:django -p no:qt -p no:asyncio -p no:cacheprovider"
 
 [tool.ruff]
-line-length = 120  # shared-standards: max 120 chars
+line-length = 120
 target-version = "py313"
 
 [tool.ruff.lint]
-# shared-standards code-style: E, W, I, N, UP, B, plus BLE (never bare
+# Code style: E, W, I, N, UP, B, plus BLE (never bare
 # `except Exception` without justification) and B904 (raise ... from) via B.
 select = ["E", "F", "W", "I", "N", "UP", "B", "BLE"]
 # Line length (max 120) is enforced by `ruff format`, which lays out code to the

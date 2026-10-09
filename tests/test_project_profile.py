@@ -26,9 +26,9 @@ def test_detect_project_profile_python_cli(tmp_path):
 def test_detect_project_profile_standards_repo(tmp_path):
     repo = tmp_path / "standards"
     (repo / "standards" / "rules").mkdir(parents=True)
-    (repo / "standards" / "STANDARDS.chrysa.md").write_text("# Standards\n")
+    (repo / "standards" / "STANDARDS.example.md").write_text("# Standards\n")
 
-    markers = ("standards/STANDARDS.chrysa.md", "standards/rules")
+    markers = ("standards/STANDARDS.example.md", "standards/rules")
     profile = ProjectProfiler(repo, markers).detect_profile()
 
     assert profile["kind"] == "standards-repo"
@@ -39,7 +39,7 @@ def test_detect_project_profile_standards_repo(tmp_path):
 def test_standards_detection_is_off_without_policy_markers(tmp_path):
     repo = tmp_path / "standards"
     (repo / "standards" / "rules").mkdir(parents=True)
-    (repo / "standards" / "STANDARDS.chrysa.md").write_text("# Standards\n")
+    (repo / "standards" / "STANDARDS.example.md").write_text("# Standards\n")
     profile = ProjectProfiler(repo).detect_profile()
     assert profile["kind"] != "standards-repo"
     assert "standards" not in profile["signals"]

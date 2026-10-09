@@ -160,7 +160,7 @@ from prism_ai_lint.tui_services import TuiServices
 
 
 def _detect_version() -> str:
-    """The version is computed, never typed (shared-standards CI-045): prefer the
+    """The version is computed, never typed: prefer the
     installed package metadata, else the git tag, else a dev placeholder."""
     try:
         from importlib.metadata import PackageNotFoundError, version
