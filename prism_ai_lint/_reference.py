@@ -482,3 +482,30 @@ AGENTS_SKELETON = """# {name}
 - Ask before any action with external effects (push, release, deploy, DNS, secrets, messages).
 - Never add assistant attribution to commits, PRs, files or docs.
 """
+
+
+# Claude model lineup, docs snapshot 2026-10 (platform.claude.com models overview).
+# Tier order is cost order, cheapest first. Anything pinned to an id outside CURRENT_MODELS
+# is older: still available (LEGACY_MODELS) but not the recommended generation.
+CURRENT_MODELS = {"claude-haiku-5-5", "claude-sonnet-5-5", "claude-opus-5-5", "claude-fable-5-1"}
+LEGACY_MODELS = {
+    "claude-fable-5",
+    "claude-opus-5",
+    "claude-opus-4-8",
+    "claude-opus-4-7",
+    "claude-opus-4-6",
+    "claude-opus-4-5",
+    "claude-sonnet-5",
+    "claude-sonnet-4-6",
+    "claude-haiku-4-5",
+}
+MODEL_SNAPSHOT = "2026-10"
+
+
+def model_status(name: str) -> str:
+    """'current', 'legacy' or '' (an alias such as 'sonnet', or an id this snapshot does not know)."""
+    base = re.sub(r"(\[1m\])?$", "", name.strip().lower())
+    base = re.sub(r"-\d{8}$", "", base)
+    if base in CURRENT_MODELS:
+        return "current"
+    return "legacy" if base in LEGACY_MODELS else ""
