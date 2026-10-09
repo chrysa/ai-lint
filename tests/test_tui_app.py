@@ -238,10 +238,11 @@ def test_existing_skill_destination_is_not_overwritten(review, monkeypatch, caps
     assert "already exists" in capsys.readouterr().out
 
 
-def test_model_change_has_working_undo_script(review, monkeypatch):
+@pytest.mark.parametrize("heavy", ["opus", "claude-opus-5-5", "claude-fable-5-1"])
+def test_model_change_has_working_undo_script(review, monkeypatch, heavy):
     mod, repo, cfg, policy, report = review
     path = cfg / "settings.json"
-    old = '{"model": "opus"}'
+    old = json.dumps({"model": heavy})
     path.write_text(old)
     answers(monkeypatch, ["", "o"])
     app = mod._tui_app()
@@ -249,6 +250,25 @@ def test_model_change_has_working_undo_script(review, monkeypatch):
     assert json.loads(path.read_text())["model"] == "sonnet"
     subprocess.run(["sh", str(app.restore.script)], check=True)
     assert path.read_text() == old
+
+
+def test_model_review_follows_the_policy_preferred_model(review, monkeypatch):
+    mod, repo, cfg, policy, report = review
+    policy["tokens"]["preferred_model"] = "my-default-route"
+    (cfg / "settings.json").write_text('{"model": "claude-fable-5-1"}')
+    answers(monkeypatch, ["", "o"])
+    app = mod._tui_app()
+    app.run(report, [repo], policy, True)
+    assert json.loads((cfg / "settings.json").read_text())["model"] == "my-default-route"
+
+
+def test_light_default_model_is_not_offered_a_change(review, monkeypatch):
+    mod, repo, cfg, policy, report = review
+    (cfg / "settings.json").write_text('{"model": "claude-haiku-5-5"}')
+    answers(monkeypatch, [""])
+    app = mod._tui_app()
+    app.run(report, [repo], policy, True)
+    assert "model" not in app.misc
 
 
 def test_description_change_has_working_undo_script(review, monkeypatch):

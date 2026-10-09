@@ -238,7 +238,7 @@ class TuiApp:
         self.agent_models = self.services.readonly_mechanical_agents(list(self.roots))
         self.udata = self.services.load_json_file(self.cfg / "settings.json")
         self.misc = []
-        if "opus" in str(self.udata.get("model", "")).lower():
+        if self._is_heavy_default(str(self.udata.get("model", ""))):
             self.misc.append("model")
         self.misc += [f for f in rep.findings if f.code == "GENERATE_USER_MCP"]
 
@@ -643,20 +643,26 @@ class TuiApp:
             else:
                 self._review_mcp(item.message)
 
+    def _is_heavy_default(self, model: str) -> bool:
+        """True when the default model matches a heavy entry of the policy ([tokens] heavy_models)."""
+        heavy = [h.lower() for h in self.policy["tokens"].get("heavy_models", ["opus", "fable"])]
+        return any(h in model.lower() for h in heavy)
+
     def _review_model(self) -> None:
+        preferred = self.policy["tokens"].get("preferred_model", "sonnet")
         print(
             f"Modèle par défaut : {self.t.b}{self.udata['model']}{self.t.r}. "
-            "Opus sert à chaque session et aux subagents qui en héritent."
+            "Ce modèle sert à chaque session et aux subagents qui en héritent."
         )
         if not self.full_yes and (
             self.services._ask(
-                "  o = passer à Sonnet par défaut (/model opus au besoin) · Entrée = garder : ", ""
+                f"  o = passer à {preferred} par défaut (/model au besoin) · Entrée = garder : ", ""
             ).lower()
             != "o"
         ):
             self._count(SKIPPED_ACTIONS)
             return
-        self.udata["model"] = "sonnet"
+        self.udata["model"] = preferred
         self._write_text(self.cfg / "settings.json", self.services.dump_json(self.udata))
         self._count("modèle changé")
 
