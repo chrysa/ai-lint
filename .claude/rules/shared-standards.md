@@ -1,3 +1,7 @@
+---
+paths: "**/*.py"
+---
+
 # shared-standards compliance for ai-lint
 
 ai-lint validates, repairs and guards agent configurations. These rules prevent regressions:
