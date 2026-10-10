@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """CLI entry point. The implementation lives in the `prism_ai_lint` package
 (`prism_ai_lint/_engine.py`); this thin wrapper keeps the `./prism-ai-lint.py` invocation
-working. The package `__init__` is intentionally empty (shared-standards)."""
+working. The package `__init__` is intentionally empty."""
 
 import sys
 

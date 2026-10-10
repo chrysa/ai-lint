@@ -119,7 +119,7 @@ def test_edit_critical_content_requires_validation(guard_module, tmp_path):
 
 
 def test_write_critical_rule_requires_validation(guard_module, tmp_path):
-    f = tmp_path / ".claude" / "rules" / "shared-standards.md"
+    f = tmp_path / ".claude" / "rules" / "conventions.md"
     f.parent.mkdir(parents=True)
     f.write_text("# Rules\n")
 

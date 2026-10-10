@@ -17,13 +17,13 @@ No global install: everything runs through `make`, invoking `python3 -m ruff/pyt
 - The engine is imported directly (`import prism_ai_lint`) via the `linter_module` fixture — most
   unit tests call functions (`check_*`, `scaffold_*`, `guard_check`, `load_policy`) and
   assert on the resulting `Report.findings` / `new_files` / `edits`.
-- Integration tests use the `env` fixture: a miniature HOME + `~/.claude-perso` + sample
+- Integration tests use the `env` fixture: a miniature HOME + `a custom config dir` + sample
   repos, and `env.run(*args)` which invokes the **CLI as a subprocess** with `HOME` /
   `CLAUDE_CONFIG_DIR` overridden, so end-to-end output and exit codes are covered.
 - Coverage measures the subprocess too: when `COVERAGE_RUN` is set, `env.run` launches the
   CLI through `coverage run --parallel-mode`, and `make cov` runs `coverage combine`.
 - Globally-installed pytest plugins that assume a Django app are disabled in
-  `addopts` (`-p no:django` etc.). Some chrysa repos also need `-p no:query_optimizer`.
+  `addopts` (`-p no:django` etc.). Some projects need extra `-p no:<plugin>` flags.
 
 ## `make selfcheck` semantics
 

@@ -1,13 +1,10 @@
-# Shared standards mapping for prism-ai-lint
+# Project conventions
 
-prism-ai-lint must respect the standards maintained in [chrysa/shared-standards](https://github.com/chrysa/shared-standards). This file records how those standards apply to this repository without copying the full standards corpus into always-loaded agent context.
-
-Canonical source: `shared-standards/standards/STANDARDS.chrysa.md` and the generated agent views in `shared-standards/standards/rules/*.md`.
+These are the conventions prism-ai-lint follows for itself: how the repository stays legible to agents and to people, how tooling is configured, and which rules are gates. This file keeps them in one place without copying them into always-loaded agent context.
 
 ## Profile-aware adaptation
 
-shared-standards is normative, but prism-ai-lint applies it through the profile of the scanned
-project. The scanner must infer whether a repository is a CLI, library, full-stack app,
+The same conventions are applied to a scanned project through its profile. The scanner must infer whether a repository is a CLI, library, full-stack app,
 frontend, infrastructure repo, standards repo, game/tooling repo or config-only repo, then
 adapt the generated Claude rules, hooks, skills, MCP and findings accordingly. A standard that
 does not fit the detected profile is documented as not applicable or surfaced as an optional
@@ -15,9 +12,9 @@ recommendation, never forced blindly.
 
 ## Application model
 
-| Source standard | prism-ai-lint adaptation | Claude rule / enforcement |
+| Convention | prism-ai-lint adaptation | Claude rule / enforcement |
 |---|---|---|
-| Agent-legible repository | Keep `CLAUDE.md`, `AGENTS.md`, `ARCHITECTURE.md`, `DECISIONS.md`, `TESTING.md` current. | `.claude/rules/shared-standards.md` and `CLAUDE.md` point to this mapping. |
+| Agent-legible repository | Keep `CLAUDE.md`, `AGENTS.md`, `ARCHITECTURE.md`, `DECISIONS.md`, `TESTING.md` current. | `.claude/rules/conventions.md` and `CLAUDE.md` point to this document. |
 | Python packaging | `pyproject.toml` is the single source for Ruff, mypy, pytest and coverage. No `setup.py` / Python `setup.cfg`. | Review any tooling change against `pyproject.toml`; do not add side config files. |
 | Project architecture | prism-ai-lint is a repo-local CLI with a root `prism_ai_lint/` package for now. | D-011 is the local exception to the distributed-library `src/` rule. |
 | Tests | Python tests use pytest. `unittest.TestCase` and `unittest.mock` imports are not introduced. | Every behaviour change ships with a pytest test. |
@@ -31,14 +28,14 @@ recommendation, never forced blindly.
 
 ## Feedback expectations
 
-When a shared standard is adapted, ignored or downgraded for a scanned project, prism-ai-lint should
+When a convention is adapted, ignored or downgraded for a scanned project, prism-ai-lint should
 say so in the report. The user should see:
 
 - detected profile and confidence;
-- standards applied as gates;
-- standards treated as advice;
-- standards considered not applicable to this repo profile;
-- local decisions that override the fleet default;
+- conventions applied as gates;
+- conventions treated as advice;
+- conventions considered not applicable to this repo profile;
+- local decisions that override a default;
 - one concrete next action per unresolved risk.
 
 In `--format json`, the same adaptation must stay machine-readable through
@@ -51,11 +48,10 @@ implicit and lets another tool continue the review without guessing from prose.
 - `src/` layout is deferred because prism-ai-lint is currently a clone-and-run CLI, not a distributed public library. See D-011.
 - Object-oriented one-class-per-file is a target for future decomposition, not a requirement to rewrite the dense engine in this documentation-only change.
 - Container-first application runtime does not apply to the prism-ai-lint CLI itself; its portability requirement is stronger: standard library runtime, no install step.
-- Notion synchronization is not automated by this repo today. Keep repository docs truthful; log project-state changes externally when that workflow is available.
 
-## When to translate a shared standard into a Claude rule
+## When to translate a convention into a Claude rule
 
-Translate a standard into `.claude/rules/` when it is:
+Translate a convention into `.claude/rules/` when it is:
 
 1. stable across sessions;
 2. actionable during editing;

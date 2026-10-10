@@ -30,7 +30,7 @@ coverage signal. **How to apply:** turn off automatic analysis in SonarCloud, th
 The core ships generic defaults only. Repository-specific critical documents go in
 `[critical] extra_files` of that repository's `.prism-ai-lint.toml`; standards-repository markers go in
 `[profile] standards_markers`. This repository lists its own `docs/FIXER_POLICY.md`,
-`docs/SHARED_STANDARDS_MAPPING.md` and `docs/CLAUDE_CODE_BEST_PRACTICES.md`, so its guard
+`docs/CONVENTIONS.md` and `docs/CLAUDE_CODE_BEST_PRACTICES.md`, so its guard
 protection is unchanged (a test runs the guard against it). **Why:** prism-ai-lint is a standalone,
 public tool; hard-coding one ecosystem's file names in every scan was wrong for other users.
 **How to apply:** `extra_files` only adds protection; a guarded agent cannot remove entries
@@ -157,19 +157,15 @@ context and unsafe generation. **How to apply:** detect first, generate second; 
 info-level guidance when intent is unclear; ask interactively when the choice changes behaviour;
 never use adaptation to loosen config automatically.
 
-## D-014 · shared-standards is the normative base, mapped locally
-[chrysa/shared-standards](https://github.com/chrysa/shared-standards) is the external
-normative source for repo quality, Python tooling, CI/CD, documentation, security and agent
-legibility. prism-ai-lint records the local adaptation in
-[docs/SHARED_STANDARDS_MAPPING.md](docs/SHARED_STANDARDS_MAPPING.md) and translates the
-actionable subset into [.claude/rules/shared-standards.md](.claude/rules/shared-standards.md).
-**Why:** copying the whole standards corpus would bloat context and drift from the canon; a
-short mapping keeps the source of truth external while making the local exceptions explicit.
-The local exceptions are deliberate: root `prism_ai_lint/` package while prism-ai-lint is repo-local
-(D-011), zero runtime dependencies over container-first runtime, and gradual engine
-decomposition rather than a documentation-only rewrite. **Reverse:** only if prism-ai-lint becomes
-fully scaffolded by project-init with generated standards views; then replace the hand-written
-mapping with generated views from shared-standards.
+## D-014 · Conventions are written down in this repository
+The conventions prism-ai-lint follows for itself (repo legibility, Python tooling, CI/CD, documentation,
+security and agent legibility) live in [docs/CONVENTIONS.md](docs/CONVENTIONS.md), and the actionable
+subset is translated into [.claude/rules/conventions.md](.claude/rules/conventions.md).
+**Why:** a public tool must not depend on a document that lives outside it; a short, local file keeps
+context small while making the deliberate exceptions explicit: root `prism_ai_lint/` package while
+prism-ai-lint is repo-local (D-011), zero runtime dependencies over container-first runtime, and gradual
+engine decomposition. **Reverse:** if the conventions grow, split them by topic rather than copying an
+external corpus.
 
 ## D-013 · Claude Code best practices are mapped, not copied
 The official Claude Code best-practice guidance is captured as a compact prism-ai-lint mapping in
@@ -184,7 +180,7 @@ independent review. **Reverse:** only if the official guidance becomes directly 
 as a short machine-readable policy; until then, keep the mapping curated and dated.
 
 ## D-012 · Computed version + release-on-main (git-cliff)
-The version is **computed, never typed** (shared-standards CI-045): `VERSION` is
+The version is **computed, never typed** : `VERSION` is
 derived at runtime from package metadata, else `git describe`, else a dev
 placeholder. A push to `main` runs the Release workflow: git-cliff computes the
 next semver from the Conventional Commits since the last tag (`--bumped-version`),
@@ -194,19 +190,19 @@ builds the notes, and the commit is tagged `vX.Y.Z` with a matching GitHub relea
 is the single source of truth. git-cliff alone (no GitVersion/.NET) keeps the
 release job simple and works from zero tags. **How to apply:** never edit a
 version by hand; land Conventional Commits and let main cut the release.
-`cliff.toml` is copied from shared-standards.
+`cliff.toml` configures git-cliff.
 
 ## D-011 · Engine as a package with an empty `__init__` (not `src/`)
 The engine is a package `prism_ai_lint/` (`_engine.py` for now), with an **empty
 `__init__.py`**; callers import `prism_ai_lint._engine`. **Why:** the package layout
 satisfies "code split into modules" and lets `_engine` be broken into finer
 modules later (issue #3) without changing the import surface. `src/` layout is a
-shared-standards rule for **distributed libraries** with a public API; prism-ai-lint is
+common rule for **distributed libraries** with a public API; prism-ai-lint is
 a repo-local CLI (D-003) run from a clone, so a **root package** keeps
 `import prism_ai_lint._engine` working with no install and no `sys.path` hacks. The
 empty `__init__` follows the request/standard to keep package inits free of
 logic. **Reverse:** if published as an installable library, move to `src/` and add
-a public API in `__init__`. Other shared-standards points are met: all tool config
+a public API in `__init__`. Other common practices are met: all tool config
 in `pyproject.toml` `[tool.*]`, Conventional Commits, invariant local `make` shortcuts,
 CI wired directly to the tools, Ruff line-length 120, caches git-ignored.
 

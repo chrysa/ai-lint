@@ -6,6 +6,6 @@
 # before changing them, like CLAUDE.md, AGENTS.md and README.md.
 extra_files = [
   "docs/FIXER_POLICY.md",
-  "docs/SHARED_STANDARDS_MAPPING.md",
+  "docs/CONVENTIONS.md",
   "docs/CLAUDE_CODE_BEST_PRACTICES.md",
 ]

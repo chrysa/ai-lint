@@ -26,11 +26,11 @@ def test_legacy_config_files_are_critical(tmp_path):
 def test_docs_files_listed_in_policy_are_critical(tmp_path, monkeypatch):
     from prism_ai_lint._runtime import state
 
-    monkeypatch.setattr(state, "critical_extra", ("docs/FIXER_POLICY.md", "docs/SHARED_STANDARDS_MAPPING.md"))
+    monkeypatch.setattr(state, "critical_extra", ("docs/FIXER_POLICY.md", "docs/CONVENTIONS.md"))
     validator = CriticalContentValidator(repo_roots=[tmp_path])
     docs_path = tmp_path / "docs"
     docs_path.mkdir()
-    for name in ["FIXER_POLICY.md", "SHARED_STANDARDS_MAPPING.md"]:
+    for name in ["FIXER_POLICY.md", "CONVENTIONS.md"]:
         assert validator.is_critical(docs_path / name), f"docs/{name} should be critical"
 
 

@@ -28,7 +28,7 @@ Keep the always-loaded contract in `CLAUDE.md` concise.
 prism-ai-lint must profile the scanned project before judging or generating agent configuration.
 The detected stack, repository role, maturity, runtime constraints and local policy decide
 which checks are errors, warnings or advice. A Python CLI, a full-stack web app, a Unity game,
-a config-only repository and a shared standards repo should not receive the same generated
+a config-only repository and a documentation-only repo should not receive the same generated
 skills, MCP servers, permissions, hooks or documentation scaffold.
 
 Adaptation rules:
