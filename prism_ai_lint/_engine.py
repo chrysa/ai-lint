@@ -4188,6 +4188,39 @@ def _sections(text: str) -> list[tuple[str, list[str]]]:
     return out
 
 
+MANAGED_BLOCK_RE = re.compile(r"DO NOT EDIT|managed by|<!--\s*[\w.:-]+:(start|begin)\b", re.I)
+
+
+def _movable_section(lines: list[str]) -> bool:
+    """A section is movable only if it is a plain H2 body: no managed block, no H1 of another document."""
+    fence = False
+    for line in lines[1:]:
+        if re.match(r"^\s*(```|~~~)", line):
+            fence = not fence
+        if fence:
+            continue
+        if MANAGED_BLOCK_RE.search(line) or re.match(r"^#\s+\S", line):
+            return False
+    return True
+
+
+def _git_ignored(path: Path) -> bool:
+    """True when git ignores the path: a skill written there would never be committed."""
+    cwd = path.parent
+    while not cwd.is_dir() and cwd != cwd.parent:
+        cwd = cwd.parent
+    try:
+        r = subprocess.run(
+            ["git", "check-ignore", "-q", "--", str(path)],
+            cwd=cwd,
+            capture_output=True,
+            timeout=10,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return False
+    return r.returncode == 0
+
+
 def compute_proposals(roots: list[Path], repos: list[Path], policy: dict) -> list[dict]:
     pol = policy["restructure"]
     props: list[dict] = []
@@ -4319,7 +4352,12 @@ def compute_proposals(roots: list[Path], repos: list[Path], policy: dict) -> lis
         text = read_text(c) or ""
         for title, lines in _sections(text)[1:]:
             steps = sum(1 for l in lines if re.match(r"^\s*(\d+\.|-|\*)\s+", l))
-            if len(lines) >= policy["restructure"]["procedure_min_lines"] and steps >= 6:
+            if (
+                len(lines) >= policy["restructure"]["procedure_min_lines"]
+                and steps >= 6
+                and _movable_section(lines)
+                and not _git_ignored(_procedure_skill_path(c, title))
+            ):
                 props.append(
                     {
                         "kind": "procedure-to-skill",
@@ -4381,6 +4419,13 @@ def _register_plugin(plugin: str, desc: str, policy: dict, restore: list[str]) -
         backup([us])
         km[name] = {"source": {"source": "directory", "path": str(mk)}}
         us.write_text(dump_json(udata), encoding="utf-8")
+
+
+def _procedure_skill_path(path: Path, title: str) -> Path:
+    root = path.parent
+    if path.parent != config_dir() and path.parent.name != ".claude":
+        root = path.parent / ".claude"
+    return root / "skills" / slugify(title)[:40] / "SKILL.md"
 
 
 def proposal_edits(p: dict, policy: dict) -> dict[Path, tuple[str, str]]:
