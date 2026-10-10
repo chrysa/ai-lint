@@ -2732,6 +2732,8 @@ def rtk_report() -> str:
 GENERATE_POLICY = {
     "skip_user_duplicates": True,  # do not copy a skill or agent into a project when the user scope already has that name
     "project_settings": True,
+    "default_model": "haiku",  # model written into generated project settings when none is set ("" disables)
+    "default_effort": "low",  # effortLevel written into generated project settings when none is set ("" disables)
     "user_settings": True,
     "rtk_config": True,
     "format_hook": True,
@@ -3189,6 +3191,13 @@ def generate_project(repo: Path, policy: dict, rep: Report) -> None:
             "attribution": {"commit": "", "pr": ""},
             "permissions": generated_permissions(stack, policy),
         }
+        # The project file comes from an untrusted policy: only a known model alias and a known effort level may reach settings.
+        model = safe_model(g.get("default_model", ""), "") if g.get("default_model") else ""
+        effort = str(g.get("default_effort", "")).strip().lower()
+        if model:
+            wanted["model"] = model
+        if effort in ("low", "medium", "high"):
+            wanted["effortLevel"] = effort
         if g["format_hook"] and (stack["python"] or stack["pm"] or stack["terraform"]):
             gen_new_file(repo / ".claude" / "hooks" / "format.py", FORMAT_HOOK, rep, "formatter hook", 0o755)
             wanted["hooks"] = {

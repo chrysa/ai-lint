@@ -129,6 +129,8 @@ Runs only when agent config changes (`.claude/`, `CLAUDE.md`, `AGENTS.md`, `.mcp
 
 **Detection**: stacks (Python, Node, React, Docker, Kubernetes, Terraform, etc.) and the project profile (CLI, library, app, infra, config-only...), shown in every report and used by `--generate`. `--generate` does not copy a skill or agent into a project when your user scope already has one with that name (reported as `GENERATE_SKIPPED`); set `[generate] skip_user_duplicates = false` to copy it anyway.
 
+`--generate` also writes `model = "haiku"` and `effortLevel = "low"` into a project's `.claude/settings.json` when it has none (the cheapest session). A value already set is never changed. Set `[generate] default_model` or `default_effort` to `""` to disable, or to another known alias or level to change it.
+
 **Generation**: `.claude/settings.json`, hooks, skills (`/check`, `/review-changes`), subagents (`/test-runner`, `/security-auditor`), MCP servers, `.gitignore` secrets block, `CLAUDE.md` / `AGENTS.md` skeletons.
 
 **Optimization**: duplicates, families, long descriptions, token estimate, restructuring proposals (pack → plugin, skill → plugin, procedure → skill).
