@@ -79,6 +79,8 @@ standards_markers = []
 [generate]
 skip_user_duplicates = true
 project_settings = true
+default_model = "haiku"
+default_effort = "low"
 user_settings = true
 rtk_config = true
 format_hook = true

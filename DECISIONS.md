@@ -103,6 +103,12 @@ the console script entry point; CI release workflow builds and publishes the whe
 (requires `PYPI_API_TOKEN` secret). **Reverse:** only if distribution constraints
 or licensing change; until then, both install paths (git clone and pip) coexist.
 
+## D-020 · Generated settings default to the cheapest model and effort
+`--generate` writes `model = "haiku"` and `effortLevel = "low"` into a project's settings when
+absent (`[generate] default_model`, `default_effort`; `""` disables). **Why:** the tool ranks work by
+tokens saved; a project that never chose gets the cheapest session. An existing value always wins
+(`setdefault`), and the policy values are untrusted: only a known alias and a known level are written.
+
 ## D-019 · Critical content changes require human validation
 Guarded sessions block edits to critical content files: repo contracts (`CLAUDE.md`,
 `AGENTS.md`), public/project docs (`README.md`, `ARCHITECTURE.md`, `DECISIONS.md`,
