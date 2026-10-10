@@ -104,6 +104,7 @@ hold_cross_session = true
 compact_instructions = true
 mcp_server_estimate = 150
 agent_pack_tokens = 1000
+generated_min_tokens = 3000
 pdf_min_bytes = 200000
 preferred_model = "sonnet"
 heavy_models = ["opus", "fable"]
