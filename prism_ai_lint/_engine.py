@@ -3273,6 +3273,7 @@ DEFAULT_POLICY["tokens"] = {
     "compact_instructions": True,  # generated CLAUDE.md gets a compaction section
     "mcp_server_estimate": 150,  # deferred tool listing: names + server instructions, per server
     "agent_pack_tokens": 1000,  # warn when one agents/ subdirectory lists more than this
+    "generated_min_tokens": 3000,  # a generated file loaded every session above this size gets INSTR_GENERATED_LOADED
     "pdf_min_bytes": 200_000,  # PDFs in agent context at or above this size get PDF_HEAVY (info)
     # Configurable model / effort expectations. The token checks read these
     # instead of hard-coding "sonnet"/"opus": a team can set its own preferred
@@ -3339,6 +3340,10 @@ HINTS.update(
         "PORTFOLIO_COPIED": (
             "The same agents or skills in many projects are listed in every session of each one and drift apart.",
             DOCS + "sub-agents",
+        ),
+        "INSTR_GENERATED_LOADED": (
+            "A generated file is rebuilt by a script and is usually a registry or a dump; loading it whole in every session costs tokens for text nobody edits.",
+            DOCS + "memory#my-claude-md-is-too-large",
         ),
         "MODEL_LEGACY": (
             "Older model ids stay available, but the current generation is the recommended one.",
@@ -3455,6 +3460,20 @@ def listing_group(p: Path) -> str:
     return short_path(str(p))
 
 
+GENERATED_RE = re.compile(
+    r"auto-?generated|generated (by|from|with)|do not (edit|modify)( (it )?manually)?", re.IGNORECASE
+)
+
+
+def is_generated(path: Path) -> bool:
+    """True when the first lines of a file say it is generated and must not be edited by hand."""
+    try:
+        with open(path, encoding="utf-8", errors="ignore") as fh:
+            return bool(GENERATED_RE.search(fh.read(1200)))
+    except OSError:
+        return False
+
+
 def token_budget(repo: Path | None, user: bool, policy: dict, rep: Report) -> dict:
     seen: set = set()
     parts: dict[str, list[tuple[Path, int]]] = {
@@ -3517,6 +3536,15 @@ def token_budget(repo: Path | None, user: bool, policy: dict, rep: Report) -> di
             imported[0][0],
             f"{len(imported)} imported file(s), ~{sum(t for _, t in imported)} tokens loaded at launch",
         )
+    for gp, gt in parts["instructions"] + parts["rules"]:
+        if gt >= policy["tokens"]["generated_min_tokens"] and (user or cfg not in gp.parents) and is_generated(gp):
+            rep.add(
+                "info",
+                "INSTR_GENERATED_LOADED",
+                gp,
+                f"{gp.name} is generated ('do not edit') and holds ~{gt} tokens loaded at every session; "
+                "do not import it, point to it by path and read it only when needed",
+            )
     if total > policy["tokens"]["max_always_loaded"]:
         rep.add(
             "warn",
@@ -4672,6 +4700,11 @@ BRIEF_FR = {
         "mêmes agents ou skills copiés dans de nombreux projets",
         "les garder en un seul plugin, activé là où il sert",
     ),
+    "INSTR_GENERATED_LOADED": (
+        "tokens",
+        "fichier généré et lourd chargé à chaque session",
+        "ne pas l'importer : le citer par son chemin",
+    ),
     "MODEL_LEGACY": (
         "tokens",
         "modèle d'une génération précédente",
@@ -4829,6 +4862,11 @@ BRIEF_EN = {
         "tokens",
         "same agents or skills copied into many projects",
         "keep one copy as a plugin, enabled where it is used",
+    ),
+    "INSTR_GENERATED_LOADED": (
+        "tokens",
+        "heavy generated file loaded every session",
+        "do not import it: point to it by path",
     ),
     "MODEL_LEGACY": (
         "tokens",
