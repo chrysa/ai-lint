@@ -149,6 +149,7 @@ from prism_ai_lint.llmtrim_checker import LlmtrimChecker
 from prism_ai_lint.mcp_checker import McpChecker
 from prism_ai_lint.pdf_checker import PdfChecker
 from prism_ai_lint.plugin_registry import PluginRegistry
+from prism_ai_lint.portfolio_checker import PortfolioChecker
 from prism_ai_lint.project_profile import ProjectProfiler
 from prism_ai_lint.report import Report, configure_report_context
 from prism_ai_lint.restore_log import RestoreLog as RestoreLog
@@ -383,6 +384,7 @@ DEFAULT_POLICY: dict[str, Any] = {
         ],
     },
     "mcp": {"max_servers": 6},
+    "portfolio": {"min_projects": 5},  # a pack copied into at least this many scanned projects is reported
     # Reference data extensions: the ONLY table an audit agent may edit (the guard enforces it).
     # Lets the linter follow new docs (keys, events, tools, fields) without code changes.
     "reference": {
@@ -3334,6 +3336,10 @@ HINTS.update(
             "A CLI adds no per-tool listing: prefer it to the MCP server when installed.",
             DOCS + "costs#reduce-mcp-server-overhead",
         ),
+        "PORTFOLIO_COPIED": (
+            "The same agents or skills in many projects are listed in every session of each one and drift apart.",
+            DOCS + "sub-agents",
+        ),
         "MODEL_LEGACY": (
             "Older model ids stay available, but the current generation is the recommended one.",
             "https://platform.claude.com/docs/en/about-claude/models/overview",
@@ -4661,6 +4667,11 @@ BRIEF_FR = {
         "serveur MCP alors que la CLI équivalente est installée",
         "retirer le serveur (gh fait le travail)",
     ),
+    "PORTFOLIO_COPIED": (
+        "tokens",
+        "mêmes agents ou skills copiés dans de nombreux projets",
+        "les garder en un seul plugin, activé là où il sert",
+    ),
     "MODEL_LEGACY": (
         "tokens",
         "modèle d'une génération précédente",
@@ -4813,6 +4824,11 @@ BRIEF_EN = {
         "tokens",
         "MCP server while the equivalent CLI is installed",
         "remove the server (gh does the job)",
+    ),
+    "PORTFOLIO_COPIED": (
+        "tokens",
+        "same agents or skills copied into many projects",
+        "keep one copy as a plugin, enabled where it is used",
     ),
     "MODEL_LEGACY": (
         "tokens",
@@ -5604,6 +5620,22 @@ def scaffold_user(policy: dict, rep: Report) -> None:
 # --------------------------------------------------------------------------- #
 
 
+def check_portfolio(repos: list[Path], policy: dict, rep: Report) -> None:
+    """Report agents and skills copied identically into many of the scanned projects."""
+    for pack in PortfolioChecker(policy["portfolio"]["min_projects"]).packs(repos):
+        names = pack["names"]
+        shown = ", ".join(names[:3]) + (f" (+{len(names) - 3})" if len(names) > 3 else "")
+        drift = f"; {pack['versions']} versions have drifted" if pack["versions"] > 1 else ""
+        rep.add(
+            "info",
+            "PORTFOLIO_COPIED",
+            pack["first_path"],
+            f"{len(names)} item(s) ({shown}) are copied into {len(pack['projects'])} scanned projects: "
+            f"~{pack['tokens_per_project']} tokens listed per session in each{drift}; keep one copy as a "
+            "plugin or at user scope and enable it only where it is used",
+        )
+
+
 def lint_user(policy: dict, rep: Report, repos: list[Path]) -> str | None:
     home = config_dir()
     log(1, f"user scope: {home}")
@@ -5799,6 +5831,7 @@ def run_lint(repos: list[Path], policy: dict, args: argparse.Namespace, history:
         t0, before = time.perf_counter(), len(rep.findings)
         lint_repo(r, policy, rep, history, user_text)
         log(1, f"{r}: {len(rep.findings) - before} finding(s) in {time.perf_counter() - t0:.2f}s")
+    check_portfolio(repos, policy, rep)
     progress(len(repos), len(repos), "done", phase)
     log(1, f"{phase}: completed")
     if isinstance(rep.budget, dict):

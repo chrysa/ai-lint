@@ -106,6 +106,8 @@ prism-ai-lint . --user --fix       # include user scope (~/.claude)
 
 `--report-issue` prints an anonymized Markdown body for the findings that have no automatic fix (paths, hosts, e-mails, URLs, names and quoted values replaced by stable tokens; secrets removed). It is a local preview: nothing is ever sent. Forbid it with `PRISM_AI_LINT_REPORTING=off` or `[reporting] mode = "off"`.
 
+Run it on a folder of repositories to see what no single project shows: `PORTFOLIO_COPIED` reports a pack of agents or skills copied identically into many projects, with its cost per session and how far the copies have drifted.
+
 Token-saving signals (info): `PDF_HEAVY` (a large PDF the agent can load; export it to text) and `COMPRESSION_DOUBLE` (rtk, llmtrim or a local gateway stacked on the same traffic).
 
 Exit codes: `0` clean, `1` errors/warnings (`--strict`), `2` usage or guard block.
