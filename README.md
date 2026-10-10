@@ -127,7 +127,7 @@ Runs only when agent config changes (`.claude/`, `CLAUDE.md`, `AGENTS.md`, `.mcp
 
 ## Features
 
-**Detection**: stacks (Python, Node, React, Docker, Kubernetes, Terraform, etc.) and the project profile (CLI, library, app, infra, config-only...), shown in every report and used by `--generate`.
+**Detection**: stacks (Python, Node, React, Docker, Kubernetes, Terraform, etc.) and the project profile (CLI, library, app, infra, config-only...), shown in every report and used by `--generate`. `--generate` does not copy a skill or agent into a project when your user scope already has one with that name (reported as `GENERATE_SKIPPED`); set `[generate] skip_user_duplicates = false` to copy it anyway.
 
 **Generation**: `.claude/settings.json`, hooks, skills (`/check`, `/review-changes`), subagents (`/test-runner`, `/security-auditor`), MCP servers, `.gitignore` secrets block, `CLAUDE.md` / `AGENTS.md` skeletons.
 

@@ -2730,6 +2730,7 @@ def rtk_report() -> str:
 # --------------------------------------------------------------------------- #
 
 GENERATE_POLICY = {
+    "skip_user_duplicates": True,  # do not copy a skill or agent into a project when the user scope already has that name
     "project_settings": True,
     "user_settings": True,
     "rtk_config": True,
@@ -2800,6 +2801,10 @@ UNITY_DENY = [
 HINTS.update(
     {
         "GENERATE": ("Generated from the detected stack; review the diff before --fix.", ""),
+        "GENERATE_SKIPPED": (
+            "A copy of a user-scope skill or agent in a project is listed twice per session and drifts; it is skipped by default.",
+            DOCS + "skills",
+        ),
         "GENERATE_USER_MCP": (
             "User-scope MCP servers live in ~/.claude.json, written by the CLI only.",
             DOCS + "mcp",
@@ -3016,6 +3021,32 @@ def check_commands_for(stack: dict) -> list[str]:
     return cmds
 
 
+def user_scope_has(path: Path) -> bool:
+    """True when the user scope already holds the skill or agent that `path` (a project file) would copy."""
+    if path.name == "SKILL.md" and path.parent.parent.name == "skills":
+        return (config_dir() / "skills" / path.parent.name / "SKILL.md").is_file()
+    if path.parent.name == "agents":
+        agents = config_dir() / "agents"
+        return agents.is_dir() and any(agents.glob(f"**/{path.name}"))
+    return False
+
+
+def gen_unless_user_scope(policy: dict, path: Path, content: str, rep: Report, what: str, mode: int = 0o644) -> None:
+    """gen_new_file, except that an item the user scope already has is not copied into the project.
+
+    A copy is listed in every session of the project on top of the user one and drifts apart from it.
+    `[generate] skip_user_duplicates = false` restores the copy."""
+    if policy["generate"].get("skip_user_duplicates", True) and not path.exists() and user_scope_has(path):
+        rep.add(
+            "info",
+            "GENERATE_SKIPPED",
+            path,
+            f"{what} not copied: the user scope already has one (set [generate] skip_user_duplicates = false to copy it)",
+        )
+        return
+    gen_new_file(path, content, rep, what, mode)
+
+
 def gen_skills(repo: Path, stack: dict, policy: dict, rep: Report) -> None:
     root = repo / ".claude" / "skills"
     wanted = policy["generate"]["skills"]
@@ -3023,7 +3054,8 @@ def gen_skills(repo: Path, stack: dict, policy: dict, rep: Report) -> None:
     if "check" in wanted and cmds:
         tools = " ".join(f"Bash({c} *)" if " " in c else f"Bash({c})" for c in cmds)
         body = "\n".join(f"{i}. `{c}`" for i, c in enumerate(cmds, 1))
-        gen_new_file(
+        gen_unless_user_scope(
+            policy,
             root / "check" / "SKILL.md",
             f"""---
 name: check
@@ -3042,7 +3074,8 @@ If everything passes, say so in one line.
             "skill /check",
         )
     if "review-changes" in wanted:
-        gen_new_file(
+        gen_unless_user_scope(
+            policy,
             root / "review-changes" / "SKILL.md",
             """---
 name: review-changes
@@ -3114,7 +3147,8 @@ def gen_agents(repo: Path, stack: dict, policy: dict, rep: Report) -> None:
             continue
         tools, desc, body, *model = AGENT_TEMPLATES[name]
         model_line = f"model: {model[0]}\n" if model else ""
-        gen_new_file(
+        gen_unless_user_scope(
+            policy,
             repo / ".claude" / "agents" / f"{name}.md",
             f"---\nname: {name}\ndescription: {desc}\ntools: {tools}\n{model_line}---\n\n{body}\n",
             rep,
@@ -4705,6 +4739,11 @@ BRIEF_FR = {
         "fichier généré et lourd chargé à chaque session",
         "ne pas l'importer : le citer par son chemin",
     ),
+    "GENERATE_SKIPPED": (
+        "tokens",
+        "élément du scope utilisateur non recopié dans le projet",
+        "mettre [generate] skip_user_duplicates = false pour le copier",
+    ),
     "MODEL_LEGACY": (
         "tokens",
         "modèle d'une génération précédente",
@@ -4867,6 +4906,11 @@ BRIEF_EN = {
         "tokens",
         "heavy generated file loaded every session",
         "do not import it: point to it by path",
+    ),
+    "GENERATE_SKIPPED": (
+        "tokens",
+        "user-scope item not copied into the project",
+        "set [generate] skip_user_duplicates = false to copy it",
     ),
     "MODEL_LEGACY": (
         "tokens",
